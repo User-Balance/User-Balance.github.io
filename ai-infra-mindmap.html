@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Infra 全景脑图</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --ink: #172033;
+      --muted: #62708a;
+      --line: #dce3ee;
+      --line-strong: #c2cede;
+      --shadow: 0 18px 50px rgba(47, 65, 98, .10);
+      --blue: #2f6fed;
+      --blue-soft: #eaf1ff;
+      --purple: #7c4dce;
+      --purple-soft: #f0eaff;
+      --orange: #d97706;
+      --orange-soft: #fff2df;
+      --green: #1c8b62;
+      --green-soft: #e8f8f0;
+      --cyan: #0c829e;
+      --cyan-soft: #e7f7fb;
+      --yellow: #b27a00;
+      --yellow-soft: #fff7d9;
+      --red: #bf4d5c;
+      --red-soft: #ffedf0;
+      --pink: #b44a8b;
+      --pink-soft: #fdebf6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.65 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .page { max-width: 1500px; margin: 0 auto; padding: 28px 28px 48px; }
+    header {
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
+      margin-bottom: 20px;
+    }
+    .eyebrow { color: var(--blue); font-size: 12px; font-weight: 700; letter-spacing: .15em; }
+    h1 { margin: 5px 0 4px; font-size: clamp(28px, 4vw, 48px); line-height: 1.1; letter-spacing: -.04em; }
+    .subtitle { margin: 0; color: var(--muted); max-width: 760px; }
+    .search {
+      display: flex; align-items: center; gap: 10px; min-width: min(370px, 100%);
+      padding: 11px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
+      box-shadow: 0 6px 18px rgba(47,65,98,.05);
+    }
+    .search span { color: var(--muted); font-size: 18px; }
+    .search input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--ink); }
+    .layout { display: grid; grid-template-columns: minmax(560px, 1.24fr) minmax(420px, .76fr); gap: 20px; align-items: start; }
+    .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
+    .map-panel { padding: 16px; overflow: hidden; }
+    .panel-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 2px 4px 9px; }
+    .panel-title { font-weight: 700; }
+    .panel-note { color: var(--muted); font-size: 12px; }
+    .map-wrap { position: relative; width: 100%; overflow: hidden; border-radius: 16px; background: linear-gradient(145deg, #fbfcff, #f4f7fc); }
+    svg { display: block; width: 100%; height: auto; }
+    .edge { fill: none; stroke: var(--line-strong); stroke-width: 2; }
+    .edge.data { stroke: var(--blue); stroke-dasharray: 8 7; opacity: .62; }
+    .edge.opt { stroke: var(--pink); stroke-dasharray: 3 7; opacity: .78; }
+    .edge.control { stroke: var(--cyan); stroke-dasharray: 2 4; opacity: .62; }
+    .edge-label { font-size: 12px; fill: var(--muted); }
+    .node { outline: none; }
+    .node rect { stroke-width: 1.4; transition: .18s ease; }
+    .node text { pointer-events: none; }
+    .node .title { font-size: 16px; font-weight: 700; fill: var(--ink); }
+    .node .desc { font-size: 11.5px; fill: var(--muted); }
+    .node:hover rect, .node:focus rect, .node.active rect { stroke: var(--blue); stroke-width: 2.5; filter: drop-shadow(0 5px 8px rgba(47,111,237,.16)); }
+    .node.dim { opacity: .25; }
+    .node.match rect { stroke: var(--orange); stroke-width: 3; }
+    .node.root rect { fill: #eaf1ff; stroke: #a7c1ff; }
+    .node.work rect { fill: var(--blue-soft); stroke: #b9ceff; }
+    .node.rl rect { fill: var(--orange-soft); stroke: #f0c98a; }
+    .node.eval rect { fill: var(--green-soft); stroke: #a9dfc3; }
+    .node.stack rect { fill: var(--cyan-soft); stroke: #a9dce6; }
+    .node.op rect { fill: var(--yellow-soft); stroke: #e7cf72; }
+    .node.runtime rect { fill: var(--red-soft); stroke: #efb6bf; }
+    .node.optimize rect { fill: var(--pink-soft); stroke: #e9b2d3; }
+    .node.resource rect { fill: #eef0ff; stroke: #c7caf6; }
+    .node.asset rect { fill: #edf9f1; stroke: #b8e1c3; }
+    .legend { display: flex; flex-wrap: wrap; gap: 9px 16px; margin: 9px 4px 0; color: var(--muted); font-size: 12px; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .dot.work { background: var(--blue); } .dot.stack { background: var(--cyan); } .dot.opt { background: var(--pink); }
+    .dot.support { background: var(--green); }
+    .detail-panel { padding: 24px 26px 22px; min-height: 716px; }
+    .crumb { color: var(--muted); font-size: 12px; margin-bottom: 5px; }
+    .detail h2 { margin: 0 0 7px; font-size: 30px; letter-spacing: -.03em; line-height: 1.2; }
+    .detail .lead { color: var(--muted); margin: 0 0 18px; }
+    .quick-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin: 16px 0 18px; }
+    .info-card { border: 1px solid var(--line); background: var(--surface-2); border-radius: 14px; padding: 13px 14px; }
+    .info-card h3 { margin: 0 0 4px; font-size: 13px; color: var(--blue); }
+    .info-card p { margin: 0; color: var(--ink); font-size: 14px; }
+    .section-label { margin: 18px 0 7px; font-size: 12px; letter-spacing: .08em; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .terms { display: flex; flex-wrap: wrap; gap: 7px; }
+    .term { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 5px 9px; font-size: 12px; }
+    .term:hover, .term:focus { border-color: var(--blue); color: var(--blue); outline: none; }
+    .term-defs { margin-top: 10px; border-top: 1px solid var(--line); }
+    .term-row { display: grid; grid-template-columns: 145px 1fr; gap: 14px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .term-row b { color: var(--ink); }
+    .term-row span { color: var(--muted); }
+    .analogy { border-left: 3px solid var(--blue); padding: 10px 13px; margin-top: 15px; background: var(--blue-soft); color: #29426d; border-radius: 0 10px 10px 0; }
+    .flow-panel { margin-top: 20px; padding: 20px 22px; }
+    .flow-panel h2 { margin: 0 0 4px; font-size: 20px; }
+    .flow-panel p { margin: 0 0 15px; color: var(--muted); }
+    .flow { display: grid; grid-template-columns: repeat(6, minmax(110px, 1fr)); gap: 8px; align-items: stretch; }
+    .flow-step { position: relative; border: 1px solid var(--line); border-radius: 13px; background: var(--surface-2); padding: 12px 11px; min-height: 92px; }
+    .flow-step::after { content: "→"; position: absolute; right: -13px; top: 30px; color: var(--line-strong); font-size: 20px; }
+    .flow-step:last-child::after { display: none; }
+    .flow-step button { display: block; padding: 0; border: 0; background: transparent; text-align: left; color: inherit; width: 100%; }
+    .flow-step b { display: block; font-size: 14px; margin-bottom: 4px; }
+    .flow-step small { display: block; color: var(--muted); line-height: 1.4; }
+    .flow-step:hover, .flow-step:focus-within { border-color: var(--blue); background: var(--blue-soft); }
+    .stack-panel { margin-top: 20px; padding: 20px 22px; }
+    .stack-panel h2 { margin: 0 0 4px; font-size: 20px; }
+    .stack-panel > p { margin: 0 0 14px; color: var(--muted); }
+    .stack-layers { display: grid; gap: 8px; }
+    .layer { display: grid; grid-template-columns: 130px 1fr 1.2fr; gap: 14px; align-items: center; padding: 11px 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+    .layer strong { color: var(--ink); }
+    .layer .examples { color: var(--blue); font-size: 13px; }
+    .layer .meaning { color: var(--muted); font-size: 13px; }
+    .glossary-panel { margin-top: 20px; padding: 20px 22px; }
+    .glossary-panel h2 { margin: 0 0 4px; font-size: 20px; }
+    .glossary-panel > p { margin: 0 0 12px; color: var(--muted); }
+    .glossary { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 9px; }
+    .glossary-item { padding: 10px 11px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-2); }
+    .glossary-item b { display: block; color: var(--ink); font-size: 13px; }
+    .glossary-item span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .study-panel { margin-top: 20px; padding: 20px 22px; }
+    .study-panel h2 { margin: 0 0 4px; font-size: 20px; }
+    .study-panel p { margin: 0 0 13px; color: var(--muted); }
+    .study-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; counter-reset: step; }
+    .study-step { counter-increment: step; position: relative; padding: 14px 14px 14px 47px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface-2); }
+    .study-step::before { content: counter(step); position: absolute; left: 14px; top: 14px; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; color: var(--blue); background: var(--blue-soft); font-weight: 700; }
+    .study-step b { display: block; margin-bottom: 3px; }
+    .study-step span { display: block; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    footer { margin-top: 20px; color: var(--muted); font-size: 12px; text-align: center; }
+    @media (max-width: 1060px) {
+      .layout { grid-template-columns: 1fr; }
+      .detail-panel { min-height: auto; }
+      .flow { grid-template-columns: repeat(3, minmax(0,1fr)); }
+      .flow-step:nth-child(3)::after { display: none; }
+      .glossary { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+    @media (max-width: 680px) {
+      .page { padding: 18px 12px 34px; }
+      header { display: block; }
+      .search { margin-top: 14px; min-width: 0; }
+      .map-panel { padding: 8px; }
+      .detail-panel { padding: 20px 17px; }
+      .quick-grid, .study-list, .glossary { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .flow-step::after { display: none; }
+      .layer { grid-template-columns: 1fr; gap: 3px; }
+      .term-row { grid-template-columns: 1fr; gap: 2px; }
+      .panel-note { display: none; }
+    }
+  </style>
+<style id="portal-map-style">.map-wrap{overflow:auto}#mindmap{min-width:1000px}.map-panel{min-width:0}</style>
+<meta name="description" content="AI Infra 全景脑图：中文图解、术语与实践指南。资料基于 2026-10-16 的记录。">
+<link rel="stylesheet" href="assets/article-nav.css">
+</head>
+<body>
+<nav class="archive-nav" aria-label="学习手册导航"><a href="index.html">← 技术学习手册 · 返回门户</a><span>AI Infra · 资料日期 2026-10-16 · 归档 2026-10-20</span></nav>
+
+  <div class="page">
+    <header>
+      <div>
+        <div class="eyebrow">SYSTEM MAP · 2026</div>
+        <h1>AI Infra 全景脑图</h1>
+        <p class="subtitle">把模型算法变成可训练、可对齐、可测评、可服务系统的软硬件基础设施。点击脑图节点，查看它解决什么问题、关注哪些指标，以及专业名词怎么理解。</p>
+      </div>
+      <label class="search" aria-label="搜索节点或术语"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜索：KV cache / 算子 / MFU…" /></label>
+    </header>
+
+    <main>
+      <div class="layout">
+        <section class="panel map-panel" aria-label="AI Infra 思维脑图">
+          <div class="panel-top"><span class="panel-title">第一张图：工作负载 × 软件栈</span><span class="panel-note">点击节点 · Enter 也可打开</span></div>
+          <div class="map-wrap">
+            <svg id="mindmap" viewBox="0 0 1000 760" role="img" aria-labelledby="map-title map-desc">
+              <title id="map-title">AI Infra 全景脑图</title>
+              <desc id="map-desc">中心是 AI Infra，左侧是训练、推理、强化学习和测评，右侧是框架、算子、runtime、量化与投机推理，底部是资源和数据资产。</desc>
+              <path class="edge data" d="M 195 144 C 330 145, 345 315, 390 335" />
+              <path class="edge data" d="M 195 278 C 315 280, 335 345, 390 350" />
+              <path class="edge data" d="M 195 412 C 315 405, 340 377, 390 365" />
+              <path class="edge data" d="M 195 546 C 325 510, 345 405, 390 380" />
+              <path class="edge control" d="M 610 335 C 665 304, 675 144, 805 144" />
+              <path class="edge control" d="M 610 350 C 690 323, 705 278, 805 278" />
+              <path class="edge control" d="M 610 365 C 690 360, 710 412, 805 412" />
+              <path class="edge opt" d="M 610 380 C 690 412, 710 546, 805 546" />
+              <path class="edge opt" d="M 500 420 C 520 485, 625 605, 805 650" />
+              <path class="edge" d="M 500 420 C 500 500, 405 615, 280 650" />
+              <path class="edge" d="M 500 420 C 500 500, 590 615, 690 650" />
+              <text class="edge-label" x="258" y="245">数据 / 梯度 / 轨迹</text>
+              <text class="edge-label" x="683" y="245">编排 / 执行</text>
+              <text class="edge-label" x="685" y="488">优化覆盖</text>
+
+              <g class="node root active" data-id="root" tabindex="0" role="button" aria-label="AI Infra 总览" transform="translate(390 300)">
+                <rect width="220" height="120" rx="20" />
+                <text class="title" x="110" y="42" text-anchor="middle">AI Infra</text>
+                <text class="desc" x="110" y="67" text-anchor="middle">模型算法 → 稳定系统</text>
+                <text class="desc" x="110" y="87" text-anchor="middle">性能 · 成本 · 可靠性</text>
+              </g>
+
+              <g class="node work" data-id="training" tabindex="0" role="button" aria-label="训练" transform="translate(20 104)">
+                <rect width="175" height="80" rx="14" /><text class="title" x="16" y="29">训练</text><text class="desc" x="16" y="53">预训练 / SFT / 分布式</text><text class="desc" x="16" y="69">追求吞吐、稳定、可扩展</text>
+              </g>
+              <g class="node work" data-id="inference" tabindex="0" role="button" aria-label="推理服务" transform="translate(20 238)">
+                <rect width="175" height="80" rx="14" /><text class="title" x="16" y="29">推理服务</text><text class="desc" x="16" y="53">在线 / 离线 / Agent</text><text class="desc" x="16" y="69">追求延迟、吞吐、成本</text>
+              </g>
+              <g class="node rl" data-id="rl" tabindex="0" role="button" aria-label="强化学习与对齐" transform="translate(20 372)">
+                <rect width="175" height="80" rx="14" /><text class="title" x="16" y="29">强化学习 / 对齐</text><text class="desc" x="16" y="53">rollout / reward / policy</text><text class="desc" x="16" y="69">追求样本效率、反馈闭环</text>
+              </g>
+              <g class="node eval" data-id="eval" tabindex="0" role="button" aria-label="测评与质量" transform="translate(20 506)">
+                <rect width="175" height="80" rx="14" /><text class="title" x="16" y="29">测评</text><text class="desc" x="16" y="53">能力 / 安全 / 回归 / A-B</text><text class="desc" x="16" y="69">追求可信、可比较、可复现</text>
+              </g>
+
+              <g class="node stack" data-id="framework" tabindex="0" role="button" aria-label="框架" transform="translate(805 104)">
+                <rect width="175" height="80" rx="14" /><text class="title" x="16" y="29">框架</text><text class="desc" x="16" y="53">PyTorch / JAX / Megatron</text><text class="desc" x="16" y="69">写模型、组图、做并行</text>
+              </g>
+              <g class="node op" data-id="operator" tabindex="0" role="button" aria-label="算子与内核" transform="translate(805 238)">
+                <rect width="175" height="80" rx="14" /><text class="title" x="16" y="29">算子 / Kernel</text><text class="desc" x="16" y="53">GEMM / Attention / Norm</text><text class="desc" x="16" y="69">决定每个张量怎么计算</text>
+              </g>
+              <g class="node runtime" data-id="runtime" tabindex="0" role="button" aria-label="Runtime" transform="translate(805 372)">
+                <rect width="175" height="80" rx="14" /><text class="title" x="16" y="29">Runtime</text><text class="desc" x="16" y="53">调度 / 内存 / 通信 / 执行</text><text class="desc" x="16" y="69">把计算真正跑起来</text>
+              </g>
+              <g class="node optimize" data-id="quant" tabindex="0" role="button" aria-label="量化" transform="translate(805 506)">
+                <rect width="175" height="80" rx="14" /><text class="title" x="16" y="29">量化</text><text class="desc" x="16" y="53">FP8 / INT8 / INT4 / KV</text><text class="desc" x="16" y="69">用更少 bit 换内存与速度</text>
+              </g>
+              <g class="node optimize" data-id="spec" tabindex="0" role="button" aria-label="投机推理" transform="translate(590 606)">
+                <rect width="175" height="80" rx="14" /><text class="title" x="16" y="29">投机推理</text><text class="desc" x="16" y="53">draft → verify → accept</text><text class="desc" x="16" y="69">小模型先猜，大模型批验</text>
+              </g>
+              <g class="node resource" data-id="resource" tabindex="0" role="button" aria-label="硬件与集群" transform="translate(195 606)">
+                <rect width="175" height="80" rx="14" /><text class="title" x="16" y="29">硬件 / 集群</text><text class="desc" x="16" y="53">GPU / HBM / 网络 / K8s</text><text class="desc" x="16" y="69">提供算力、带宽与隔离</text>
+              </g>
+              <g class="node asset" data-id="asset" tabindex="0" role="button" aria-label="数据与模型资产" transform="translate(390 606)">
+                <rect width="175" height="80" rx="14" /><text class="title" x="16" y="29">数据 / 模型资产</text><text class="desc" x="16" y="53">清洗、去重、版本、血缘</text><text class="desc" x="16" y="69">保证输入和产物可追踪</text>
+              </g>
+            </svg>
+          </div>
+          <div class="legend" aria-label="图例"><span><i class="dot work"></i>工作负载</span><span><i class="dot stack"></i>软件栈</span><span><i class="dot opt"></i>性能优化</span><span><i class="dot support"></i>支撑系统</span><span>实线=依赖</span><span>虚线=数据或优化关系</span></div>
+        </section>
+
+        <section class="panel detail-panel detail" aria-live="polite">
+          <div class="crumb" id="crumb">AI Infra / 总览</div>
+          <h2 id="detail-title">AI Infra 是什么？</h2>
+          <p class="lead" id="detail-lead">它是连接“模型算法”和“可用产品”的系统工程：让同一个模型能在集群上稳定训练、在反馈中对齐、被客观测评，并以可接受的延迟和成本服务用户。</p>
+          <div class="quick-grid">
+            <div class="info-card"><h3>解决什么问题</h3><p id="detail-why">把模型代码、数据、算力和服务流程组织成可复用、可观测、可恢复的系统。</p></div>
+            <div class="info-card"><h3>核心关注点</h3><p id="detail-focus">性能（吞吐/延迟）、成本（算力/显存）、质量（精度/安全）、可靠性（故障/回滚）。</p></div>
+          </div>
+          <div class="section-label">如何理解</div>
+          <div class="analogy" id="detail-analogy">把 AI Infra 想成“模型工厂”：框架负责画生产流程，算子是工位，runtime 是调度员，硬件是厂房与机器，测评是质检，推理服务是交付渠道。</div>
+          <div class="section-label">常见专业名词</div>
+          <div class="terms" id="detail-terms"></div>
+          <div class="term-defs" id="term-defs"></div>
+        </section>
+      </div>
+
+      <section class="panel flow-panel">
+        <h2>第二张图：从模型生命周期看 AI Infra</h2>
+        <p>一条模型主线通常是“数据 → 训练 → 对齐 → 测评 → 发布 → 推理”；每一步都会调用下面的软件栈。</p>
+        <div class="flow">
+          <div class="flow-step"><button data-select="asset"><b>① 数据资产</b><small>清洗、去重、tokenize、采样、版本</small></button></div>
+          <div class="flow-step"><button data-select="training"><b>② 训练</b><small>预训练、SFT、继续训练、checkpoint</small></button></div>
+          <div class="flow-step"><button data-select="rl"><b>③ 对齐</b><small>偏好、奖励、rollout、策略更新</small></button></div>
+          <div class="flow-step"><button data-select="eval"><b>④ 测评</b><small>能力、安全、回归、线上 A/B</small></button></div>
+          <div class="flow-step"><button data-select="inference"><b>⑤ 发布</b><small>打包、量化、灰度、扩缩容</small></button></div>
+          <div class="flow-step"><button data-select="runtime"><b>⑥ 服务</b><small>调度请求、复用 KV、返回 token</small></button></div>
+        </div>
+      </section>
+
+      <section class="panel stack-panel">
+        <h2>第三张图：框架、算子、Runtime 到底怎么分工？</h2>
+        <p>可以把一次 <code>y = softmax(QKᵀ / √d)V</code> 的执行想成一条生产线：上层描述意图，中层拆成算子，底层安排内存、通信和 kernel。</p>
+        <div class="stack-layers">
+          <div class="layer"><strong>模型 / 应用</strong><span class="examples">Transformer、RAG、Agent、训练脚本</span><span class="meaning">描述“要解决什么任务”，包含网络结构、数据流和业务约束。</span></div>
+          <div class="layer"><strong>框架</strong><span class="examples">PyTorch、JAX、TensorFlow、Megatron-LM、DeepSpeed、FSDP</span><span class="meaning">提供张量、自动微分、计算图、分布式并行和 checkpoint 等抽象。</span></div>
+          <div class="layer"><strong>编译 / 图层</strong><span class="examples">TorchDynamo / FX、AOTAutograd、XLA、MLIR、ONNX</span><span class="meaning">捕获计算图、做 shape/布局/融合优化，把动态图变成更适合执行的计划。</span></div>
+          <div class="layer"><strong>算子 / Kernel</strong><span class="examples">GEMM、FlashAttention、RMSNorm、RoPE、AllReduce、Triton、CUTLASS</span><span class="meaning">对具体张量形状、数据类型和设备执行一小段计算；性能常由 kernel 决定。</span></div>
+          <div class="layer"><strong>Runtime</strong><span class="examples">CUDA Runtime、NCCL、CUDA Graph、vLLM、TensorRT-LLM、SGLang</span><span class="meaning">管理 stream、event、内存、通信、请求调度、KV cache 和执行顺序。</span></div>
+          <div class="layer"><strong>硬件 / 系统</strong><span class="examples">GPU/TPU/NPU、HBM、NVLink、InfiniBand、K8s、Slurm</span><span class="meaning">真正提供 FLOPs、显存带宽、节点间带宽，以及资源隔离和故障恢复能力。</span></div>
+        </div>
+      </section>
+
+      <section class="panel glossary-panel">
+        <h2>第四张图：一组高频词的“人话”解释</h2>
+        <p>先把这些词放进正确的层级，再去看论文、代码或系统 benchmark，会更容易判断瓶颈在哪里。</p>
+        <div class="glossary">
+          <div class="glossary-item"><b>FLOPs / FLOPS</b><span>运算量 / 每秒浮点运算能力；是“理论速度”，不等于真实吞吐。</span></div>
+          <div class="glossary-item"><b>MFU / HFU</b><span>模型/硬件 FLOPs 利用率；看理论峰值有多少真正变成了有效计算。</span></div>
+          <div class="glossary-item"><b>DP / TP / PP / EP</b><span>数据、张量、流水线、专家并行；分别切 batch、权重张量、层、MoE experts。</span></div>
+          <div class="glossary-item"><b>AllReduce / AllGather / All-to-All</b><span>集体通信原语；训练同步梯度，MoE 路由 token，常见瓶颈是网络。</span></div>
+          <div class="glossary-item"><b>Prefill / Decode</b><span>Prefill 一次处理输入上下文，Decode 逐 token 生成；两者算力和调度特征不同。</span></div>
+          <div class="glossary-item"><b>KV Cache</b><span>缓存已经算过的 Key/Value，后续生成只追加新 token，减少重复计算和延迟。</span></div>
+          <div class="glossary-item"><b>TTFT / TPOT / ITL</b><span>首 token 时间、每输出 token 时间、token 间隔；分别描述“等多久”和“生成多快”。</span></div>
+          <div class="glossary-item"><b>Continuous Batching</b><span>请求完成就补入新请求，动态拼 batch；比固定 batch 更适合在线生成。</span></div>
+          <div class="glossary-item"><b>PTQ / QAT</b><span>训练后量化 / 量化感知训练；前者快，后者更能补偿精度损失。</span></div>
+          <div class="glossary-item"><b>W8A8 / W4A16 / FP8</b><span>权重/激活的 bit 组合；位宽越低通常越省显存，但越依赖硬件和校准。</span></div>
+          <div class="glossary-item"><b>Speculative Decoding</b><span>小 draft 模型先猜多个 token，大模型批量验证；接受率、草稿成本和验证开销共同决定收益。</span></div>
+          <div class="glossary-item"><b>PPO / GRPO / DPO</b><span>PPO/GRPO 是策略优化方法；DPO 是直接偏好优化，通常无需在线 rollout。</span></div>
+          <div class="glossary-item"><b>Actor / Critic / Reward Model</b><span>行动策略、价值估计、奖励打分；是 RL 训练闭环的三个常见角色。</span></div>
+          <div class="glossary-item"><b>pass@k / Win Rate / ECE</b><span>代码通过率、偏好胜率、校准误差；分别看能力、偏好和置信度。</span></div>
+          <div class="glossary-item"><b>p50 / p95 / p99</b><span>延迟分位数；p99 常比平均值更能暴露线上长尾。</span></div>
+          <div class="glossary-item"><b>Checkpoint / Fault Tolerance</b><span>保存训练状态并可恢复；大规模训练要把故障当成常态设计。</span></div>
+          <div class="glossary-item"><b>Kernel Fusion</b><span>把多个小算子合并成一个 kernel，减少读写显存和 launch 开销。</span></div>
+          <div class="glossary-item"><b>Roofline / Memory-bound</b><span>用算力与带宽判断瓶颈；很多 Decode 阶段更像“搬数据”而非“算不动”。</span></div>
+        </div>
+      </section>
+
+      <section class="panel study-panel">
+        <h2>第五张图：建议的学习顺序</h2>
+        <p>先建立“数据流和张量形状”的直觉，再深入并行、kernel、runtime 和服务指标。</p>
+        <div class="study-list">
+          <div class="study-step"><b>先看模型计算</b><span>掌握 Transformer 的 Q/K/V、GEMM、Attention、Norm，以及 [B,T,d] 的 shape。</span></div>
+          <div class="study-step"><b>再看训练并行</b><span>理解 DP/TP/PP/EP、AllReduce、显存组成、checkpoint 和 MFU。</span></div>
+          <div class="study-step"><b>再看推理链路</b><span>区分 Prefill/Decode，理解 KV Cache、continuous batching、TTFT/TPOT。</span></div>
+          <div class="study-step"><b>再看算子与 runtime</b><span>用 profiler 找 kernel、显存带宽、通信、launch 和调度瓶颈。</span></div>
+          <div class="study-step"><b>最后看优化</b><span>比较 Flash/PagedAttention、量化、kernel fusion、投机推理的收益与代价。</span></div>
+          <div class="study-step"><b>用测评闭环</b><span>同时看质量、安全、吞吐、延迟、成本和回归，避免只优化单一指标。</span></div>
+        </div>
+      </section>
+    </main>
+    <footer>这张脑图的主线：把“模型能算”推进到“系统能稳定、便宜、快速、可信地运行”。</footer>
+  </div>
+
+  <script>
+    const DATA = {
+      root: { crumb:'AI Infra / 总览', title:'AI Infra 是什么？', lead:'它是连接“模型算法”和“可用产品”的系统工程：让同一个模型能在集群上稳定训练、在反馈中对齐、被客观测评，并以可接受的延迟和成本服务用户。', why:'把模型代码、数据、算力和服务流程组织成可复用、可观测、可恢复的系统。', focus:'性能（吞吐/延迟）、成本（算力/显存）、质量（精度/安全）、可靠性（故障/回滚）。', analogy:'把 AI Infra 想成“模型工厂”：框架负责画生产流程，算子是工位，runtime 是调度员，硬件是厂房与机器，测评是质检，推理服务是交付渠道。', terms:[['FLOPs','总运算量；回答“要算多少”。'],['FLOPS','每秒运算能力；回答“机器有多快”。'],['MFU','模型有效 FLOPs / 理论峰值，衡量训练是否把 GPU 用起来。'],['p99 latency','99% 请求都能在这个时延内完成，体现长尾体验。'],['可观测性','把吞吐、显存、通信、错误和质量变成可追踪信号。']] },
+      training: { crumb:'AI Infra / 工作负载 / 训练', title:'训练：让模型“学会”', lead:'训练 infra 要把海量 token 变成稳定的梯度更新，并让多卡、多机、长时间运行仍然可扩展、可恢复。', why:'解决单卡放不下、算不满、同步慢、训练中断后难恢复等问题。', focus:'吞吐（tokens/s）、扩展效率、显存、通信、数值稳定性、checkpoint、数据质量与版本血缘。', analogy:'像一座多班组工厂：DP 分摊订单，TP 把一台大机器拆给多台 GPU，PP 把工序串成流水线，通信负责班组同步。', terms:[['Pretraining','从大规模语料学习通用能力。'],['SFT','用指令-回答数据做监督微调。'],['DP / TP / PP / EP','数据/张量/流水线/专家并行。'],['ZeRO / FSDP','切分参数、梯度、优化器状态，降低单卡显存。'],['Activation Checkpointing','少存激活，反向时重算，拿算力换显存。'],['MFU / HFU','模型/硬件 FLOPs 利用率；低时要查通信、访存或调度。'],['BF16 / FP8','低精度训练格式；更省带宽显存，但要关注稳定性。']] },
+      inference: { crumb:'AI Infra / 工作负载 / 推理', title:'推理：让模型“服务”', lead:'推理不是简单地把训练代码换成 eval 模式，而是一套围绕请求、缓存、调度和尾延迟设计的系统。', why:'在用户并发、上下文长度和输出长度都变化时，稳定返回高质量 token。', focus:'TTFT、TPOT/ITL、QPS、并发、显存、KV cache 命中、p95/p99、每百万 token 成本。', analogy:'像机场塔台：请求是航班，scheduler 排起降，KV cache 是已完成的航段，continuous batching 让空位马上被新航班填上。', terms:[['Prefill','一次性处理输入上下文，通常更偏计算密集。'],['Decode','逐 token 生成，常受显存带宽和 KV 访问影响。'],['KV Cache','缓存历史 token 的 Key/Value，避免重复计算。'],['Continuous Batching','请求动态进出 batch，提高在线 GPU 利用率。'],['PagedAttention','按页管理 KV cache，减少碎片和浪费。'],['TTFT / TPOT / ITL','首 token 时间 / 每 token 时间 / token 间隔。'],['Disaggregated Serving','把 prefill 与 decode 拆到不同资源池。']] },
+      rl: { crumb:'AI Infra / 工作负载 / 强化学习与对齐', title:'强化学习与偏好对齐', lead:'RL infra 需要把策略生成、环境/验证器反馈、奖励计算和策略更新串成高吞吐闭环，且每条轨迹长度都可能不同。', why:'让模型不只拟合示例，还能通过奖励、偏好或可验证结果持续改进。', focus:'rollout 吞吐、样本效率、策略与参考模型同步、奖励延迟、轨迹存储、显存、KL 约束和训练稳定性。', analogy:'像训练运动员：actor 出招，环境/验证器打分，critic 估计局势，learner 根据反馈更新策略。', terms:[['Actor / Policy','负责生成动作或回答的策略模型。'],['Rollout','让策略与环境交互，采集一条或一批轨迹。'],['Reward Model / Verifier','把偏好或可验证结果变成奖励信号。'],['Critic / Value','估计状态价值，帮助判断动作好坏。'],['PPO','限制策略更新幅度的经典 on-policy 优化。'],['GRPO','按一组样本的相对奖励更新，常用于可验证推理。'],['DPO','用偏好对直接优化模型，通常不需要在线 rollout 或 critic；属于偏好优化，不等同于 PPO/GRPO 式在线 RL。'],['GAE / KL Penalty','估计 advantage / 约束策略别偏离参考模型太远。']] },
+      eval: { crumb:'AI Infra / 工作负载 / 测评', title:'测评：回答“到底变好了吗？”', lead:'测评 infra 把能力、安全、稳定性和系统性能变成可重复的实验，让每次模型、数据或 kernel 变更都能被比较。', why:'防止“一个 benchmark 变好、真实体验变差”或“代码改了却不知道影响了什么”。', focus:'任务覆盖、数据泄漏、可复现、置信区间、回归门禁、质量-性能联合指标和线上 A/B。', analogy:'像质检与体检：既看考试分数，也看安全体检、耐久测试和真实用户的满意度。', terms:[['Offline Benchmark','固定数据集上的可复现实验。'],['Online A/B','把两个版本随机分流给真实流量比较。'],['pass@k','代码任务中 k 次采样至少一次通过的概率。'],['Win Rate / Elo','两模型成对比较的偏好或排序。'],['MMLU / GSM8K / HumanEval','知识、数学推理、代码能力的常见任务集。'],['MT-Bench / HELM / RAGAS','对话、综合责任、RAG 质量评估框架/指标集合。'],['p50 / p95 / p99','延迟分位数，识别线上长尾。'],['Safety / Red Team','越狱、毒性、隐私、偏见和鲁棒性测试。']] },
+      framework: { crumb:'AI Infra / 软件栈 / 框架', title:'框架：把模型写成可执行的计算', lead:'框架给研究者张量、自动微分、计算图和分布式抽象，让模型代码可以在不同设备和集群上运行。', why:'避免每个人都手写内存、梯度和通信，同时保留足够的性能控制能力。', focus:'动态图/静态图、自动微分、并行策略、编译捕获、checkpoint、生态兼容和调试体验。', analogy:'像编程语言与施工图：你描述网络结构和数据流，框架把它翻译成一组可执行的工序。', terms:[['PyTorch / JAX','主流深度学习框架；分别偏动态图生态和函数式/编译生态。'],['Megatron-LM','面向大模型训练的并行与通信实现。'],['DeepSpeed / ZeRO','训练优化和显存切分方案。'],['FSDP','Fully Sharded Data Parallel，参数/梯度/优化器切分。'],['TorchDynamo / FX','捕获 Python/PyTorch 计算并转成图。'],['AOTAutograd / XLA / MLIR','提前生成反向或跨硬件编译优化。']] },
+      operator: { crumb:'AI Infra / 软件栈 / 算子与 Kernel', title:'算子：把一小段数学算快', lead:'算子是计算图中的基本积木；kernel 是它在特定硬件、shape 和 dtype 上的一种具体实现。', why:'同样的数学公式，内存布局、融合方式和线程组织不同，速度可能相差数量级。', focus:'FLOPs、显存带宽、访存合并、并行度、shape 特化、kernel launch 次数、融合与数值误差。', analogy:'同一道菜，算子是菜谱，kernel 是针对这口锅、这个火力和这批食材写的具体做法。', terms:[['GEMM / MatMul','矩阵乘法，Transformer 训练计算量的大头。'],['Attention / Softmax','计算 token 间关联并归一化权重。'],['RMSNorm / LayerNorm','稳定激活分布，常在每层前后出现。'],['RoPE / Embedding','位置编码 / token 到向量的映射。'],['FlashAttention','通过分块和片上内存减少 Attention 的中间读写。'],['Kernel Fusion','把多个算子合成一个 kernel，减少访存和 launch。'],['Triton / CUTLASS','编写或生成高性能 GPU kernel 的工具。'],['AllReduce / All-to-All','训练同步或 MoE 路由的通信算子。']] },
+      runtime: { crumb:'AI Infra / 软件栈 / Runtime', title:'Runtime：让计算真正跑起来', lead:'runtime 负责把算子安排到设备和集群上：管理内存、stream、事件、通信、请求队列、缓存和执行顺序。', why:'把“图里有这些算子”变成“在这张 GPU、这批请求、这个时间点执行它们”。', focus:'调度、内存复用、异步执行、通信重叠、CUDA Graph、错误恢复、资源隔离和可观测性。', analogy:'像交通调度中心：算子是车辆，stream 是车道，显存是停车场，NCCL 是跨城高速，scheduler 决定谁先走。', terms:[['CUDA Runtime','向 GPU 提交 kernel、管理 stream/event 和内存。'],['NCCL','GPU 集群的高性能集体通信库。'],['CUDA Graph','预先捕获执行序列，减少重复 launch 开销。'],['Allocator / Memory Pool','管理显存分配、复用和碎片。'],['Scheduler','安排请求、batch、kernel 或训练阶段的执行。'],['vLLM / TensorRT-LLM / SGLang','面向 LLM serving 的 runtime/执行引擎。'],['Overlap','让计算、通信、数据搬运并行，隐藏等待时间。']] },
+      quant: { crumb:'AI Infra / 性能优化 / 量化', title:'量化：用更少 bit 表示数值', lead:'量化把权重、激活或 KV cache 从高精度格式映射到更低 bit，减少显存和带宽，并借助硬件低精度指令提速。', why:'让更大的模型装进同一张卡，或在同样硬件上服务更多并发。', focus:'精度损失、校准数据、误差分布、硬件支持、反量化开销、权重/激活/KV 的组合。', analogy:'像把高精度尺子换成刻度更粗的尺子：省空间、读写快，但要确认关键刻度没有被抹掉。', terms:[['PTQ / QAT','训练后量化 / 量化感知训练。'],['W8A8 / W4A16','权重和激活的位宽组合。'],['FP8 / INT8 / INT4 / NF4','不同低精度表示；格式和硬件决定速度。'],['Per-Tensor / Per-Channel / Per-Group','scale 的粒度；粒度越细通常误差越小但开销更大。'],['Symmetric / Asymmetric','对称/非对称量化的零点与范围设计。'],['GPTQ / AWQ / SmoothQuant','常见的权重或激活量化方法。'],['KV Cache Quantization','压缩推理缓存，直接影响长上下文并发。']] },
+      spec: { crumb:'AI Infra / 性能优化 / 投机推理', title:'投机推理：让大模型少做几次串行等待', lead:'投机解码让小 draft 模型一次猜多个 token，再让目标大模型批量验证；猜对的 token 可以成段提交。', why:'Decode 阶段每生成一个 token 都要等一次大模型前向，投机推理用并行验证减少串行轮数。', focus:'draft 成本、猜测长度、接受率、目标模型验证吞吐、额外显存和不同任务上的收益稳定性。', analogy:'像秘书先写一段草稿，专家一次检查一串；草稿越准，专家越少需要从零开始写。', terms:[['Draft Model','负责快速生成候选 token 的小模型或轻量分支。'],['Target Model','最终提供可信 logits 的大模型。'],['Verify','目标模型并行计算并检查候选 token。'],['Acceptance Rate','候选 token 被接受的比例，决定实际收益。'],['Medusa / EAGLE','利用多头或额外预测器生成候选的一类方法。'],['Self-Speculative','同一个模型用浅层/早退分支做 draft。'],['Speedup','实际 token/s 或端到端延迟的改善，不能只看理论接受数。'],['正确性边界','采样模式需要正确的接受/拒绝与校正算法才能保持目标分布；近似接受策略不自动保证分布不变。']] },
+      resource: { crumb:'AI Infra / 支撑系统 / 硬件与集群', title:'硬件与集群：提供算力、带宽和隔离', lead:'AI infra 的上限来自硬件，稳定性来自集群系统：显存容量、带宽、互联、调度和故障恢复共同决定可做什么。', why:'把单卡、单机、多机资源组织起来，并在任务之间安全、公平地分配。', focus:'FLOPs、HBM 容量/带宽、互联带宽、拓扑、利用率、排队时间、容错、成本和能耗。', analogy:'像城市基础设施：GPU 是工厂，HBM 是仓库，NVLink/InfiniBand 是高速路，K8s/Slurm 是城市调度。', terms:[['GPU / TPU / NPU','不同类型的 AI 加速器。'],['HBM','高带宽显存；容量和带宽共同限制模型规模与速度。'],['NVLink / PCIe / InfiniBand','卡间、主机到卡、节点间的互联。'],['Topology','设备连接拓扑；决定通信是否绕远路。'],['Kubernetes / Slurm','容器编排 / HPC 作业调度系统。'],['MIG / Quota','硬件切分与资源配额，影响隔离和利用率。']] },
+      asset: { crumb:'AI Infra / 支撑系统 / 数据与模型资产', title:'数据与模型资产：让输入和产物可追踪', lead:'大模型系统的很多问题不是算力问题，而是数据质量、版本混乱、tokenizer 不一致或 checkpoint 找不回来。', why:'保证数据集、模型、配置、评测结果和线上版本能够追溯、复现和回滚。', focus:'去重、污染检测、采样配比、数据血缘、模型 registry、版本、权限、隐私和保留策略。', analogy:'像实验室的样本库和档案室：每个样本、配方和实验结果都要有编号、来源和可回溯记录。', terms:[['Tokenizer','把文本转换成 token id；词表变化会改变训练与推理输入。'],['Data Dedup / Filtering','去重和质量过滤，减少重复、噪声和污染。'],['Dataset Lineage','记录数据从来源到训练集的加工路径。'],['Model Registry','登记模型版本、权重、配置、评测和发布状态。'],['Checkpoint','训练过程中保存的权重、优化器和随机状态。'],['Reproducibility','同样代码、数据、配置能复现接近的结果。']] }
+    };
+
+    const nodes = [...document.querySelectorAll('.node')];
+    const title = document.getElementById('detail-title');
+    const lead = document.getElementById('detail-lead');
+    const crumb = document.getElementById('crumb');
+    const why = document.getElementById('detail-why');
+    const focus = document.getElementById('detail-focus');
+    const analogy = document.getElementById('detail-analogy');
+    const terms = document.getElementById('detail-terms');
+    const defs = document.getElementById('term-defs');
+    let selected = 'root';
+
+    function render(id) {
+      const item = DATA[id] || DATA.root;
+      selected = id;
+      nodes.forEach(n => n.classList.toggle('active', n.dataset.id === id));
+      crumb.textContent = item.crumb;
+      title.textContent = item.title;
+      lead.textContent = item.lead;
+      why.textContent = item.why;
+      focus.textContent = item.focus;
+      analogy.textContent = item.analogy;
+      terms.innerHTML = item.terms.map(([name]) => `<button class="term" type="button" data-term="${name}">${name}</button>`).join('');
+      defs.innerHTML = item.terms.map(([name, desc]) => `<div class="term-row"><b>${name}</b><span>${desc}</span></div>`).join('');
+    }
+    function choose(id) { render(id); document.querySelector('.detail-panel').scrollIntoView({behavior:'smooth', block:'nearest'}); }
+    nodes.forEach(n => {
+      n.addEventListener('click', () => choose(n.dataset.id));
+      n.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(n.dataset.id); } });
+    });
+    document.querySelectorAll('[data-select]').forEach(b => b.addEventListener('click', () => choose(b.dataset.select)));
+    document.getElementById('search').addEventListener('input', e => {
+      const q = e.target.value.trim().toLowerCase();
+      nodes.forEach(n => {
+        const item = DATA[n.dataset.id];
+        const hay = [item.title, item.lead, item.focus, item.analogy, ...item.terms.flat()].join(' ').toLowerCase();
+        n.classList.toggle('dim', Boolean(q) && !hay.includes(q));
+        n.classList.toggle('match', Boolean(q) && hay.includes(q));
+      });
+    });
+    render('root');
+  </script>
+</body>
+</html>

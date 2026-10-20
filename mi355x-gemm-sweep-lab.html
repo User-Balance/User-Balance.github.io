@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MI355X FP8 A8W8：B Preshuffle、Blockscale 与 Sweep</title>
+<style>
+:root{--bg:#f4f6fa;--paper:#fff;--ink:#1d2c43;--muted:#5b6b83;--line:#dce3ee;--blue:#285dc9;--blue-bg:#edf3ff;--teal:#147966;--teal-bg:#e9f7f2;--orange:#a75d12;--orange-bg:#fff3e2;--code:#13233c}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;color:var(--ink);background:var(--bg);font:16px/1.75 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}button,input,select{font:inherit}button{cursor:pointer}button,a,input,select{touch-action:manipulation}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #81a9ff;outline-offset:3px}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(30px,4.2vw,52px);line-height:1.15;letter-spacing:-.04em;margin:12px 0 20px}h2{font-size:27px;line-height:1.4;letter-spacing:-.025em;margin:0 0 16px}h3{font-size:19px;margin:26px 0 12px}p{margin-bottom:15px}li{margin:7px 0}.page{max-width:1460px;margin:auto;padding:38px 36px 54px}.eyebrow{font-size:12px;font-weight:700;letter-spacing:.13em;color:var(--blue)}.intro{max-width:1080px;font-size:17px;color:var(--muted)}.header-links{display:flex;flex-wrap:wrap;gap:10px 18px;font-size:13px;margin:20px 0 28px}.header-links a{padding:5px 10px;border:1px solid var(--line);border-radius:7px;background:var(--paper)}.shell{display:grid;grid-template-columns:180px minmax(0,1fr);gap:26px}.toc{position:sticky;top:26px;align-self:start;display:grid;gap:7px;font-size:13px}.toc a{color:var(--muted);padding:8px 10px;border-radius:7px;line-height:1.5}.toc a:hover{background:var(--blue-bg);color:var(--blue)}main{min-width:0}.section{padding:28px 30px;background:var(--paper);border:1px solid var(--line);border-radius:15px;margin-bottom:22px;min-width:0}.section-num{font-size:12px;color:var(--blue);font-weight:700;margin-bottom:6px}.muted{color:var(--muted)}.small{font-size:13px}.callout{border-left:3px solid var(--blue);background:var(--blue-bg);padding:14px 18px;margin:17px 0;border-radius:0 9px 9px 0}.callout.green{background:var(--teal-bg);border-color:var(--teal)}.callout.amber{background:var(--orange-bg);border-color:var(--orange)}.formula{padding:17px 20px;background:#f1f5fa;border-radius:10px;margin:16px 0;font:15px/1.8 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-wrap:anywhere}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:9px;margin:16px 0 20px}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.65}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;min-width:110px}th{background:#f0f4fa;color:#384f73;font-weight:600}tbody tr:nth-child(even){background:#fbfcfe}tr:last-child td{border-bottom:0}code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em;background:#eef2f7;border-radius:4px;padding:2px 4px;overflow-wrap:anywhere}pre{margin:18px 0;padding:18px 20px;border-radius:10px;color:#e0ebff;background:var(--code);overflow:auto;line-height:1.65;font-size:13px}pre code{padding:0;background:none;color:inherit;font-size:inherit;overflow-wrap:normal}.presets,.controls,.inline-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:end}.presets{margin:20px 0 16px}.btn{border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:8px 13px;border-radius:7px;min-height:40px;font-size:13px}.btn:hover{border-color:var(--blue);color:var(--blue)}.btn.primary,.btn[aria-pressed=true]{background:var(--blue);color:#fff;border-color:var(--blue)}.btn:disabled{opacity:.45;cursor:default}.field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);min-width:90px;flex:1}.field input,.field select{min-height:40px;padding:7px 9px;border:1px solid #bdc9da;border-radius:6px;color:var(--ink);background:var(--paper);width:100%;font-size:15px}.field input[type=range]{padding:0;border:0;accent-color:var(--blue)}.controls{padding:16px;background:#f7f9fc;border:1px solid var(--line);border-radius:10px}.inline-controls{margin:16px 0}.inline-controls .field{flex:none;width:150px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.stat{padding:12px 13px;border-bottom:2px solid var(--line)}.stat .label{font-size:12px;color:var(--muted)}.stat .value{font-size:24px;font-weight:600;color:var(--ink);line-height:1.5;font-variant-numeric:tabular-nums}.stat .detail{font-size:12px;color:var(--muted)}.matrix-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:18px 0}.matrix-title{font-size:15px;margin-bottom:5px;font-weight:600}.matrix-axes{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);gap:6px;margin-bottom:6px}.matrix{height:184px;border:1px solid #aebed4;background-color:#f8fafd;position:relative;overflow:hidden;border-radius:4px}.matrix.grid{background-image:linear-gradient(to right,#d5dfea 1px,transparent 1px),linear-gradient(to bottom,#d5dfea 1px,transparent 1px)}.matrix-c{cursor:crosshair}.band{position:absolute;background:rgba(40,93,201,.10);pointer-events:none}.selection{position:absolute;border:2px solid var(--blue);background:rgba(40,93,201,.28);pointer-events:none;min-width:2px;min-height:2px}.matrix-b .selection{border-color:var(--teal);background:rgba(20,121,102,.27)}.matrix-c .selection{border-color:var(--orange);background:rgba(167,93,18,.3)}.matrix-caption{font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:8px;color:var(--muted);min-height:40px;overflow-wrap:anywhere}.selected-equation{font-size:13px;padding:14px 16px;background:#f1f5fb;border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}.flow-steps{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:20px 0 13px}.step{padding:10px 4px;font-size:12px;line-height:1.5;background:#f2f5fa;border:1px solid var(--line);border-radius:7px;color:var(--muted);cursor:pointer}.step strong{display:block;color:inherit;font-size:14px}.step.active{background:var(--blue);border-color:var(--blue);color:#fff}.stage-detail{min-height:106px;padding:17px 20px;background:var(--blue-bg);border-radius:10px}.stage-detail h3{margin:0 0 6px}.stage-detail p{margin:0;font-size:14px}.flow-data{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;gap:8px;align-items:center;margin:18px 0}.data-node{text-align:center;padding:15px 7px;background:#f4f7fc;border:1px solid var(--line);border-radius:8px;font-size:13px}.data-node.active{background:var(--teal-bg);border-color:var(--teal)}.data-node strong{display:block}.arrow{color:var(--muted)}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}.wave-box{display:grid;gap:5px;min-height:180px;border:1px solid var(--line);padding:8px;border-radius:8px}.wave{padding:13px 7px;background:var(--blue-bg);font-size:12px;text-align:center;display:flex;justify-content:center;flex-direction:column;gap:3px;color:#355280}.wave strong{font-size:15px;color:var(--ink)}.fact-list{font-size:14px;padding-left:20px;margin-top:10px}.queue{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:14px 0}.job{border:1px solid var(--line);padding:6px 9px;border-radius:5px;background:#f4f7fc;font:12px/1.5 ui-monospace,monospace}.queue-arrow{font-size:14px;color:var(--blue);margin:12px 0}.cu-rack{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.xcd{border:1px solid var(--line);padding:8px;border-radius:7px;background:#f8fafc}.xcd-label{font-size:11px;color:var(--muted);margin-bottom:7px}.cus{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:3px}.cu{padding:0;aspect-ratio:1;border:0;border-radius:2px;background:#e2e8f0;min-width:0;position:relative}.cu.assigned{background:#8daee8}.cu.selected{background:var(--orange);outline:2px solid var(--orange);outline-offset:1px}.cu:hover{filter:brightness(.86)}.legend{display:flex;gap:15px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:11px 0}.swatch{width:10px;height:10px;display:inline-block;margin-right:5px;background:#8daee8}.swatch.empty{background:#e2e8f0}.swatch.sel{background:var(--orange)}.planner-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.checkbox{display:flex;gap:9px;align-items:center;font-size:13px;margin:14px 0}.checkbox input{accent-color:var(--blue)}.status{font-size:13px;color:var(--muted);margin:10px 0}.error{color:#a03931}.source-list{font-size:14px;padding-left:22px}.source-list li{margin-bottom:11px}.footer{color:var(--muted);font-size:12px;text-align:center;margin-top:28px}.badge{padding:2px 7px;border-radius:4px;background:var(--blue-bg);color:var(--blue);font-size:12px}.kbd{font-family:ui-monospace,monospace}.eval-time{max-width:180px}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+@media(max-width:1180px){.shell{grid-template-columns:1fr}.toc{position:static;display:flex;flex-wrap:wrap;gap:3px}.toc a{background:#eaf0f8;padding:5px 8px;font-size:12px}.page{padding:28px 24px}.section{padding:25px}}
+@media(max-width:760px){.page{padding:22px 12px}.section{padding:21px 16px}.matrix-grid{grid-template-columns:1fr}.matrix{height:170px}.matrix-caption{min-height:0}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.two-col{grid-template-columns:1fr}.flow-steps{grid-template-columns:repeat(4,minmax(0,1fr))}.flow-data{grid-template-columns:1fr auto 1fr}.flow-data .arrow:nth-child(4){display:none}.cu-rack{grid-template-columns:repeat(2,minmax(0,1fr))}.planner-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.controls .field{min-width:78px}h2{font-size:23px}.table-wrap table{min-width:650px}.intro{font-size:16px}}
+@media(max-width:390px){.planner-fields{grid-template-columns:1fr}.stats{gap:6px}.stat{padding:10px 7px}.stat .value{font-size:21px}.section{padding:18px 12px}.flow-steps{grid-template-columns:repeat(3,minmax(0,1fr))}.inline-controls .field{width:125px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{.page{padding:0}.shell{display:block}.toc,.presets,.btn,.header-links,.planner-fields{display:none}.section{border:0;border-radius:0;break-inside:auto}.controls{display:flex}body{background:#fff;font-size:10pt}h2{break-after:avoid}.matrix-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.matrix{height:130px}.table-wrap{overflow:visible}table{font-size:9pt}.table-wrap table{min-width:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}a{color:inherit}}
+</style><meta name="description" content="MI355X FP8 GEMM 分块与 Sweep：中文图解、术语与实践指南。资料基于 2026-10-16 的记录。">
+<link rel="stylesheet" href="assets/article-nav.css">
+</head>
+<body>
+<nav class="archive-nav" aria-label="学习手册导航"><a href="index.html">← 技术学习手册 · 返回门户</a><span>AMD 算子 · 资料日期 2026-10-16 · 归档 2026-10-20</span></nav>
+<div class="page">
+<header><div class="eyebrow">MI355X · FP8 A8W8 · B PRESHUFFLE · BLOCKSCALE 128</div><h1>分块，调度，再 Sweep。</h1><p class="intro">针对 FP8 A8W8 + B preshuffle + 128 粒度 blockscale：从一块输出 C 出发，看数据与 scale 如何参与 K 归约，M/N tile 如何变成 workgroup，再找到这条实现真正支持的 sweep 入口。</p><div class="header-links"><a href="#target-sweep">你的目标路径与真实命令</a><a href="#explorer">交互：MNK、tile 与 scale</a><a href="#cu-scheduling">查看 CU 调度</a><a href="#planner">生成候选 CSV</a><a href="mi355x-operator-ecosystem-guide.html">生态与安装指南</a></div></header>
+<div class="shell"><nav class="toc" aria-label="目录"><a href="#target-sweep">目标路径 / 命令</a><a href="#model">01 / 两层循环</a><a href="#explorer">02 / MNK 分块实验</a><a href="#kernel-flow">03 / kernel 内部流程</a><a href="#target-flow">FP8 / 数据与 scales</a><a href="#wave-layout">04 / wave 与 MFMA</a><a href="#cu-scheduling">05 / workgroup → CU</a><a href="#sweep-strategy">06 / sweep 策略</a><a href="#sweep-tools">07 / 工具与命令</a><a href="#fp8-sweep">FP8 / 专项搜索</a><a href="#planner">08 / 候选生成器</a><a href="#measurement">09 / 测量与验收</a><a href="#diagnosis">10 / 瓶颈判断</a><a href="#sources">官方来源与边界</a></nav>
+<main>
+<section class="section" id="target-overview"><div class="section-num">你的目标 / 已按源码收窄</div><h2>FP8 + FP32 blockscales，B 预排只是物理布局</h2><p>固定基线：AITER v0.1.25 / gfx950。A scale 逻辑为 <code>[M,ceil(K/128)]</code>，W scale 为 <code>[ceil(N/128),ceil(K/128)]</code>；公共入口是 <code>aiter.gemm_a8w8_blockscale_bpreshuffle</code>。</p><div class="callout"><strong>先扫什么：</strong>专用 tuner 的 <code>--libtype cktile --preshuffle --blockPerCu 1 2 3 4</code> 与内置实例。进一步扩展 BM/BN/BK、wave/MFMA、pipeline 需要修改实例表并重编译。此分支不启用 Split-K；gfx950 的该 preshuffle wrapper 也不能直接强制 Gluon。</div><p class="small muted">下方图默认只建模已核查的 4-wave CK Tile A-LDS/B-register 路径；FP32 blockscale、E8M0 MXscale 和普通 BF16 的工具边界分别标注。<a href="#target-sweep">直接跳到可复制的目标命令 →</a></p></section>
+<section class="section" id="model"><div class="section-num">01 / 先建立计算模型</div><h2>M/N 决定输出块，K 决定每块要累加多少次</h2><p>逻辑上 <code>A[M,K] × B[K,N] → C[M,N]</code>。你的路径使用 FP8 A/W 与 FP32 scales，物理权重为 <code>W[N,K]</code>，数学上的 <code>B=Wᵀ</code>；preshuffle 后的权重字节序还会按 kernel 要求重新排列，不能直接当普通转置矩阵解释。</p><div class="formula">C[m,n] = Σₖ A[m,k] × B[k,n]<br>blockscale：C[m,n] ≈ Σg sA[m,g] × sW[⌊n/128⌋,g] × Σ(k∈g) AQ[m,k] × WQ[n,k]</div><div class="table-wrap"><table><thead><tr><th>层级</th><th>切什么</th><th>在做什么</th></tr></thead><tbody><tr><td>Grid / workgroup</td><td>M、N 按 BM、BN 分块</td><td>一个 workgroup 通常负责一个 BM×BN 输出 tile；多个 workgroup 并行。</td></tr><tr><td>K 循环</td><td>K 按 BK 分段</td><td>同一 workgroup 反复读取 BM×BK 的 A 与 BK×BN 的 B，累加到相同的输出 tile。</td></tr><tr><td>128 blockscale</td><td>K 按 128 划 scale 组；W 还按 N=128 分组</td><td>每段 dot 使用对应的 A/W scale；scale 随 K 变化，不能把整个缩放统一推迟到最终 epilogue。</td></tr><tr><td>Wave / MFMA</td><td>输出 tile 再拆成 wave 子块与指令小块</td><td>一个 wave 的 64 个 lane 协同执行矩阵指令，fragment 分散在 lane 的寄存器里。</td></tr><tr><td>Split-K（算法选项）</td><td>把 K 的不同区间分给多个 workgroup</td><td>需要对应实现支持。已核查的 CK/CK Tile preshuffle tuner 不启用此轴；通用图可用来理解其他实现。</td></tr></tbody></table></div><div class="callout"><strong>BK、scale block K=128、Split-K 是三个不同概念。</strong>BK 变小通常只增加 block 内循环，不增加普通 GEMM 的 grid；跨多个 scale 组的 BK 必须正确处理各组独立缩放。128 粒度也不表示允许任意 BK。</div></section>
+
+<section class="section" id="explorer"><div class="section-num">02 / 可调参数，不是性能模拟器</div><h2>选一个输出 tile，追踪 FP8 数据与 scale</h2><p class="muted">点击 C 矩阵选择输出块，拖动 K 滑块查看当前一段累加。默认是你的 FP8 128-blockscale 目标模型；可切换 BF16 通用模型理解 Split-K。所有 tile 选择只是结构演示，不保证具体实例可编译。batch=1。</p>
+<div class="presets"><button class="btn" type="button" data-preset="large">大方阵 · 4096×4096×8192</button><button class="btn" type="button" data-preset="small">小 M · 64×8192×3584</button><button class="btn" type="button" data-preset="tail">BF16 边界对照 · 1000×3000×4097</button></div>
+<div class="controls" id="shape-controls">
+<label class="field" style="flex-basis:100%">模型 / 验证边界<select id="mode"><option value="fp8">目标：FP8 blockscale128 / CKTile preshuffle 约束</option><option value="bf16">对照：普通 BF16 GEMM / workspace Split-K 示意</option></select></label>
+<label class="field">M<input id="m" type="number" min="1" max="65536" step="1" value="64"></label>
+<label class="field">N<input id="n" type="number" min="1" max="65536" step="1" value="8192"></label>
+<label class="field">K<input id="k" type="number" min="1" max="65536" step="1" value="3584"></label>
+<label class="field">BM<select id="bm"><option>16</option><option>32</option><option selected>64</option><option>128</option><option>256</option></select></label>
+<label class="field">BN<select id="bn"><option>32</option><option>64</option><option selected>128</option><option>256</option></select></label>
+<label class="field">BK<select id="bk"><option>32</option><option>64</option><option selected>128</option><option>256</option></select></label>
+<label class="field">Waves / WG<select id="waves"><option>4</option><option>8</option></select></label>
+<label class="field">LDS 缓冲份数<select id="buffers"><option>1</option><option selected>2</option><option>3</option></select></label>
+<label class="field">Split-K<select id="split"><option>1</option><option>2</option><option>4</option><option>8</option><option>16</option></select></label>
+</div><div id="shape-error" class="status error" role="alert"></div>
+<div class="status" id="mode-note"></div>
+<div class="stats" aria-live="polite"><div class="stat"><div class="label">输出 tiles → workgroups</div><div id="stat-blocks" class="value"></div><div id="stat-grid" class="detail"></div></div><div class="stat"><div class="label">每个 K 分区最多循环</div><div id="stat-kloop" class="value"></div><div id="stat-kdetail" class="detail"></div></div><div class="stat"><div class="label">简化 LDS 占用 / WG</div><div id="stat-lds" class="value"></div><div id="stat-lds-detail" class="detail"></div></div><div class="stat"><div class="label">每 lane 平均累加元素</div><div id="stat-reg" class="value"></div><div id="stat-reg-detail" class="detail"></div></div></div>
+<div class="inline-controls"><label class="field">输出块 row<input id="tile-m" type="number" min="0" value="0"></label><label class="field">输出块 col<input id="tile-n" type="number" min="0" value="0"></label><label class="field">K 分区 index<input id="part" type="number" min="0" value="0"></label><label class="field" style="flex:1;min-width:200px">当前分区的 K 步 <span id="k-step-label"></span><input id="k-step" type="range" min="0" max="127" value="0"></label></div>
+<div class="matrix-grid"><div><div class="matrix-title">A[M,K] · 取一行 tile 带</div><div class="matrix-axes"><span>↓ M</span><span>K →</span></div><div class="matrix grid" id="matrix-a" role="img" aria-label="A 矩阵当前读取分块"><div class="band" id="band-a"></div><div class="selection" id="select-a"></div></div><div class="matrix-caption" id="caption-a"></div></div><div><div class="matrix-title">B[K,N] · 取一列 tile 带</div><div class="matrix-axes"><span>↓ K</span><span>N →</span></div><div class="matrix matrix-b grid" id="matrix-b" role="img" aria-label="B 矩阵当前读取分块"><div class="band" id="band-b"></div><div class="selection" id="select-b"></div></div><div class="matrix-caption" id="caption-b"></div></div><div><div class="matrix-title">C[M,N] · 点击选择输出 tile</div><div class="matrix-axes"><span>↓ M</span><span>N →</span></div><div class="matrix matrix-c grid" id="matrix-c" aria-label="点击选输出块，或使用上方 row/col 输入"><div class="selection" id="select-c"></div></div><div class="matrix-caption" id="caption-c"></div></div></div>
+<div class="selected-equation" id="tile-equation" aria-live="polite"></div><p class="small muted" id="padding-note" style="margin-top:12px"></p>
+<div id="scale-panel"><h3>同一 tile 还需要哪些 FP32 scales？</h3><p class="small muted">这里只画逻辑 scale 网格。A scale 在真实 API 中可能要求特殊物理布局；B preshuffle 也不是普通转置。FP32 blockscale 与 E8M0/MXscale 不是同一合同。</p><div class="two-col"><div><div class="matrix-title">sA[M, ceil(K/128)]</div><div class="matrix-axes"><span>↓ 每个 m 行</span><span>K 的 scale 组 →</span></div><div class="matrix grid" id="scale-a"><div class="selection" id="select-scale-a"></div></div><div class="matrix-caption" id="caption-scale-a"></div></div><div><div class="matrix-title">sW[ceil(N/128), ceil(K/128)]</div><div class="matrix-axes"><span>↓ N 的 scale 组</span><span>K 的 scale 组 →</span></div><div class="matrix matrix-b grid" id="scale-w"><div class="selection" id="select-scale-w"></div></div><div class="matrix-caption" id="caption-scale-w"></div></div></div><div id="scale-equation" class="selected-equation" aria-live="polite" style="margin-top:14px"></div></div>
+<div class="callout amber" id="resource-note"></div>
+<div class="inline-controls"><label class="field eval-time">填入该 shape 的实测总耗时（µs）<input id="measured-us" type="number" min="0.001" step="any" placeholder="不填则不计算"></label><div id="measured-result" class="small muted" aria-live="polite">填入目标路径的实测耗时后才计算有效 TFLOPS。</div></div><p class="small muted">有效吞吐按 2MNK / time 计算。若开启 Split-K，时间要包含 partial kernel、合并与必要清零；不把 padding 的额外工作记成有效 FLOPs。</p>
+</section>
+
+<section class="section" id="kernel-flow"><div class="section-num">03 / 一个 workgroup 内部</div><h2>搬运 → 片上复用 → MFMA 累加 → 写回</h2><p>步骤说明随上方模型切换。目标 FP8 模式对应已核查的 4-wave CK Tile 路径：A 经 LDS 双缓冲，预排 B 直接进寄存器，每 128-K 分组使用独立 scale；BF16 对照模式展示经典 A/B 均经 LDS 的算法。</p>
+<div class="flow-steps" id="flow-steps"><button class="step active" type="button" data-stage="0"><strong>① 定位</strong>pid → tile</button><button class="step" type="button" data-stage="1"><strong>② 预取</strong>global → stage</button><button class="step" type="button" data-stage="2"><strong>③ 就绪</strong>wait / barrier</button><button class="step" type="button" data-stage="3"><strong>④ 取片</strong>LDS → fragment</button><button class="step" type="button" data-stage="4"><strong>⑤ MFMA</strong>acc += A×B</button><button class="step" type="button" data-stage="5"><strong>⑥ 滚动</strong>advance K</button><button class="step" type="button" data-stage="6"><strong>⑦ 写回</strong>epilogue</button></div>
+<div class="stage-detail" aria-live="polite"><h3 id="stage-title"></h3><p id="stage-text"></p></div><div class="inline-controls"><button class="btn" id="prev-stage" type="button">上一步</button><button class="btn" id="next-stage" type="button">下一步</button><span class="small muted">一次演示一个 K tile；上方滑块选择具体 K 段。</span></div>
+<div id="target-data-path" class="selected-equation">B 的旁路：WQ（已 preshuffle）global/cache → B lane registers → FP8 MFMA；不经过下图的 A LDS。</div>
+<div class="flow-data"><div class="data-node" id="node-global"><strong>Global memory</strong>A / B / C<br><span class="small muted">经过 L2 / HBM 层级</span></div><span class="arrow">→</span><div class="data-node" id="node-lds"><strong>LDS buffer</strong>A tile + B tile<br><span class="small muted">swizzle / ping-pong</span></div><span class="arrow">→</span><div class="data-node" id="node-fragment"><strong>Lane fragments</strong>寄存器内的 A / B<br><span class="small muted">匹配 MFMA layout</span></div><span class="arrow">→</span><div class="data-node" id="node-acc"><strong>FP32 accumulator</strong>跨 K 循环保留<br><span class="small muted">最后 epilogue 写回</span></div></div>
+<p class="small muted">下面是普通 GEMM 的通用伪代码对照；目标 FP8 的逐 scale 段累加和 B 寄存器旁路见下一张专用流程图。</p>
+<pre><code>// 概念伪代码：变量名不是某个后端的真实 API。
+(tile_m, tile_n, part) = decode(workgroup_id)
+acc = zeros(BM, BN, fp32)  // 逻辑形状；实际分散在 wave/lane 寄存器
+prefetch(first_k_tile)
+for k0 in assigned_K_partition(step=BK):
+    wait_until_current_buffer_ready()
+    // 可以与当前计算重叠预取下一段；等待/屏障由实现保证
+    prefetch_next_tile_if_any()
+    fragments_A, fragments_B = load_fragments_from_LDS()
+    acc += wave_level_MFMA(fragments_A, fragments_B)
+    rotate_buffers()
+if SplitK == 1:
+    store(epilogue(acc), output_tile)
+else:
+    store(acc, partial_workspace[part, output_tile])
+    // 后续 reduce kernel：sum partials，再执行一次最终 epilogue</code></pre><div class="callout"><strong>pipeline sweep 要搜索的是重叠方式与资源代价。</strong>增加预取/缓冲通常能隐藏访存等待，也可能用更多 LDS 和寄存器。页面中的“缓冲份数”是存储模型，不能直接等同所有后端的 <code>num_stages</code>。</div></section>
+
+<section id="target-flow" class="section">
+  <div class="eyebrow">目标内核 · FP8 A8W8 + B preshuffle + 128 blockscale</div>
+  <h2>这条路径里，B 直接进入寄存器；每个 K=128 缩放段独立乘 scale</h2>
+  <p>以 AITER v0.1.25 固定 CK 版本的 <code>WPABQuantBPipelineAgBgCrV2</code> 4-wave 路径为例。逻辑输入是 <code>A[M,K]</code> 与 <code>W[N,K]</code>，输出 <code>C=A·Wᵀ</code>。<code>B=Wᵀ</code> 是数学视图；preshuffle 是另一层物理存储重排。</p>
+  <div style="overflow-x:auto">
+    <svg viewBox="0 0 1120 440" role="img" aria-label="FP8 B preshuffle blockscale GEMM 数据通路：A经LDS双缓冲，B直达寄存器，128 K段部分和乘A和B缩放系数，再累加输出" style="display:block;width:100%;min-width:1120px;height:auto">
+      <defs><marker id="fp8-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7793a8"/></marker></defs>
+      <g font-family="system-ui,sans-serif" fill="#dce9f4" font-size="16">
+        <rect x="20" y="36" width="176" height="68" rx="12" fill="#133047" stroke="#3d91b9"/><text x="108" y="64" text-anchor="middle">A FP8 [BM,BK]</text><text x="108" y="87" text-anchor="middle" font-size="13">global / cache</text>
+        <rect x="246" y="24" width="226" height="92" rx="12" fill="#153c40" stroke="#52bdb0"/><text x="359" y="53" text-anchor="middle">A LDS ping / pong</text><text x="359" y="78" text-anchor="middle" font-size="13">本段读取 · 下一段预取</text><text x="359" y="99" text-anchor="middle" font-size="12">该 CKTile 路径：global→reg→LDS</text>
+        <rect x="524" y="36" width="170" height="68" rx="12" fill="#153c40" stroke="#52bdb0"/><text x="609" y="64" text-anchor="middle">A lane fragments</text><text x="609" y="87" text-anchor="middle" font-size="13">LDS → registers</text>
+        <rect x="20" y="161" width="176" height="86" rx="12" fill="#332d4a" stroke="#ab87db"/><text x="108" y="191" text-anchor="middle">W FP8 [N,K]</text><text x="108" y="215" text-anchor="middle" font-size="13">预先 preshuffle</text><text x="108" y="235" text-anchor="middle" font-size="12">与 kernel 布局契约匹配</text>
+        <rect x="246" y="173" width="226" height="62" rx="12" fill="#332d4a" stroke="#ab87db"/><text x="359" y="199" text-anchor="middle">packed B · global/cache</text><text x="359" y="221" text-anchor="middle" font-size="13">按 MFMA 所需 lane 布局读取</text>
+        <rect x="524" y="173" width="170" height="62" rx="12" fill="#332d4a" stroke="#ab87db"/><text x="609" y="199" text-anchor="middle">B lane fragments</text><text x="609" y="221" text-anchor="middle" font-size="13">直接寄存器，无 B LDS</text>
+        <rect x="756" y="78" width="165" height="150" rx="14" fill="#343c29" stroke="#b4c86f"/><text x="839" y="112" text-anchor="middle">wave 级 MFMA</text><text x="839" y="143" text-anchor="middle" font-size="14">FP8 × FP8</text><text x="839" y="169" text-anchor="middle" font-size="14">→ FP32 部分和</text><text x="839" y="201" text-anchor="middle" font-size="13">P<tspan baseline-shift="sub" font-size="10">q</tspan> = Σ<tspan baseline-shift="sub" font-size="10">k∈q</tspan> A<tspan baseline-shift="sub" font-size="10">8</tspan>·W<tspan baseline-shift="sub" font-size="10">8</tspan></text>
+        <rect x="20" y="307" width="452" height="88" rx="12" fill="#473525" stroke="#d8aa68"/><text x="246" y="335" text-anchor="middle">FP32 scales · 每 q=⌊k/128⌋ 一组</text><text x="246" y="362" text-anchor="middle" font-size="14">sA[m,q] × sW[⌊n/128⌋,q]</text><text x="246" y="384" text-anchor="middle" font-size="12">global → scale registers；A 的物理 stride 另核对</text>
+        <rect x="524" y="307" width="397" height="88" rx="12" fill="#473525" stroke="#d8aa68"/><text x="722" y="337" text-anchor="middle">C<tspan baseline-shift="sub" font-size="10">acc</tspan> += P<tspan baseline-shift="sub" font-size="10">q</tspan> × sA[m,q] × sW[⌊n/128⌋,q]</text><text x="722" y="365" text-anchor="middle" font-size="14">完成一个缩放段再加入总 accumulator</text><text x="722" y="386" text-anchor="middle" font-size="12">禁止把所有不同 q 的未缩放部分和先混在一起</text>
+        <rect x="965" y="180" width="137" height="135" rx="12" fill="#19384a" stroke="#659bc3"/><text x="1033" y="209" text-anchor="middle">所有 K 段完成</text><text x="1033" y="239" text-anchor="middle" font-size="14">epilogue / cast</text><text x="1033" y="265" text-anchor="middle" font-size="14">C 输出写回</text><text x="1033" y="291" text-anchor="middle" font-size="12">本分支不启用 split-K</text>
+      </g>
+      <g stroke="#7793a8" stroke-width="2.2" fill="none" marker-end="url(#fp8-arrow)"><path d="M196 70H246"/><path d="M472 70H524"/><path d="M196 204H246"/><path d="M472 204H524"/><path d="M694 70H727V120H756"/><path d="M694 204H756"/><path d="M839 228V307"/><path d="M472 351H524"/><path d="M921 351H940V267H965"/></g>
+    </svg>
+  </div>
+  <p><strong>缩放合同：</strong><code>sA.shape = [M, ceil(K/128)]</code>；<code>sW.shape = [ceil(N/128), ceil(K/128)]</code>。A 每行每 128 个 K 元素共用一个 scale，W 每 128×128 个 N/K 元素共用一个 scale。128 是量化分组大小，与 block tile、wave 数、MFMA 的 K 宽度是不同参数。</p>
+  <p><strong>BK 与 scale 的正确关系：</strong>数学上 BK32/64 可分别用 4/2 个小块凑成一个 K128 缩放段；BK256 内含两个不同 scale 段，必须分段乘 scale。当前这条 CKTile 路径要求 <code>BK≥128</code> 且满足指令/分组整除条件；AITER v0.1.25 的 gfx950 Triton blockscale wrapper 还要求 <code>BK=GROUP_K=128</code>。因此不能把 BK32/64 当成这些接口直接支持的 sweep 候选。</p>
+  <p><strong>LDS 粗估只算 A：</strong>FP8 的 A 双缓冲约为 <code>2×BM×BK bytes</code>；BM128/BK128 时为 <strong>32 KiB</strong>。这还没计入 LDS padding、epilogue/C-shuffle 等资源。实际驻留能力应以编译的 <code>group_segment_fixed_size</code>、VGPR/AGPR、scratch、occupancy 报告为准。</p>
+  <p><strong>省下 B LDS 不等于省下所有资源：</strong>B 的预取/ping-pong fragments、A 中转寄存器、scale 寄存器、FP32 分段部分和与总 accumulator 都可能增加寄存器压力。源码同时存在部分和与总和；编译器能否复用，以及实际 VGPR/AGPR 数量，必须看生成代码。8-wave 特化使用另一套 pipeline，不能复用本图的资源公式。</p>
+  <p><strong>FP32 scale 与 E8M0 是两条合同：</strong>这里展示 FP32 blockscale。gfx950 的 FlyDSL MX 路径可以把 E8M0 缩放直接送入 scaled MFMA，128 分组通过广播适配硬件 32 元素子组；它要求对应的 scale preshuffle。不要为切换 kernel 擅自将任意 FP32 scale 舍入成 E8M0，也不要用 per-row/per-column epilogue scaling 代替沿 K 改变的 blockscale。</p>
+  <p class="muted">固定源码依据：
+    <a href="https://github.com/ROCm/aiter/blob/v0.1.25/csrc/ck_gemm_a8w8_blockscale/include/gemm_a8w8_blockscale_cktile_common.cuh#L47" target="_blank" rel="noreferrer">量化分组与 pipeline 选择</a> ·
+    <a href="https://github.com/ROCm/composable_kernel/blob/96afae1d54fc79c26857de7e1683b0dde1ff3c6f/include/ck_tile/ops/gemm_quant/pipeline/gemm_wp_abquant_pipeline_ag_bg_cr_v2.hpp#L233" target="_blank" rel="noreferrer">A LDS 双缓冲</a> ·
+    <a href="https://github.com/ROCm/composable_kernel/blob/96afae1d54fc79c26857de7e1683b0dde1ff3c6f/include/ck_tile/ops/gemm_quant/pipeline/gemm_wp_abquant_pipeline_ag_bg_cr_v2.hpp#L395" target="_blank" rel="noreferrer">B 直接读寄存器</a> ·
+    <a href="https://github.com/ROCm/composable_kernel/blob/96afae1d54fc79c26857de7e1683b0dde1ff3c6f/include/ck_tile/ops/gemm_quant/block/block_universal_gemm_ar_aquant_flatbr_bquant_cr.hpp#L225" target="_blank" rel="noreferrer">逐 scale 段累加</a> ·
+    <a href="https://github.com/ROCm/composable_kernel/blob/96afae1d54fc79c26857de7e1683b0dde1ff3c6f/include/ck_tile/ops/gemm_quant/block/block_universal_gemm_ar_aquant_flatbr_bquant_cr.hpp#L83" target="_blank" rel="noreferrer">BK/指令合法性约束</a>
+  </p>
+</section>
+
+<section class="section" id="wave-layout"><div class="section-num">04 / workgroup 继续拆成 wave 与指令</div><h2>一个 CU 不等于一个 tile，一条 MFMA 也不等于整个 GEMM</h2><div class="two-col"><div><p class="small muted">当前选择的 BM×BN 输出 tile，示意分成 W<sub>M</sub>×W<sub>N</sub> 个 wave 子块。不同 kernel 可采用不同分布。</p><div id="wave-box" class="wave-box" role="img" aria-label="输出 tile 到 wave 的示意分块"></div><p id="wave-caption" class="small muted" style="margin-top:10px"></p></div><div><h3 style="margin-top:0">固定 FP8 例子：128×128×128</h3><ul class="fact-list"><li>4 waves × 64 lanes = <strong>256 threads / workgroup</strong>。</li><li>若 wave grid 为 2×2，则每 wave 负责逻辑上 64×64 的 C 子块。</li><li>以一种 <strong>16×16×128 FP8 warp-GEMM 逻辑 tile</strong> 为例，每 wave 的一个 BK=128 步需要 (64/16)×(64/16)×(128/128)=<strong>16 次逻辑 warp-GEMM</strong>，之后应用对应的 blockscales。</li><li>64×64 / 64 = <strong>平均每 lane 64 个 FP32 输出累加元素</strong>；不是“每 lane 固定连续 8×8”，真实 fragment 映射由指令布局决定。</li><li>该 blockscale 路径还有分组临时 acc 与总 acc，另有 A/B fragments、scales、地址和流水线状态。64 个数学输出值不能当成真实寄存器数。</li></ul></div></div><p class="small muted">固定 AITER/CK 实例中也有 16×16×64 的 warp tile；具体展开成多少条 ISA 以编译后反汇编为准，对一个 128-K scale 组需要更多 K 方向重复。指令选择与 block tile、量化分组是三个层级；具体合法性看目标实例和生成代码。</p></section>
+
+<section class="section" id="cu-scheduling"><div class="section-num">05 / 真正的硬件分派边界</div><h2>Grid 先产生任务，硬件再把 workgroup 放到空闲 CU</h2><p>MI355X 有 <strong>8 个 XCD，每个 32 个 active CU，总计 256 CU</strong>。同一个 workgroup 的所有 waves 驻留在同一个 CU，以共享 LDS 并执行屏障；不同 workgroup 的顺序和 CU 位置由调度动态决定。</p><div class="queue" id="queue"></div><div class="queue-arrow">队列 / dispatcher → 可用 CU（以下分派顺序只作教学示意）</div>
+<div class="inline-controls"><label class="field" style="min-width:230px">示意批次：每个 CU 一次放 1 个 workgroup<input id="round" type="range" min="0" max="3" value="0"></label><span id="round-label" class="small"></span><button type="button" class="btn" id="locate-selected">定位选中输出块的示意任务</button></div>
+<div class="cu-rack" id="cu-rack" aria-label="256 CU 的示意任务分配"></div><div class="legend"><span><i class="swatch"></i>此批次有任务</span><span><i class="swatch empty"></i>此批次无任务</span><span><i class="swatch sel"></i>选中的输出块/K 分区</span></div><div id="cu-detail" class="selected-equation" aria-live="polite"></div>
+<div class="callout amber"><strong>重要：图里按编号顺次填 CU，是一种演示排队规则，不是硬件保证。</strong>实际执行没有“tile i 固定在 CU i % 256”的可移植公式；一个 CU 还可能同时驻留多个 workgroup。这里的“批次”不是 occupancy，也不是 wavefront 数量。</div>
+<div class="stats"><div class="stat"><div class="label">每个 CU 放 1 个 WG 时的示意批次</div><div class="value" id="rounds-count"></div><div class="detail">仅用于展示 grid 是否足够大</div></div><div class="stat"><div class="label">第一批最多涉及的 CU 比例</div><div class="value" id="coverage"></div><div class="detail">不是 CU 利用率 / occupancy</div></div><div class="stat"><div class="label">Split-K partial workspace</div><div class="value" id="workspace"></div><div class="detail">FP32 workspace 路线，未计对齐</div></div><div class="stat"><div class="label">partial 至少额外读写量</div><div class="value" id="partial-traffic"></div><div class="detail">写 S 份 + reduce 读 S 份</div></div></div>
+<div class="table-wrap"><table><thead><tr><th>算法/调度手段</th><th>改变什么</th><th>它不保证什么</th></tr></thead><tbody><tr><td>普通 tile GEMM</td><td>一个 WG 算一个输出 tile 的完整 K。</td><td>BM/BN 更大不保证更快；减少 block 可能让小 shape 并行不足。</td></tr><tr><td>Split-K</td><td>同一 C tile 的不同 K 分区并行；workspace reduce 或原子累加。</td><td>更多 block 不保证收益；多了合并、workspace、清零或原子竞争。</td></tr><tr><td>Grouped ordering / swizzle</td><td>改变 workgroup id → tile 坐标的访问顺序，改善 L2 复用。</td><td>不直接绑定到某个 CU/XCD；收益取决于缓存与实际调度。</td></tr><tr><td>Persistent GEMM</td><td>较少长驻 workgroup 在 kernel 内领取/遍历多个输出 tile。</td><td>一个“persistent program”不意味着永远固定占一颗 CU；要处理尾部与负载均衡。</td></tr><tr><td>Stream-K</td><td>按 tile 的 K 迭代工作量做更均衡的分配，减少尾部空闲。</td><td>不是把 Split-K 改一个数；需专门的同步/归约实现和负载策略。</td></tr></tbody></table></div>
+<p class="small muted">软件能控制 launch grid、block/wave 组织、资源使用和 tile 访问顺序；常规可移植 kernel 不指定确切 CU ID。真实 residency 还受 LDS、寄存器、wave/thread 上限以及系统并发影响。本页按完整 256 CU 设备计算；分区模式或 CU mask 可能减少实际可用 CU，应读取目标设备属性再换算。</p>
+<div class="callout green"><strong>你的 FP8 路径可以先试：</strong>小 M 示例中把 BM 从 64 改为 16，输出 tile 数从 64 增为 256，无需 Split-K。真实实例仍需满足 wave/MFMA 组织；并行增加可能以复用或流水效率为代价，必须实测。</div><div class="callout green"><strong>切换到 BF16 通用对照后，试一遍小 M 场景：</strong>64×8192×3584 配 BM64/BN128 时只有 64 个输出 tile。把 waves 从 4 改为 8 不会让它占用 128 个 CU；把 Split-K 从 1 改为 4 才会得到 256 个 workgroup。后者是否更快，要连同 partial 合并成本一起测；当前目标 CK/CK Tile preshuffle 分支不开放此设置，其他 ASM/Triton 路线另行验收。</div></section>
+
+<section class="section" id="target-sweep">
+  <h2>针对你的目标：FP8 A8W8 + 128 粒度 blockscale + B-preshuffle</h2>
+  <p>这里以 <strong>AITER v0.1.25 的 gfx950 路径</strong>为准。你的优化对象应固定为同一输入、量化尺度和权重排列合同，再比较 CK / CK Tile / ASM / Triton。<strong>普通 FP32 scale 路径与 E8M0 MXscale 路径要分别评估</strong>；本节命令已核对源码，尚未在目标 MI355X 上运行。</p>
+
+  <h3>1. 先固定算子的数学含义和内存布局</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>对象</th><th>逻辑形状 / 含义</th><th>实际接口要求</th></tr></thead>
+    <tbody>
+      <tr><td>A / XQ</td><td><code>[M,K]</code>，每个 token 的输入</td><td>gfx950 的 <code>aiter.dtypes.fp8</code> 对应 <code>torch.float8_e4m3fn</code>；不是 INT8，也不是 gfx942 的 E4M3 FNUZ。</td></tr>
+      <tr><td>W / WQ</td><td><code>[N,K]</code>，计算 <code>Y=A×Wᵀ</code>；数学中的 B 为 <code>[K,N]</code></td><td>先做 <code>shuffle_weight(WQ, layout=(16,16))</code>。返回 tensor 的 shape 仍是 <code>[N,K]</code>，但字节已经重新排列。</td></tr>
+      <tr><td>A scale</td><td><code>[M,ceil(K/128)]</code>；每行、每 128 个 K 元素共享一个 scale</td><td>普通 preshuffle 公共入口使用列优先的 scale 字节布局。官方 tuner 用 <code>sa.T.contiguous().view(*sa.shape)</code>，形状仍不变。</td></tr>
+      <tr><td>W scale</td><td><code>[ceil(N/128),ceil(K/128)]</code>；W 的每个 128×128 块共享一个 scale</td><td>普通 FP32 scale 路径保留这一 scale 表；不要因为 W 被 shuffle 就自行对 scale 套用相同排列。</td></tr>
+      <tr><td>输出</td><td><code>[M,N]</code></td><td>公共接口支持 BF16 / FP16；本目标 tuner 的参考输出为 BF16。</td></tr>
+    </tbody>
+  </table></div>
+  <p>令 g 表示 K 上的第 g 个 128 元素分组，计算关系为：</p>
+  <pre><code>Y[m,n] = Σ_g { sA[m,g] × sW[floor(n/128),g]
+                    × Σ_{k ∈ group(g)} Aq[m,k] × Wq[n,k] }</code></pre>
+  <p>scale 随 K 分组变化，不能把所有 K 的裸 FP8 乘积累加完成后，只乘一个总 scale。<strong>量化分组 128 与 BK 不是同一个概念</strong>：CK Tile 候选中存在 BK=256，一个 tile 会覆盖两个量化分组；当前 AITER Triton harness 则要求该 family 的 BK=128。</p>
+
+  <h3>2. B-preshuffle 究竟做了什么</h3>
+  <p>对 1-byte FP8 和 <code>layout=(16,16)</code>，官方实现把 W 的局部 <strong>16 行 × 32 列</strong>重新排列，为 wave / MFMA 消费顺序准备数据。简化为单矩阵的等价变换：</p>
+  <pre><code># Wq: [N,K], FP8，已经完成量化
+# 省略源码中的批次维；这是排列解释，不是另一个量化步骤
+Wq.view(N//16, 16, K//32, 2, 16) \
+  .permute(0, 2, 3, 1, 4) \
+  .contiguous().view(N, K)</code></pre>
+  <p><code>shuffle_weight</code> 本身要求 N%16=0、K%32=0；目标 kernel 还可能有更严格的 tile / quantization 约束。首轮建议用 N、K 均为 128 的倍数，尾部单独验证。它不是转置，也不改变 scale 或数值；逻辑上相同的数据使用了不同地址映射。</p>
+  <pre><code>import torch
+import aiter
+from aiter.ops.shuffle import shuffle_weight
+
+# 已有 Aq[M,K]、Wq[N,K]，dtype=torch.float8_e4m3fn
+# 已有 FP32 sa[M,K//128]、sw[N//128,K//128]
+# 此例仅示范 N、K 对齐到128的输入合同，不包含量化过程
+Wq_shuffled = shuffle_weight(Wq, layout=(16,16))
+sa_column_bytes = sa.T.contiguous().view(*sa.shape)
+Y = aiter.gemm_a8w8_blockscale_bpreshuffle(
+    Aq, Wq_shuffled, sa_column_bytes, sw,
+    dtype=torch.bfloat16,
+)</code></pre>
+  <div class="callout"><strong>最容易出现“快但算错”的地方：</strong>shape 与 stride 不能完整说明这些 buffer 的含义。W 的 shape 没变，scale 的 shape 也可能没变，但字节顺序已改变。量化器若已经输出转置 scale，就不能再转一次；不同 kernel 的 AQRowMajor 选项也必须与输入合同一起改。正确性测试应使用原始 W、原始逻辑 scale 反量化建立参考。</div>
+  <p>来源：<a href="https://github.com/ROCm/aiter/blob/v0.1.25/aiter/ops/gemm_op_a8w8.py" target="_blank" rel="noopener">公共算子与 dispatch</a>、<a href="https://github.com/ROCm/aiter/blob/v0.1.25/aiter/ops/shuffle.py" target="_blank" rel="noopener">shuffle_weight</a>、<a href="https://github.com/ROCm/aiter/blob/v0.1.25/aiter/utility/dtypes.py" target="_blank" rel="noopener">架构对应 FP8 类型</a>。</p>
+
+  <h3>3. 首选 sweep：这个算子的专用 tuner</h3>
+  <p>从 AITER 仓库根目录运行。输入 CSV <strong>只有 M,N,K 三列</strong>；不要套用 BF16 tuner 的 bias / dtype schema。先单卡、单后端建立可复现基线：</p>
+  <pre><code># 保存为 shapes-a8w8.csv
+M,N,K
+16,8192,7168
+64,8192,7168
+128,8192,7168
+512,8192,7168</code></pre>
+  <pre><code>python3 csrc/ck_gemm_a8w8_blockscale/gemm_a8w8_blockscale_tune.py --help
+
+HIP_VISIBLE_DEVICES=0 python3 \
+  csrc/ck_gemm_a8w8_blockscale/gemm_a8w8_blockscale_tune.py \
+  --preshuffle --libtype cktile \
+  -i shapes-a8w8.csv -o tuned-a8w8-cktile.csv \
+  --profile_file all-a8w8-cktile.csv \
+  --blockPerCu 1 2 3 4 --mp 1 --warmup 10 --iters 101
+
+# 同一组shape比较CK、CKTile和可用ASM等FP32-scale后端
+HIP_VISIBLE_DEVICES=0 python3 \
+  csrc/ck_gemm_a8w8_blockscale/gemm_a8w8_blockscale_tune.py \
+  --preshuffle --libtype all \
+  -i shapes-a8w8.csv -o tuned-a8w8-all.csv \
+  --profile_file all-a8w8-backends.csv --mp 1
+
+# 验证生产入口确实使用所生成的配置
+HIP_VISIBLE_DEVICES=0 python3 \
+  csrc/ck_gemm_a8w8_blockscale/gemm_a8w8_blockscale_tune.py \
+  --preshuffle --run_config tuned-a8w8-cktile.csv --mp 1</code></pre>
+  <p><code>-o</code> 保存 winner，<code>--profile_file</code> 保留全部候选。<code>all</code> / <code>both</code> 不包含 MXscale FlyDSL；gfx950 上不适用的实现可能被过滤。输出以 gfx、cu_num、M/N/K 等识别环境，不能跨架构或分区模式机械复用。</p>
+  <div class="callout"><strong>纠正一个关键默认认知：</strong>v0.1.25 源码在 CK 和 CK Tile 的 <code>preshuffleB=True</code> 分支中直接令 <code>maxsplitK=0</code>。这里 CSV 的 <code>splitK=0</code> 是该后端的“不切分”记号，不是执行了 0 次计算。给它加 <code>-k / --splitK</code> 也不会展开 Split-K 候选。ASM 有自己的合法 splitK 搜索，Triton 也有独立 partial+reduce 实现，必须分别比较归约总成本。</div>
+  <p>源码比 README 更可靠：该目录 README 的部分旧例子仍指向已不存在的独立 preshuffle tuner，且 libtype 默认值描述已过时。本页使用实际存在的 <a href="https://github.com/ROCm/aiter/blob/v0.1.25/csrc/ck_gemm_a8w8_blockscale/gemm_a8w8_blockscale_tune.py" target="_blank" rel="noopener">统一 blockscale tuner</a>。重测同文件已有 shape 时使用 <code>--all</code>；已有 JIT 产物需要更新时可按版本指引使用 <code>AITER_REBUILD=1</code>。</p>
+
+  <h3>4. CK Tile 真正扫哪些参数</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>参数层</th><th>本版本的实际入口</th><th>理解与限制</th></tr></thead>
+    <tbody>
+      <tr><td><code>--blockPerCu</code></td><td>筛选内置 <code>BlockPerCu=1..4</code> 实例</td><td>传入 <code>make_kernel&lt;BlockPerCu,...&gt;</code> 的编译 / launch 属性，影响资源与驻留权衡；不保证实际有该数量的 block 同时驻留，更不是指定某个 CU。</td></tr>
+      <tr><td>Block tile</td><td><code>M_Tile / N_Tile / K_Tile</code></td><td>需要修改候选实例表并重编译。gfx95x 已有 16×128×256、32×128×128、128×128×128、192×256×128 等种子，按 shape 选择。</td></tr>
+      <tr><td>Wave / MFMA</td><td><code>M_Warp/N_Warp/K_Warp</code> 与 <code>*_Warp_Tile</code></td><td>已有 4-wave / 8-wave 和不同 K_Warp_Tile；波前数量、指令 tile、量化分组是不同概念。</td></tr>
+      <tr><td>Pipeline / layout</td><td><code>Scheduler</code>、<code>TiledMMAPermuteN</code>、<code>TransposeC</code>、<code>UsePersistentKernel</code>、<code>AQRowMajor</code></td><td>这些是源码字段，不是现成 CLI 旋钮；扩展候选必须重新验证支持性、scale布局和正确性。字段存在不保证任意取值都有效。</td></tr>
+    </tbody>
+  </table></div>
+  <p>候选源文件：<a href="https://github.com/ROCm/aiter/blob/v0.1.25/csrc/ck_gemm_a8w8_blockscale/gemm_a8w8_blockscale_cktile_instance.py" target="_blank" rel="noopener">gemm_a8w8_blockscale_cktile_instance.py</a>。内核源 <a href="https://github.com/ROCm/aiter/blob/v0.1.25/csrc/ck_gemm_a8w8_blockscale/include/gemm_a8w8_blockscale_cktile_common.cuh" target="_blank" rel="noopener">common.cuh</a> 使用 <code>QuantGemmKernel</code> 与 <code>BaseWeightPreshufflePipelineAGmemBGmemCRegV2</code>；不要把所有名为 flatmm 的路径都当成这同一个实现。</p>
+  <p>某些 CK Tile 配置在 wrapper 内还会转换 A scale 布局。比较“kernel-only”时需要注明是否排除了这次转换；生产端比较必须包含实际转换、分配和归约成本。不变的权重 shuffle 可离线处理，需分别报告一次性预处理成本与每次调用成本。</p>
+
+  <h3>5. 可选 Triton sweep，以及 Gluon / FlyDSL 的边界</h3>
+  <p>针对同一普通 FP32-scale 语义，AITER 还提供真实的 <code>gemm_a8w8_blockscale_preshuffle</code> harness。它要求 BK=128；stock sweep 还要求 M 和 BM/BN/BK 为 2 的幂。先锁定 NUM_KSPLIT=1，避免把第一轮搜索和归约成本混在一起：</p>
+  <pre><code>cd aiter/ops/triton/utils/_triton/tuning
+python3 sweep_configs.py 64 8192 7168 0 gemm_a8w8_blockscale_preshuffle \
+  --block-size-m-range 32 64 --block-size-n-range 64 128 \
+  --block-size-k-range 128 --group-size-m-range 1 4 \
+  --num-warps-range 4 --num-stages-range 1 2 \
+  --waves-per-eu-range 1 2 --matrix-instr-nonkdim-range 16 \
+  --cache-modifier-range 0 --num-ksplit-range 1
+python3 write_best_configs.py gemm_a8w8_blockscale_preshuffle \
+  --n-list 8192 --k-list 7168</code></pre>
+  <p>该搜索需要 rocprofv3，原始空间 32 组合。配置目录为该版本的 <code>gfx950/triton/gemm/gemm_a8w8_blockscale_preshuffled/</code>，部署前按 README 确认文件名、DEFAULT.json、重新启动进程及真实命中；另做数值校验。直接调用此 Triton wrapper 时，W 使用 <code>[N//16,K*16]</code> 的视图，和公共 AITER API 保留 <code>[N,K]</code> 的外形不同。</p>
+  <ul>
+    <li><strong>Gluon：</strong>v0.1.25 的普通 blockscale 支持列表有 gfx950；但 <code>_GLUON_PRESHUFFLE_ARCHS=("gfx1250",)</code>。本目标的 gfx950 preshuffle 包装器默认走 Triton，不能强制 <code>backend="gluon"</code> 并假定可用。</li>
+    <li><strong>FlyDSL：</strong>同一专用 tuner 中 <code>--libtype flydsl --preshuffle</code> 进入 E8M0 MXscale family，使用 <code>shuffle_scale_blockscale_a/b</code> 生成 1-D scale buffer并写入独立 mxscale 配置表。它不是普通 FP32 scales 的无缝后端替换。</li>
+    <li><strong>比较前保持语义一致：</strong>E8M0 改变 scale 的可表示集合；需先确认模型允许这种量化合同，再比较数值误差、转换成本和性能。普通 FP32 路径不要调用 MXscale 的 scale shuffle。</li>
+  </ul>
+  <p>来源：<a href="https://github.com/ROCm/aiter/blob/v0.1.25/aiter/ops/triton/gemm/basic/gemm_a8w8_blockscale.py" target="_blank" rel="noopener">Triton / Gluon 包装器</a>、<a href="https://github.com/ROCm/aiter/blob/v0.1.25/aiter/ops/triton/utils/_triton/tuning/harness.py" target="_blank" rel="noopener">harness 的 BK 约束</a>、<a href="https://github.com/ROCm/aiter/blob/v0.1.25/aiter/ops/triton/utils/_triton/tuning/README.md" target="_blank" rel="noopener">结果落盘说明</a>。</p>
+</section>
+
+<section class="section" id="sweep-strategy"><div class="section-num">06 / 分层搜索</div>
+<h2>把 sweep 变成可复现的实验</h2><div class="callout amber">本节是通用 GEMM 搜索方法，不是当前目标的合法配置表。目标 CKTile preshuffle 请遵循专用 tuner：BK≥128、不启用 Split-K；本文具体 4-wave 图使用 A-only 固定双缓冲。改变 pipeline 或精度合同时，需要另立实验。</div>
+<p>Sweep 是在同一个算子问题、同一套软件和同一种计时口径下，生成合法候选、筛掉错误实现、测量性能并保存最优配置。先让成熟库搜索算法，再决定是否值得写 CK Tile、Gluon 或 FlyDSL 自定义内核。</p>
+<div class="callout"><strong>先固定问题：</strong>M/N/K、batch、A/B/输出与累加精度、转置、stride、地址对齐、alpha/beta、bias/activation、workspace 上限及确定性要求。把 BF16 改成 FP8、删除 epilogue 或增大 batch 都是在改变问题，必须另立实验。</div>
+
+<h3>五种实际可用的搜索手段</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>手段</th><th>搜索对象</th><th>使用时机与产物</th><th>容易忽略的边界</th></tr></thead>
+<tbody>
+<tr><td>库算法调优</td><td>hipBLASLt / rocBLAS 可用算法、solution、workspace 与库支持的调参</td><td>第一步；得到成熟库在目标 shape 上的强基线及可重放配置</td><td>算法 ID 依赖库版本；并非全部库都开放同样的参数</td></tr>
+<tr><td>模板实例枚举</td><td>CK / CK Tile 的 block/wave tile、pipeline、layout、向量宽度、epilogue</td><td>需要控制硬件细节时；生成、编译、运行合法实例并归档</td><td>模板名和候选支持范围随版本变化；编译成本可能大于计时成本</td></tr>
+<tr><td>DSL 配置调优</td><td>Triton/Gluon/FlyDSL 中实际支持的 tile、waves、布局、流水与调度配置</td><td>快速试验与定制融合；产出以 shape/dtype/layout 等为 key 的配置表</td><td>三个后端并不共享一套 autotune API；同名 stages 也可能语义不同</td></tr>
+<tr><td>算法分工切换</td><td>普通 tile、split-K、Stream-K、persistent、grouped/batched</td><td>tile 数少、长 K、尾部不均或大量小 GEMM 时，先改变并行分工</td><td>取决于实现支持；必须计入 reduction、同步、workspace 和所有 launch</td></tr>
+<tr><td>Profiler 驱动的局部搜索</td><td>LDS layout、prefetch、vectorization、unroll、寄存器压力与指令调度</td><td>粗搜进入平台期后，根据瓶颈缩小搜索范围</td><td>采样分析与最终计时分开；指标名称和含义需对应当前工具版本</td></tr>
+</tbody></table></div>
+
+<h3>参数按层搜索，约束先于计时</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>层</th><th>候选参数</th><th>想改善什么</th><th>约束与代价</th></tr></thead>
+<tbody>
+<tr><td>数学语义</td><td>输入/累加/输出精度、量化方案、融合 epilogue</td><td>减少流量、转换和额外 launch</td><td>业务精度契约；scale/量化成本；不能拿不同表达式直接比较</td></tr>
+<tr><td>并行分工</td><td>split-K、Stream-K、persistent、grouped</td><td>增加可调度工作、缓解尾部、降低小任务调度成本</td><td>归约与同步、workspace、确定性、后端是否支持</td></tr>
+<tr><td>Block tile</td><td>BM、BN、BK</td><td>A/B 数据重用、K 循环成本、边界浪费</td><td>大 BM/BN 增加 accumulator 且减少 block 数；大 BK 增加数据缓冲</td></tr>
+<tr><td>Wave / MFMA</td><td>waves per block、wave tile、MFMA instruction tile、accumulator 布局</td><td>矩阵指令利用率、wave 间分工与寄存器使用</td><td>tile 分解与指令支持；更多 wave 不等于更高有效吞吐</td></tr>
+<tr><td>访存与流水</td><td>LDS 双缓冲/多缓冲、prefetch distance、stages、LDS swizzle/padding、向量 load/store</td><td>重叠计算与搬运、减少 bank conflict、合并访问</td><td>LDS/寄存器增长；地址与 stride 对齐；不同 stage 定义不能机械换算</td></tr>
+<tr><td>Grid 顺序</td><td>grouped ordering、swizzle、tile 遍历顺序</td><td>相邻任务的缓存复用、工作量均衡</td><td>改变逻辑任务顺序，不代表把 block 固定绑定到指定 CU</td></tr>
+<tr><td>编译特化</td><td>unroll、静态常量、mask/fast path、specialization</td><td>减少动态控制与不必要指令</td><td>二进制/编译时间膨胀；形状、stride 或对齐变化时需回退路径</td></tr>
+</tbody></table></div>
+
+<p>经典 A/B 都经 LDS 的路径，可用朴素模型估算每个 block 的 LDS 需求：<code>A/B 缓冲份数 × BK × (BM × sizeof(A) + BN × sizeof(B))</code>。目标 FP8 4-wave 路径只对 A 用双缓冲，改用 2×BM×BK bytes。真实内核还会有 padding、swizzle、格式转换、缓冲复用和额外存储，最终以编译器资源报告为准。<code>BM × BN / threads_per_block</code> 仅是每线程平均 accumulator 元素数，不能直接当成 VGPR 数或 occupancy。</p>
+
+<h3>推荐的分阶段搜索</h3>
+<ul>
+<li><strong>阶段 0：建立基线。</strong>保存当前实现、成熟库默认结果及成熟库调优结果。全部使用相同精度、stride、融合表达式和计时口径。</li>
+<li><strong>阶段 1：按 shape 分类。</strong>大方阵先探索重用与流水；小 M/大 N,K 先探索更小 BM 与额外并行；非整齐尺寸检查边界；很多小 GEMM 检查分组和 launch 开销。</li>
+<li><strong>阶段 2：粗搜。</strong>先用少量合法布局和流水，扫描 block tile；每个候选先编译、检查资源与正确性，然后做短测，保留 top-k。</li>
+<li><strong>阶段 3：局部扩展。</strong>对短名单扩展实际实现支持的 waves、stages、layout、调度；只有后端支持时才扩展 split-K。参数互相影响，保留一部分探索预算给其他区域，避免分阶段筛选过早丢掉好组合。</li>
+<li><strong>阶段 4：正式复测。</strong>扩大测量时长，交错/随机化候选顺序，在独立批次中复测；同时检查数值、workspace、相近 shape 与真实工作负载。</li>
+<li><strong>阶段 5：保存分发策略。</strong>将赢家和回退配置写入 tuning 表，保留完整环境、问题描述、编译配置及测量原始记录；升级 ROCm/编译器/库后重新验证。</li>
+</ul>
+
+<pre><code>BF16 通用搜索空间（非当前 FP8 目标；不是现成 CLI）
+BM          ∈ {32, 64, 128}
+BN          ∈ {64, 128, 256}
+BK          ∈ {32, 64}
+waves/block ∈ {4, 8}
+stages      ∈ {1, 2, 3}
+split-K     ∈ {1, 2, 4}
+
+原始组合：3 × 3 × 2 × 2 × 3 × 3 = 324
+执行顺序：合法性筛选 → 编译 → 正确性 → 短测 → top-k 长测 → 回归
+小 M 的专门空间可加入 BM=16 等后端支持的候选。</code></pre>
+
+<div class="callout"><strong>硬剪枝与软剪枝要分开。</strong>不支持的 dtype/指令、非法 tile 分解、资源超限、对齐不满足、workspace 超限、错误结果直接淘汰。block 数偏少、padding 多、LDS 高或疑似寄存器压力大，只能作为降低搜索优先级的依据；它们本身不证明候选更慢。</div>
+<p>空间小可以穷举；空间大可以采用随机搜索、successive halving，再考虑贝叶斯或进化搜索。搜索算法解决“先测谁”，不替代合法性、正确性和独立复测。</p>
+
+</section>
+<section class="section" id="sweep-tools">
+  <div class="section-num">07 / 官方工具与实际接口</div><h2>通用工具对照：其他 GEMM 的 sweep 手段</h2><div class="callout amber">本节是跨 GEMM 类型的参考。你的 A8W8 blockscale+preshuffle 首先使用上面的专用 tuner；下面 BF16 与普通库命令不能直接当作同 scale 合同的基线。</div>
+  <p>按 <strong>AITER v0.1.25、CK rocm-7.2.4、FlyDSL v0.4.0</strong> 核查；不是一套可混装依赖。命令尚未在 MI355X 实测。</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>工具 / 仓库</th><th>主要搜索对象</th><th>入口与边界</th></tr></thead>
+    <tbody>
+      <tr><td>hipBLASLt</td><td>预编译 solution；可选 Split-K / workgroup mapping</td><td><code>hipblaslt-bench</code>；先建立“库内最优”基线。solution ID 绑定库版本和架构。</td></tr>
+      <tr><td>rocBLAS</td><td>已有 GEMM kernel</td><td><code>rocblas-gemm-tune --yaml</code>；确认实际使用 Tensile 还是 hipBLASLt 后端。</td></tr>
+      <tr><td>AITER</td><td>多后端选择；特定 kernel 参数</td><td><code>csrc/gemm_a16w16/gemm_a16w16_tune.py</code> 和 Triton tuning 目录。不同 op 支持的后端不同。</td></tr>
+      <tr><td>CK / CK Tile</td><td>模板参数、pipeline、layout、已编译实例</td><td><code>example/ck_tile/03_gemm</code>；生成多个合法实例再 benchmark。只改 <code>-m/-n/-k</code> 不会改内核 tile。</td></tr>
+      <tr><td>Triton / Gluon</td><td>tile、wave 数、编译提示；显式 layout</td><td><code>triton.Config</code> + <code>triton.autotune</code>，或统一离线 harness；MI355X 从 CDNA4 实现起步。</td></tr>
+      <tr><td>FlyDSL</td><td>已暴露的 Constexpr 和编译提示</td><td><code>flydsl.autotune</code>；自写 GEMM 需要接入 tuner，不能假定所有 GEMM 已自动调优。</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>AITER：用一个受控的小空间开始</h3>
+  <p>使用 <a href="https://github.com/ROCm/aiter/blob/v0.1.25/aiter/ops/triton/utils/_triton/tuning/README.md" target="_blank" rel="noopener">v0.1.25 官方 sweep 工具</a>，GPU ID=0，原始空间 96 个组合，再做剪枝。候选是实验起点。</p>
+  <pre><code># 从 AITER 仓库根目录开始；依赖已按该版本装好
+cd aiter/ops/triton/utils/_triton/tuning
+python3 harness.py --help
+python3 sweep_configs.py 64 8192 3584 0 gemm_a16w16 \
+  --block-size-m-range 32 64 \
+  --block-size-n-range 64 128 \
+  --block-size-k-range 128 \
+  --group-size-m-range 1 4 \
+  --num-warps-range 4 \
+  --num-stages-range 1 2 \
+  --waves-per-eu-range 1 2 \
+  --matrix-instr-nonkdim-range 16 \
+  --cache-modifier-range 0 \
+  --num-ksplit-range 1 2 4
+
+python3 write_best_configs.py gemm_a16w16 \
+  --n-list 8192 --k-list 3584</code></pre>
+  <div class="callout"><strong>执行前读这几条：</strong><ul>
+    <li>该版本脚本要求 M 为 2 的幂，BM / BN / BK 也必须为 2 的幂。任意尾部 shape 要使用适配的 harness；不能仅删除断言就认定支持。</li>
+    <li>需要 <code>rocprofv3</code>。Split-K 自动包含 1，只保留整除 K 的候选；部分 blockscale kernel 固定 BK=128。</li>
+    <li><code>waves_per_eu</code> 是编译提示，不保证实际 occupancy，也不指定 CU；<code>num_stages</code> 不可一概等同 LDS buffer 数。</li>
+    <li>先独立校验数值，再排名。<code>verify_configs.py</code> 主要检查配置命中和耗时，不替代正确性测试。</li>
+  </ul></div>
+  <p>JSON 安装到 <code>aiter/ops/triton/configs/&lt;arch&gt;/&lt;backend&gt;/&lt;op&gt;/&lt;d_type&gt;/</code>，去掉文件名架构前缀；family 要有 <code>DEFAULT.json</code>。Triton / Gluon 分目录，复制后重启 Python 确认命中。详见 <a href="https://github.com/ROCm/aiter/blob/v0.1.25/aiter/ops/triton/utils/_triton/tuning/sweep_configs.py" target="_blank" rel="noopener">sweep_configs.py</a>。</p>
+  <p>跨后端比较用 <a href="https://github.com/ROCm/aiter/blob/v0.1.25/csrc/gemm_a16w16/gemm_a16w16_tune.py" target="_blank" rel="noopener">A16W16 多后端 tuner</a>：<code>--input_file my-shapes.csv --tuned_file my-tuned.csv --libtype triton,flydsl</code>。输入沿用 <code>bf16_untuned_gemm.csv</code> schema；hipBLASLt 还需 <code>--with-hipblaslt</code> 和相应扩展依赖。</p>
+
+  <h3>hipBLASLt / rocBLAS：把默认 heuristic 与库内最优分开</h3>
+  <p>用应用的 <code>HIPBLASLT_LOG_MASK=32</code> 日志生成完整命令。下面是 <strong>column-major NN BF16</strong> 示例，不等于 PyTorch row-major 布局。</p>
+  <pre><code>hipblaslt-bench --help
+HIPBLASLT_TUNING_FILE=mi355x-tuning.txt hipblaslt-bench \
+  --api_method c -m 64 -n 8192 -k 3584 \
+  --lda 64 --ldb 3584 --ldc 64 --ldd 64 \
+  --alpha 1 --beta 0 --transA N --transB N \
+  --a_type bf16_r --b_type bf16_r --c_type bf16_r --d_type bf16_r \
+  --compute_type f32_r --algo_method all \
+  --cold_iters 20 --iters 100 --rotating 512 --print_kernel_info
+
+# 独立复测 winner 后，在同版库、同架构的应用中加载
+export HIPBLASLT_TUNING_OVERRIDE_FILE=/absolute/path/mi355x-tuning.txt</code></pre>
+  <ul>
+    <li><code>all</code> 扫已有 solution；<code>index</code> 配 <code>--solution_index</code> 可复测指定候选。索引不可跨库版本或 GPU 架构复用。</li>
+    <li><code>--splitk</code> / <code>--wgm</code> 要求 GEMM + <code>--api_method mix</code> 或 <code>cpp</code>，不能直接加到上面的 c API 命令。0 表示采用 solution 默认值。</li>
+    <li><code>--rotating 512</code> 单位 MB，控制缓存条件；热缓存和轮换缓存分开对比，workspace 上限保持一致。</li>
+  </ul>
+  <p>以上选项依据 <a href="https://github.com/ROCm/hipBLASLt/blob/0f517f6d628f7c9ee1bdd41eb9cf954be3121f05/docs/how-to/how-to-use-hipblaslt-offline-tuning.rst" target="_blank" rel="noopener">官方 offline tuning 文档快照</a>及 <a href="https://github.com/ROCm/hipBLASLt/blob/0f517f6d628f7c9ee1bdd41eb9cf954be3121f05/docs/conceptual/hipblaslt-clients.rst" target="_blank" rel="noopener">clients 参数表</a>；目标机以自身 <code>--help</code> 为准。</p>
+  <pre><code># rocBLAS 路径：用 ROCBLAS_LAYER=4 日志收集真实问题的 YAML
+rocblas-gemm-tune --help
+rocblas-gemm-tune --yaml shapes.yaml &gt; solutions.csv</code></pre>
+  <div class="callout"><strong>rocBLAS 的后端陷阱：</strong><code>ROCBLAS_TENSILE_GEMM_OVERRIDE_PATH</code> 只覆盖 Tensile。强制 <code>ROCBLAS_USE_HIPBLASLT=1</code>，或架构默认采用 hipBLASLt 时，会绕过该文件；应调优实际执行的后端。此处依据 <a href="https://rocm.docs.amd.com/projects/rocBLAS/en/latest/how-to/Programmers_Guide.html#rocblas-gemm-tune" target="_blank" rel="noopener">当前官方 guide</a>，旧版本的索引约定可能不同。</div>
+
+  <h3>CK Tile：问题尺寸与编译期 tile 是两个层次</h3>
+  <p><a href="https://github.com/ROCm/rocm-libraries/blob/rocm-7.2.4/projects/composablekernel/example/ck_tile/03_gemm/gemm_basic_invoker.hpp" target="_blank" rel="noopener">rocm-7.2.4 的 basic GEMM MFMA 示例</a>定义 block tile 256×256×64、wave 排列 2×2×1、MFMA tile 32×32×16；<code>-m/-n/-k</code> 仅改输入问题。这些常量不代表 MI355X 最优配置。</p>
+  <p>Sweep：<strong>生成合法模板实例 → 编译 → 检查支持条件与数值 → 同一 driver 测时 → 保存最佳 dispatch</strong>。可扫 tile、copy vector、LDS swizzle、pipeline、scheduler 和 epilogue。basic 忽略 persistent 选项；需使用相应算法实现。</p>
+
+  <h3>Triton / Gluon / FlyDSL：调参接口需要正确绑定语义</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>设置</th><th>应该怎样使用</th></tr></thead>
+    <tbody>
+      <tr><td>搜索 key</td><td>M/N/K 之外，布局、dtype、epilogue、batch 或量化模式会变时，也要进入匹配条件或拆开 wrapper。</td></tr>
+      <tr><td>Triton / Gluon</td><td>用 Config + autotune 或离线 harness 暴露真实参数。Gluon 的 MI355X 代码应参考 CDNA4；NVIDIA TMA / WGMMA / tcgen05 示例不直接适用。</td></tr>
+      <tr><td>可变输出</td><td>atomic / accumulate / in-place kernel 每轮要 reset 或 restore；正确性校验在计时区间之外。</td></tr>
+      <tr><td>FlyDSL v0.4.0</td><td><code>from flydsl.autotune import autotune, Config</code>；Config kwargs 必须对应 kernel 的真实 Constexpr。<code>waves_per_eu</code> 是编译提示；<code>Config(maxnreg=...)</code> 已明确不支持。</td></tr>
+      <tr><td>FlyDSL 离线配置</td><td><code>FLYDSL_AUTOTUNE=1</code> 强制搜索，配 <code>artifact_name</code> 与 <code>FLYDSL_AUTOTUNE_CONFIG_DIR</code>；<code>validate_hook</code> 可拒绝错误候选。</td></tr>
+    </tbody>
+  </table></div>
+  <p>FlyDSL artifact 不含 source / compiler 指纹，变更后要重测；官方示例主要是 Norm，并非全部 GEMM 已接入。参考：<a href="https://github.com/ROCm/FlyDSL/blob/v0.4.0/docs/autotune_guide.md" target="_blank" rel="noopener">FlyDSL autotune 指南</a>、<a href="https://github.com/ROCm/FlyDSL/blob/v0.4.0/python/flydsl/autotune.py" target="_blank" rel="noopener">API 源码</a>、<a href="https://github.com/triton-lang/triton/blob/v3.8.0/python/tutorials/03-matrix-multiplication.py" target="_blank" rel="noopener">Triton matmul</a>与 <a href="https://github.com/triton-lang/triton/blob/v3.8.0/third_party/amd/python/test/test_gluon_cdna4.py" target="_blank" rel="noopener">Gluon CDNA4</a>。</p>
+</section>
+
+
+<section class="section" id="fp8-sweep"><div class="section-num">FP8 专项 / 让完整调用路径变快</div><h2>针对 FP8 A8W8 + B preshuffle + 128 粒度 blockscale 的专项 sweep</h2>
+<p>这条路径要同时调优 FP8 乘加、scale 的加载与应用、预排后的 B 访存，以及激活量化。先把 scale 几何和 preshuffle 契约固定下来，再搜索 tile 与流水；最终用完整热路径的耗时决定是否采用。</p>
+<div class="callout"><strong>“128 粒度”还不是完整接口定义。</strong>本页已核查的 AITER 普通 FP32-scale 路径采用 A 每行每 128 个 K 元素共享 scale、W 每个 128×128 的 N/K 区块共享 scale；下文 sB 表示数学 B 的 scale 视图。实际算子若采用其他粒度、转置约定、scale 排列或倒数 scale，必须据实现调整；A8W8 本身也没有规定 FP8 编码、累加与输出 dtype。</div>
+
+<h3>先写下这份数值与布局契约</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>对象</th><th>必须固定的属性</th><th>为什么影响 sweep</th></tr></thead>
+<tbody>
+<tr><td>A / 激活</td><td>逻辑形状 M×K；FP8 编码；量化是在线还是预先完成；scale 粒度、dtype、shape、stride、排列和是否为倒数</td><td>动态 amax、scale 生成、cast/pack 可能成为小 M 热路径的主要成本</td></tr>
+<tr><td>B / 权重</td><td>逻辑 B 为 K×N，或存储 W 为 N×K；FP8 编码；scale 几何；权重是否在多次调用之间保持不变</td><td>决定静态准备可否摊销，也决定缩放沿哪两个逻辑维度进行</td></tr>
+<tr><td>B preshuffle</td><td>打包格式 ID、pack/unpack 工具与版本、padding、对齐、物理尺寸；scale 是否另行变换</td><td>预排改变物理存储，不改变逻辑 GEMM；不是普通 transpose 或 contiguous 的替代名称</td></tr>
+<tr><td>计算与输出</td><td>累加精度、scale 应用顺序、输出 dtype、alpha/beta、bias/activation、允许误差和确定性</td><td>不同累加或缩放策略可能改变数值结果，必须作为有约束的候选处理</td></tr>
+<tr><td>硬件与实现</td><td>gfx 架构、FP8 指令支持、ROCm/编译器/算子版本、scale 格式与 packed-layout 支持范围</td><td>旧架构的 FP8 编码或旧版本的 packed tensor 不能假定可直接复用</td></tr>
+</tbody></table></div>
+
+<h3>128 scale block 如何约束 BK</h3>
+<p>用 <code>A ≈ A8 × sA</code>、<code>B ≈ B8 × sB</code> 表示反量化 scale。示例中 <code>sA</code> 的逻辑形状是 <code>[M, ceil(K/128)]</code>，<code>sB</code> 的逻辑形状是 <code>[ceil(K/128), ceil(N/128)]</code>；物理存储可能转置或预排。对输出元素：</p>
+<pre><code>C[m,n] ≈ Σg { sA[m,g] × sB[g, floor(n/128)]
+                 × Σ(k 属于第 g 个 128-K 区间) A8[m,k] × B8[k,n] }
+
+这里的 sA/sB 是反量化乘数。
+如果接口存储 reciprocal scale，加载后必须按该接口约定使用。</code></pre>
+<div class="table-wrap"><table>
+<thead><tr><th>BK 候选</th><th>与 128-K scale 的关系</th><th>搜索价值</th><th>合法性与数值检查</th></tr></thead>
+<tbody>
+<tr><td>BK=64（仅数学对照）</td><td>通常两次 K tile 覆盖一个 scale block</td><td>较小缓冲、更细流水；可复用同一段 scale</td><td>当前已核查的 CK Tile 路径不支持；若另写实现，必须验证半组部分和与缩放</td></tr>
+<tr><td>BK=128</td><td>与一个 scale block 对齐</td><td>最清晰的初始基线，scale 边界与主循环一致</td><td>仍需检查 MFMA、LDS、packed B 和编译器约束；并不保证最快</td></tr>
+<tr><td>BK=256</td><td>一次覆盖两个不同的 K scale block</td><td>可能减少控制开销、扩大搬运和计算重叠窗口</td><td>必须保留两段各自的 partial 与 scale 语义；不能对整段 256 的 dot 只乘一个 scale</td></tr>
+</tbody></table></div>
+<p>若 BN=256，在此示例 scale 几何下同一输出 tile 跨两个 N scale 区块；每个输出列必须使用对应 scale。BN=64 则可能有相邻 tile 共享一个 N scale 区块。BM 的 scale 复用取决于 A 是逐行还是二维 blockscale，不能只凭“blockscale=128”推断。</p>
+<div class="callout"><strong>核心错误模式：</strong>跨多个 K scale block 先把未经缩放的 FP8 dot 全部累加，再统一乘一个 scale，通常不等价于 blockscaled GEMM。一个 candidate 编译成功并不表示 scale 语义正确；BK、split-K 和 K-tail 都要专门验证。</div>
+
+<h3>推荐搜索优先级与默认起点</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>优先级</th><th>先搜索什么</th><th>建议起点</th><th>必须先通过的检查</th></tr></thead>
+<tbody>
+<tr><td>P0：建立可比基线</td><td>官方/当前版本支持的同语义 blockscaled FP8 算法，以及当前 preshuffle 路径</td><td>固定同一份 A8、B8 与 scales，先比较 GEMM 本身；随后加入真实 A 动态量化</td><td>FP8 编码、scale 几何、输出/累加精度、epilogue 相同；不将 per-tensor FP8 当成等价基线</td></tr>
+<tr><td>P1：tile 与工作量</td><td>BM/BN，尤其是实际业务 M 的分布</td><td>小 M：BM∈{16,32,64}；较大 M：BM∈{64,128}；BN 先试 {128,256}，BK 先固定 128</td><td>候选必须被实现、MFMA 和 packed-layout 支持；M 极小时加入更小 BM 仅在后端合法时进行</td></tr>
+<tr><td>P2：wave 与流水</td><td>waves/block、stage、prefetch、scale 与数据加载的重叠</td><td>合法的 4-wave 配置作为起点，按内置实例探索 4/8-wave 分支；4-wave A 双缓冲是固定管线，改变 stages 要更换或修改实现</td><td>这些是逻辑候选，不是通用 API 参数；LDS、寄存器、accumulator 和 scale 存活期需看编译报告</td></tr>
+<tr><td>P3：BK 与 scale 路径</td><td>CK Tile 合法 BK∈{128,256} 等；Triton wrapper 固定 128；scale 复用、缩放位置、partial accumulator 组织</td><td>仅为 top-k tile 扩展；从与 128 边界对齐的实现逐步扩展</td><td>不同 scale block 不混用；缩放顺序的数值变化符合契约；禁止通过丢 scale 提速</td></tr>
+<tr><td>P4：权重布局与加载</td><td>实现支持的 preshuffle 格式、向量宽度、LDS layout/swizzle、tile 顺序</td><td>先保持当前 B 打包格式，只搜索兼容消费者；新格式单独构建并记录</td><td>部分格式会依赖 kernel family/指令/特定配置；以实现契约为准，不能假定任意候选能共享同一 packed B</td></tr>
+<tr><td>P5：额外并行</td><td>合法的 split-K / Stream-K 等策略</td><td>本版本 CK/CK Tile preshuffle tuner 不启用；只在 ASM/Triton 等已实现支持的路线中单独探索</td><td>分段尽量对齐 128-K scale block 和实现要求；每段正确缩放后再归约；计入 workspace、归约与所有 launch</td></tr>
+<tr><td>P6：完整热路径</td><td>A 动态 quantize/amax/scale/pack 与 GEMM 的组合；可行时融合</td><td>对 GEMM 短名单测真实调用序列，比较算子整体收益</td><td>不能在实际每次都量化 A 的工作负载中，只报告已量化 A 的 GEMM 速度</td></tr>
+</tbody></table></div>
+<p>以上是候选生成顺序，不是保证合法的配置文件。先针对一两个代表 shape 跑通正确性与测量闭环，再扩成业务 shape 表。对于已经高度优化的 packed B kernel，布局和 MFMA 约束可能让实际可搜索空间很小，重点应转向 shape 分发和 A 准备成本。</p>
+
+<h3>静态权重准备与每次调用成本分开记录</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>阶段</th><th>典型内容</th><th>应该如何计时</th></tr></thead>
+<tbody>
+<tr><td>B 静态准备</td><td>B 量化、权重 scale 计算/转换、B preshuffle、padding、packed tensor 保存或装载</td><td>单独报告准备时延、额外常驻内存、格式/版本与首次可用时间；权重长期复用时不重复塞入每次 GEMM</td></tr>
+<tr><td>A 动态准备</td><td>读入当前 A、amax/reduction、scale 生成、FP8 cast、必要的 A/scale layout 转换</td><td>若业务每次调用都发生，必须计入热路径；预量化 A 的 GEMM-only 结果只能作为独立诊断口径</td></tr>
+<tr><td>GEMM 主体</td><td>读 A8/B8/scales、FP8 dot、分块缩放、累加、输出；必要的 split-K partial 与 reduction</td><td>报告 GEMM-only 与包含 reduction 的算子总时间，注明 workspace 和输出 dtype</td></tr>
+<tr><td>输出与框架</td><td>bias/activation、输出转换、dispatch、同步与真实 launch/capture 模式</td><td>分别记录完整表达式和框架热路径，最终按部署口径选型</td></tr>
+</tbody></table></div>
+<pre><code>串行路径的摊销模型（R = 同一份 packed B 的复用调用次数）：
+T_amortized ≈ T_A_prepare + T_GEMM_complete + T_post + T_B_prepare / R
+
+必须另报：
+T_GEMM_only、T_hot_path、T_B_prepare、packed_B_bytes、workspace_bytes。
+
+如果存在多 stream 重叠，以实际关键路径计时为准，不能直接相加。
+训练或权重频繁更新时，B 不再是可长期摊销的静态准备。</code></pre>
+<p>同一候选不要在计时循环里重复无必要的 B preshuffle；不同候选若要求不同 packing，则在计时前准备各自合法的 B，并分别记录格式与成本。基准里保留的多份 packed B 可能改变缓存/显存条件，正式复测应按部署实际常驻数据量运行。</p>
+
+<h3>三层正确性，定位是量化、打包还是内核出错</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>层</th><th>对照方法</th><th>主要发现的问题</th></tr></thead>
+<tbody>
+<tr><td>量化质量</td><td>将 A8/B8 按实际 scale 反量化，与原始 A/B 比较；再比较反量化后的矩阵乘法与原始高精度参考</td><td>scale 算法、饱和/溢出、离群值、FP8 编码选择与业务允许的量化损失</td></tr>
+<tr><td>布局一致性</td><td>使用该格式受支持的参考 unpack/索引映射验证 preshuffle；验证 scale 的逻辑坐标与物理坐标匹配</td><td>把 transpose 当 shuffle、错误格式复用、N/K 维搞反、padding 或 scale 变换不一致</td></tr>
+<tr><td>内核计算</td><td>固定同一份 A8/B8/scales，用它们反量化后的可信计算作为参考，再比较 packed kernel 输出</td><td>BK 跨 scale 边界、partial 缩放、split-K reduction、tail/mask、累加和输出转换错误</td></tr>
+</tbody></table></div>
+<ul>
+<li>单独覆盖各 K-scale 区块数值相差很大的输入；只用分布完全相似的随机块，可能掩盖用错 scale 的错误。</li>
+<li>测试相邻 128-N 区块 scale 差异大、跨 128-K 边界、零块、正负抵消、极小/极大数值；零块 scale 的保护规则以量化契约为准。</li>
+<li>测试非 128 整除尺寸仅限实现声明支持的范围；若要求 padding，验证 padding 的数据和 scale 不污染真实输出。</li>
+<li>记录饱和/裁剪比例、非有限值、最大绝对误差、约定 epsilon 的相对误差、相对 L2 误差；容限按实际 dtype/累加与业务要求设定，不采用对所有 shape 通用的随意阈值。</li>
+<li>量化误差与 kernel 误差分开报告。相对原始 BF16/FP32 的差异不能全部归因于 GEMM 实现，反之也不能用“FP8 本来有误差”掩盖 scale 错误。</li>
+</ul>
+
+<h3>最终结果表增加这些专项字段</h3>
+<p>在通用 sweep 表之外，增加 <code>fp8_format_A/B</code>、<code>scale_geometry_A/B</code>、<code>scale_dtype/stride/order</code>、<code>scale_or_inverse_scale</code>、<code>quantization_method</code>、<code>packing_format/version</code>、<code>packing_config_dependencies</code>、<code>T_A_prepare</code>、<code>T_B_prepare</code>、<code>T_GEMM_complete</code>、<code>T_hot_path</code>、<code>weight_reuse_R</code>、<code>packed_B_bytes</code>、<code>saturation_ratio</code>、<code>quantization_error</code> 和 <code>kernel_error</code>。</p>
+<div class="callout"><strong>采用标准：</strong>同一 FP8/scale/输出语义，正确性通过，完整热路径复测有稳定收益，静态 B 的准备与额外内存可接受，并保留不满足布局、对齐或 shape 条件时的回退路径。只快在预量化输入的 GEMM-only 测试中，还不足以证明线上 A8W8 路径变快。</div>
+</section>
+<section class="section" id="planner"><div class="section-num">08 / 把搜索空间变成实验记录</div><h2>候选生成器：先计数与粗筛，再编译和测量</h2><p>下列参数沿用当前 M/N/K，只生成<strong>结构候选清单</strong>。导出格式是实验记录模板，不是 AITER tuner 的输入 schema。候选仍要映射成真实实例，经过编译、正确性和计时，才能选 winner。</p><div class="callout" id="planner-mode-note"></div><div class="planner-fields"><label class="field">BM 候选<input id="search-bm" value="16,32,64,128"></label><label class="field">BN 候选<input id="search-bn" value="128,256"></label><label class="field">BK 候选<input id="search-bk" value="128,256"></label><label class="field">Waves / WG<input id="search-waves" value="4"></label><label class="field">LDS 缓冲份数<input id="search-buffers" value="2"></label><label class="field">Split-K（1表示不切分）<input id="search-split" value="1"></label></div><label class="checkbox"><input type="checkbox" id="prune-lds" checked>按当前模型，跳过估算 LDS &gt; 160 KiB/WG 的组合</label><p class="small muted">FP8 目标用 A-only 双缓冲估算；BF16 对照用 A/B 缓冲估算。160 KiB 是每 CU 总 LDS 容量，不是承诺的每 workgroup 可分配上限。未含 padding/scratch，估算较小仍可能不合法。此处 Split-K=1 表示不切分；目标 CK CSV 中 splitK=0 是同一“不切分”含义的不同编号。</p><div class="inline-controls"><button class="btn primary" type="button" id="generate">生成候选</button><button class="btn" type="button" id="export-csv" disabled>导出 CSV</button></div><div class="status" id="candidate-status" aria-live="polite"></div><div class="table-wrap"><table><thead><tr><th>配置 BM/BN/BK</th><th>Waves / 缓冲 / Split-K</th><th>WG 数</th><th>估算 LDS KiB</th><th>验收状态</th></tr></thead><tbody id="candidate-rows"></tbody></table></div><p class="small muted">仅预览前 12 条，顺序是参数枚举顺序，<strong>不是预测性能排名</strong>。CSV 包含全部保留候选与未填的 correctness、median_us、p95_us、effective_tflops、backend、source_commit 字段。</p></section>
+
+<section class="section" id="measurement"><div class="section-num">09 / 正确性与计时</div>
+<h2>正确性、计时与结果归档</h2>
+<h3>先回答“在测哪段时间”</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>口径</th><th>应该包含</th><th>适合回答</th></tr></thead>
+<tbody>
+<tr><td>单 kernel</td><td>该 GPU kernel 的执行；排除 JIT、分配与拷贝</td><td>内核改动有没有改善？</td></tr>
+<tr><td>完整算子</td><td>全部 partial kernel、reduction、必要转换和同步</td><td>split-K、融合或量化路线总体是否更快？</td></tr>
+<tr><td>框架调用</td><td>实际 dispatch、CPU 供给、正常 launch 或图捕获模式</td><td>放回 AITER/PyTorch 后收益还能保留多少？</td></tr>
+<tr><td>业务端到端</td><td>真实数据准备、通信、依赖、并发和业务表达式</td><td>最终训练或推理吞吐/延迟改善多少？</td></tr>
+</tbody></table></div>
+
+<h3>一套可靠的微基准流程</h3>
+<ul>
+<li><strong>固定环境：</strong>记录 GPU/分区、gfx、CU 数、驱动、ROCm、编译器、库 commit、容器镜像及共享负载；观测温度/频率/功耗，避免不同热状态偏置结果。</li>
+<li><strong>编译与预热分离：</strong>先完成编译、输入和 workspace 分配。可从 20–100 次预热开始，再依据 kernel 时长与热稳定情况调整；不把首个 JIT 算进稳态延迟。</li>
+<li><strong>使用 GPU event：</strong>在同一 stream 记录计时事件并同步结束事件。ROCm PyTorch 仍使用 <code>torch.cuda.Event</code>、<code>torch.cuda.synchronize</code> 这些 API 名称。</li>
+<li><strong>让每轮计时足够长：</strong>一轮运行多次 launch，例如累计 20–100 ms，再除以次数。先做约 10–30 轮，交错或随机化候选顺序，报告中位数和离散程度；具体次数按噪声调整。</li>
+<li><strong>区分普通 launch 与图捕获：</strong>短 kernel 可能受 CPU 供给影响。图捕获能降低这类开销，但必须与目标部署模式一致；两种结果分别记录。</li>
+<li><strong>区分缓存模型：</strong>重复同一输入、轮换输入、权重长期复用等对应不同工作负载。用真实访问模式选择热/冷缓存口径，不将热缓存结果解释为持续 HBM 带宽。</li>
+<li><strong>短名单独立复测：</strong>多做几个独立批次；在 profiler 之外重新计时。若收益落在测量波动内，先增加证据，再决定是否更换内核。</li>
+</ul>
+<div class="callout"><strong>不要制造虚假的精度。</strong>10 次样本不足以可靠报告 p99；“一轮许多 launch 的平均时延”的分布也不是线上单请求尾延迟。HTML 中的 tile 分解、FLOPs 和填充比例可以计算，微秒、TFLOP/s 和 speedup 必须来自实测。</div>
+
+<h3>正确性是一项约束，不是最后的勾选框</h3>
+<p>为每种 dtype/累加路径定义参考结果和容限。常见逐点契约是 <code>abs(out − ref) ≤ atol + rtol × abs(ref)</code>；同时记录最大绝对误差、明确 epsilon 约定的相对误差、相对 L2 误差，以及 NaN/Inf。可信库可以作为参考，但参考的精度与计算路径也要写清。</p>
+<ul>
+<li>测试零值、正负混合、正常随机输入、不同量级、抵消，以及真实数据分布。</li>
+<li>覆盖边界 M/N/K、非整齐维度、不同合法 stride、地址偏移和对齐；只测整齐 shape 会漏掉 tail/mask 错误。</li>
+<li>split-K 改变加法次序，可能改变误差；atomic reduction 可能非确定。若业务要求确定性，应明确排除不满足要求的路径。</li>
+<li>FP8/FP4 需验证 scale 布局、转换、饱和及整体精度；若量化在线执行，必须纳入正确性和整体算子耗时。</li>
+</ul>
+
+<h3>每次 sweep 至少保存这些字段</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>类别</th><th>字段</th><th>作用</th></tr></thead>
+<tbody>
+<tr><td>环境</td><td>run_id、时间、GPU/分区、gfx、CU 数、驱动/ROCm/编译器、库 commit、容器 digest</td><td>解释升级或硬件差异，复现结果</td></tr>
+<tr><td>问题</td><td>M/N/K、batch、dtype/acc/out、trans/stride/alignment、alpha/beta、epilogue、输入分布、seed</td><td>确保比较的是同一件事，构建正确 tuning key</td></tr>
+<tr><td>配置</td><td>backend、algorithm/kernel ID、BM/BN/BK、wave/MFMA tile、waves、stages、layout、split-K、scheduler、workspace</td><td>重建候选，分析参数和表现的关系</td></tr>
+<tr><td>资源</td><td>编译时间、LDS、VGPR/AGPR/SGPR、spill、occupancy 与其来源</td><td>区分编译器资源报告、理论估算和实测指标</td></tr>
+<tr><td>测量</td><td>timer、launch/capture、缓存模式、warmup、每轮次数、轮数、median_us、波动/置信区间、算子总耗时</td><td>判断收益是否稳定，防止混淆计时口径</td></tr>
+<tr><td>质量与收益</td><td>atol/rtol、误差指标、NaN/Inf、正确性/确定性、baseline_id、speedup、TFLOPS、复测结论</td><td>让性能结果与数值约束同时成立</td></tr>
+<tr><td>归档</td><td>命令/配置、日志、profiler 文件、二进制/缓存指纹、失败原因</td><td>保留失败证据，便于回归和下一轮搜索</td></tr>
+</tbody></table></div>
+
+<h3>怎样决定是否采用赢家</h3>
+<p>保留 top-k，在独立批次中复测。不要挑“最快的单次”作为结论；优先考虑收益稳定、workspace 可接受、精度通过、邻近 shape 不显著退化的候选。性能相近时，较低方差、较少资源占用和较小维护成本更有价值。</p>
+<p>多 shape 的业务按出现频率计算 <code>总时间 = Σ frequency_i × latency_i</code>；最终比较总时间或端到端指标。speedup 几何均值可以是额外摘要，但无法替代业务权重。tuning key 至少包含 shape、dtype、layout/stride、epilogue、架构与相关版本；只有验证过才能把多个 shape 归为同一 bucket。</p>
+
+</section>
+<section class="section" id="diagnosis"><div class="section-num">10 / 下一轮扫什么</div>
+<h2>从瓶颈反推下一轮 sweep</h2>
+<p>先判断原因，再扩大相关参数空间。单独看到“TFLOPS 低”或“occupancy 低”不足以确定瓶颈，应结合工作规模、访存、资源与指令执行证据。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>现象 / 证据</th><th>优先检查</th><th>优先 sweep</th><th>需要防止的误判</th></tr></thead>
+<tbody>
+<tr><td>小 M/N、长 K，grid 中 block 很少</td><td>是否有足够独立工作；更小 tile 是否可行</td><td>小 BM/BN、split-K、后端支持的 Stream-K、grouped</td><td>split-K 增加的归约可能吃掉并行收益；K 短时尤其明显</td></tr>
+<tr><td>block 数临近机器覆盖边界，尾部明显</td><td>tile 工作量与调度尾部</td><td>tile 尺寸、Stream-K、persistent 调度、分组</td><td>blocks/CU 比值不是 occupancy，不能直接预测执行轮数</td></tr>
+<tr><td>大矩阵、计算指令吞吐仍不足</td><td>MFMA 布局、依赖链、搬运与计算是否重叠</td><td>wave/MFMA tile、accumulator 分工、BK、prefetch、pipeline</td><td>增加 stages 也会吃掉 LDS/寄存器，可能降低并发</td></tr>
+<tr><td>带宽主导、A/B 重复读取多或访问不连续</td><td>真实 DRAM 流量、布局/stride、向量化、缓存模型</td><td>BM/BN 重用、tile 遍历顺序、连续维向量 load、允许的融合</td><td>一次读 A/B 的理想算术强度不等于实测流量；热缓存会改变结果</td></tr>
+<tr><td>LDS bank conflict 或 LDS 访问代价突出</td><td>线程/元素映射、bank 对应、读取向量形状</td><td>LDS swizzle/padding、layout、向量宽度、wave tile</td><td>padding 消耗更多 LDS；总收益仍需正式计时确认</td></tr>
+<tr><td>VGPR/AGPR 压力高、spill、驻留受限</td><td>资源报告与 spill 指令/流量</td><td>缩小 BM/BN、减少同时存活 fragment、stages/prefetch、unroll、wave 分工</td><td>更高 occupancy 不自动代表更快；也可能牺牲数据重用</td></tr>
+<tr><td>仅非整齐 shape 掉速</td><td>tail/mask、padding、fast path 分发</td><td>更合适 tile、边界专用 kernel、可验证的 shape bucket</td><td>填充比例只是提示，不能直接换算性能损失</td></tr>
+<tr><td>极短 kernel，CPU/launch 占比大</td><td>空隙、dispatch、图捕获模式</td><td>融合 epilogue、grouped/batched、图捕获、必要时 persistent</td><td>不得通过增大业务 batch 偷换单请求延迟；按部署模式比较</td></tr>
+<tr><td>微基准快，集成后收益很小</td><td>数据转换、同步、通信、调度与其他算子占比</td><td>整体表达式融合、消除中间张量、真实 shape 分发、端到端策略</td><td>把单 kernel 的 speedup 当作模型端到端 speedup</td></tr>
+</tbody></table></div>
+<div class="callout"><strong>最小闭环：</strong>一个业务 shape → 一个强基线 → 一份受约束候选表 → 正确性筛选 → 可重复计时 → profiler 解释 → 独立复测 → 保存 tuning key 与回退配置。先把这个闭环跑通，再扩到成百上千个 shape。</div>
+</section>
+<section class="section" id="sources"><div class="section-num">参考与验证边界</div><h2>来源、假设与下一步</h2><p>本页基于 AMD 官方架构文档和 2026-10-16 查到的仓库版本；没有访问目标 MI355X，也没有生成任何实测性能结论。交互默认采用目标 FP8 4-wave CK Tile 模型，并提供 BF16 通用对照；量化 scales 的逻辑映射、LDS 简化公式与真实资源报告有明确区别。CU 图只展示调度原理。</p><ul class="source-list">
+<li><a href="https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html">AMD GPU 架构规格表</a>：MI355X / gfx950、CU 数、wavefront、LDS。</li>
+<li><a href="https://rocm.docs.amd.com/en/latest/reference/gpu-arch/mi350.html">AMD Instinct MI350 架构</a>：XCD、CU 与存储层级。</li>
+<li><a href="https://rocm.docs.amd.com/projects/HIP/en/latest/understand/programming_model.html">HIP 编程模型</a>：workgroup 的 wave 同 CU 与动态调度规则。</li>
+<li><a href="https://github.com/ROCm/FlyDSL/blob/v0.4.0/kernels/gemm/gemm_a16w16_gfx950.py">FlyDSL v0.4.0 gfx950 GEMM</a>：16×16×32 MFMA 示例与实际 split-K 实现。</li>
+<li><a href="https://github.com/ROCm/aiter/blob/v0.1.25/aiter/ops/triton/utils/_triton/tuning/README.md">AITER v0.1.25 tuning 工具</a>：harness、sweep、配置复用。</li>
+<li><a href="https://github.com/ROCm/rocm-libraries/blob/rocm-7.2.4/projects/composablekernel/example/ck_tile/03_gemm/README.md">CK Tile 7.2.4 GEMM</a>：模板、运行参数与示例；具体 target 的支持选项还需查源码。</li>
+<li><a href="https://github.com/ROCm/FlyDSL/blob/v0.4.0/docs/autotune_guide.md">FlyDSL v0.4.0 autotune</a>、<a href="https://github.com/triton-lang/triton/blob/v3.8.0/python/tutorials/03-matrix-multiplication.py">Triton v3.8.0 GEMM 教程</a>：候选参数和调优接口。</li>
+</ul><p>真实调优前，先收集你的 <strong>M/N/K 列表、dtype、A/B stride/转置、是否有 scale/量化、调用频率、是否预排权重、现有 kernel 与耗时</strong>。优先保留最常见与最贵的几组 shape，在相同软件锁定环境下完成一次小范围 sweep。</p><div class="inline-controls"><a class="btn" href="mi355x-operator-ecosystem-guide.html">查看仓库版本与安装指南</a><a class="btn" href="mi355x-env-check.py" download>下载环境采集脚本</a></div></section>
+</main></div><div class="footer">MI355X GEMM / 分块与调度交互教程 / 2026-10-16 · 可离线使用，无外部脚本依赖</div></div>
+<script>
+const GemmModel = (() => {
+  const CU = 256, LDS_CU = 160 * 1024, WAVE_SIZE = 64;
+  const ceil = (a, b) => Math.ceil(a / b);
+  function partition(kTiles, split, part) {
+    const q = Math.floor(kTiles / split), r = kTiles % split;
+    return {start: part * q + Math.min(part, r), count: q + (part < r ? 1 : 0)};
+  }
+  function compute(p) {
+    for (const key of ['m','n','k','bm','bn','bk','waves','buffers','split']) {
+      if (!Number.isSafeInteger(p[key]) || p[key] < 1) throw new Error(`${key} 必须是正整数`);
+    }
+    const gm=ceil(p.m,p.bm), gn=ceil(p.n,p.bn), kt=ceil(p.k,p.bk);
+    if(p.split>kt) throw new Error('Split-K 大于 K tile 数，会产生空分区');
+    const tiles=gm*gn, jobs=tiles*p.split;
+    const inputBytes=p.mode==='fp8'?1:2;
+    // Target FP8 illustration is specifically the 4-wave A-LDS/B-register pipeline.
+    const ldsBytes=p.mode==='fp8'?p.buffers*p.bm*p.bk*inputBytes:p.buffers*(p.bm*p.bk+p.bk*p.bn)*inputBytes;
+    const partialBytes=p.split===1?0:p.split*p.m*p.n*4;
+    return {...p, inputBytes, gm,gn,kt,tiles,jobs, maxKLoops:ceil(kt,p.split),
+      ldsBytes, ldsOnlyBound:Math.floor(LDS_CU/ldsBytes),
+      accumPerLane:p.bm*p.bn/(p.waves*WAVE_SIZE),
+      threads:p.waves*WAVE_SIZE, rounds:ceil(jobs,CU),
+      firstCoverage:Math.min(jobs,CU)/CU,
+      mnFill:p.m*p.n/(gm*p.bm*gn*p.bn), kFill:p.k/(kt*p.bk),
+      flops:2*p.m*p.n*p.k, partialBytes, partialTrafficBytes:partialBytes*2};
+  }
+  function decode(job, d) {
+    if(job<0||job>=d.jobs) throw new Error('任务编号超界');
+    const part=Math.floor(job/d.tiles), tile=job%d.tiles;
+    return {part, tm:Math.floor(tile/d.gn), tn:tile%d.gn};
+  }
+  function encode(tm,tn,part,d){return part*d.tiles+tm*d.gn+tn;}
+  return {CU,LDS_CU,WAVE_SIZE,compute,partition,decode,encode};
+})();
+if(typeof module!=='undefined' && module.exports) module.exports=GemmModel;
+
+(() => {
+  const $=id=>document.getElementById(id);
+  const nf=new Intl.NumberFormat('zh-CN',{maximumFractionDigits:2});
+  const fmt=n=>nf.format(n);
+  const pct=x=>`${(x*100).toFixed(1)}%`;
+  const bytes=n=>n>=1024**3?`${fmt(n/1024**3)} GiB`:n>=1024**2?`${fmt(n/1024**2)} MiB`:`${fmt(n/1024)} KiB`;
+  const keys=['m','n','k','bm','bn','bk','waves','buffers','split'];
+  let data=null, stage=0, plan=null;
+  const stages=[
+    ['定位：把 workgroup id 解码成输出块', '普通 GEMM 只由 M/N 生成输出 tile；Split-K 再加一个 K 分区索引。设置 A/B 起始指针、边界 mask，并在 lane 寄存器中准备 FP32 accumulator。'],
+    ['预取：把当前或下一段 A/B 准备到片上', '本模型每步读取 BM×BK 与 BK×BN 两块。经典路径可经过寄存器写 LDS，也可能使用直接 global-to-LDS 搬运；实际访问经缓存层级，不代表每次都落到 HBM。'],
+    ['等待与同步：数据可用后才能消费', '等待搬运完成；当一个 wave 要消费其他 wave 写入的数据时，执行实现所需的 workgroup 屏障。双缓冲能重叠，不等于可以省略依赖、wait 或 barrier。'],
+    ['取 fragment：按 MFMA 需要的布局装入寄存器', '从 LDS 按 wave/lane 分布读取 A/B fragment。swizzle、向量化、bank conflict 与寄存器 shuffle 会影响速度；逻辑 tile 连续不意味着每个 lane 的 fragment 连续。'],
+    ['MFMA：当前 K 段更新同一份 accumulator', 'wave64 协同执行矩阵乘加，沿输出子块重复 M/N 指令，再沿 BK 重复指令 K 维。A/B fragment 可复用，FP32 accumulator 跨 K 步持续保留。'],
+    ['滚动 K：计算当前段，准备下一段', '轮换当前与下一份缓冲、推进 K 指针；必要时插入预取与等待。sweep 可改变 BK、缓冲、预取距离和指令调度，但要同时检查 LDS、寄存器与驻留工作量。'],
+    ['完成 K 后写回：只在这里执行最终语义', 'Split-K=1 时执行 alpha/beta、bias、activation、转换与边界 store。workspace Split-K 时先写 FP32 partial，由后续 reduce 合并后做一次最终 epilogue；非线性 activation 不能提前对各份 partial 独立执行。']
+  ];
+  const cuElements=[];
+  for(let x=0;x<8;x++){
+    const box=document.createElement('div');box.className='xcd';
+    const label=document.createElement('div');label.className='xcd-label';label.textContent=`XCD ${x} · 示意 32 CU`;
+    const grid=document.createElement('div');grid.className='cus';
+    for(let j=0;j<32;j++){
+      const cell=document.createElement('span');cell.className='cu';cell.setAttribute('aria-hidden','true');grid.appendChild(cell);cuElements.push(cell);
+    }
+    box.append(label,grid);$('cu-rack').appendChild(box);
+  }
+  function invalidatePlan(){
+    plan=null;$('export-csv').disabled=true;$('candidate-rows').replaceChildren();
+    $('candidate-status').textContent='搜索参数或 shape 已变化，点击“生成候选”更新清单。';
+    $('candidate-status').classList.remove('error');
+  }
+  function setRect(el,x,y,w,h){
+    Object.assign(el.style,{left:`${x*100}%`,top:`${y*100}%`,width:`${w*100}%`,height:`${h*100}%`});
+  }
+  function grid(el,cols,rows){
+    el.style.backgroundSize=`${100/cols*Math.ceil(cols/64)}% ${100/rows*Math.ceil(rows/64)}%`;
+  }
+  function readParams(){
+    const p={};for(const key of keys)p[key]=Number($(key).value);
+    p.mode=$('mode').value;
+    const target=p.mode==='fp8';
+    $('waves').disabled=target;$('buffers').disabled=target;$('split').disabled=target;
+    for(const option of $('bk').options)option.disabled=target&&Number(option.value)<128;
+    if(target){
+      p.waves=4;p.buffers=2;p.split=1;
+      $('waves').value='4';$('buffers').value='2';$('split').value='1';
+      if(p.bk<128){p.bk=128;$('bk').value='128';}
+    }
+    for(const key of ['m','n','k'])if(!Number.isInteger(p[key])||p[key]<1||p[key]>65536)throw new Error('M/N/K 请输入 1–65536 的整数。');
+    const kt=Math.ceil(p.k/p.bk);
+    for(const opt of $('split').options)opt.disabled=Number(opt.value)>kt;
+    if(p.split>kt){$('split').value='1';p.split=1;}
+    return p;
+  }
+  function renderShape(clearTime=true){
+    try{data=GemmModel.compute(readParams());$('shape-error').textContent='';}
+    catch(e){data=null;$('shape-error').textContent=e.message;invalidatePlan();return;}
+    if(clearTime)$('measured-us').value='';
+    $('stat-blocks').textContent=`${fmt(data.tiles)} → ${fmt(data.jobs)}`;
+    $('stat-grid').textContent=`grid ${data.gm} × ${data.gn} × ${data.split}；batch = 1`;
+    $('stat-kloop').textContent=fmt(data.maxKLoops);
+    $('stat-kdetail').textContent=`完整 K 有 ${data.kt} 个 BK tile，分到 ${data.split} 组`;
+    $('stat-lds').textContent=bytes(data.ldsBytes);
+    $('stat-lds-detail').textContent=data.mode==='fp8'?`${data.buffers} × BM×BK × 1 B（A-only）`:`${data.buffers} × (BM×BK + BK×BN) × 2 B`;
+    $('stat-reg').textContent=fmt(data.accumPerLane);
+    $('stat-reg-detail').textContent=data.mode==='fp8'?`只计输出acc；未含分组临时acc/scales`:`FP32 payload / lane；${data.threads} threads/WG`;
+    $('scale-panel').hidden=data.mode!=='fp8';
+    $('mode-note').textContent=data.mode==='fp8'
+      ? '目标模型：FP8 E4M3FN + FP32 scales；图示选定 CK Tile 4-wave、A LDS 双缓冲 / B寄存器路径。该分支 BK≥128，Split-K不启用；8-wave/其他pipeline需另建模型。非对齐输入只展示数学几何，不承诺kernel支持。'
+      : '通用对照：BF16 A/B 双操作数 LDS 模型；允许演示 workspace Split-K，不能把这些设置直接套到目标 CKTile preshuffle tuner。';
+    $('tile-m').max=String(data.gm-1);$('tile-n').max=String(data.gn-1);$('part').max=String(data.split-1);
+    for(const id of ['tile-m','tile-n','part'])$(id).value=String(Math.max(0,Math.min(Number($(id).value)||0,Number($(id).max))));
+    $('round').max=String(data.rounds-1);$('round').value=String(Math.min(Number($('round').value),data.rounds-1));
+    $('padding-note').textContent=`M/N 逻辑填充率 ${pct(data.mnFill)}，K 逻辑填充率 ${pct(data.kFill)}；是尺寸比率，不是实测效率。矩阵各自缩放、密集网格稀疏显示；极细选块用可见边框定位，具体范围以上述数字为准。`;
+    $('resource-note').textContent=data.ldsBytes>GemmModel.LDS_CU
+      ? `当前完整 A/B 缓冲估算 ${bytes(data.ldsBytes)}，已超过每 CU 160 KiB LDS。该模型下不能容纳此配置；实际后端可能采用不同存储策略，仍需以编译与设备限制验证。`
+      : `当前${data.mode==='fp8'?'A-only 双缓冲':'A/B 缓冲'}模型为 ${bytes(data.ldsBytes)}/WG。仅按 160 KiB LDS 计算的驻留上界是 ${data.ldsOnlyBound} 个 WG/CU；实际还受 padding、scratch、scale/临时累加寄存器、wave/thread 上限和每 WG 限制约束。这不是 occupancy 预测。`;
+    $('rounds-count').textContent=fmt(data.rounds);$('coverage').textContent=pct(data.firstCoverage);
+    $('workspace').textContent=bytes(data.partialBytes);$('partial-traffic').textContent=bytes(data.partialTrafficBytes);
+    renderSelection();renderWaves();renderMeasured();invalidatePlan();
+  }
+  function selection(){
+    const tm=Math.max(0,Math.min(Number($('tile-m').value)||0,data.gm-1));
+    const tn=Math.max(0,Math.min(Number($('tile-n').value)||0,data.gn-1));
+    const part=Math.max(0,Math.min(Number($('part').value)||0,data.split-1));
+    return {tm:Math.floor(tm),tn:Math.floor(tn),part:Math.floor(part)};
+  }
+  function renderSelection(){
+    if(!data)return;
+    const {tm,tn,part}=selection();$('tile-m').value=String(tm);$('tile-n').value=String(tn);$('part').value=String(part);
+    const kp=GemmModel.partition(data.kt,data.split,part);
+    $('k-step').max=String(kp.count-1);$('k-step').value=String(Math.min(Number($('k-step').value),kp.count-1));
+    const kstep=Number($('k-step').value), k0=(kp.start+kstep)*data.bk, k1=Math.min(k0+data.bk,data.k);
+    const m0=tm*data.bm,m1=Math.min(m0+data.bm,data.m),n0=tn*data.bn,n1=Math.min(n0+data.bn,data.n);
+    grid($('matrix-a'),data.k/data.bk,data.m/data.bm);grid($('matrix-b'),data.n/data.bn,data.k/data.bk);grid($('matrix-c'),data.n/data.bn,data.m/data.bm);
+    setRect($('band-a'),0,m0/data.m,1,(m1-m0)/data.m);
+    setRect($('band-b'),n0/data.n,0,(n1-n0)/data.n,1);
+    setRect($('select-a'),k0/data.k,m0/data.m,(k1-k0)/data.k,(m1-m0)/data.m);
+    setRect($('select-b'),n0/data.n,k0/data.k,(n1-n0)/data.n,(k1-k0)/data.k);
+    setRect($('select-c'),n0/data.n,m0/data.m,(n1-n0)/data.n,(m1-m0)/data.m);
+    $('caption-a').textContent=`A[${m0}:${m1}, ${k0}:${k1}]`;
+    $('caption-b').textContent=`B[${k0}:${k1}, ${n0}:${n1}]`;
+    $('caption-c').textContent=`C[${m0}:${m1}, ${n0}:${n1}] · tile (${tm}, ${tn})`;
+    $('k-step-label').textContent=`${kstep+1} / ${kp.count}`;
+    $('tile-equation').textContent=`partial[${part}, ${tm}, ${tn}] += A[${m0}:${m1}, ${k0}:${k1}] × B[${k0}:${k1}, ${n0}:${n1}]；该 K 分区范围 [${kp.start*data.bk}, ${Math.min((kp.start+kp.count)*data.bk,data.k)})`;
+    if(data.mode==='fp8'){
+      const kg=Math.ceil(data.k/128),ng=Math.ceil(data.n/128);
+      const g0=Math.floor(k0/128),g1=Math.ceil(k1/128),nG0=Math.floor(n0/128),nG1=Math.ceil(n1/128);
+      grid($('scale-a'),kg,data.m);grid($('scale-w'),kg,ng);
+      setRect($('select-scale-a'),g0/kg,m0/data.m,(g1-g0)/kg,(m1-m0)/data.m);
+      setRect($('select-scale-w'),g0/kg,nG0/ng,(g1-g0)/kg,(nG1-nG0)/ng);
+      $('caption-scale-a').textContent=`逻辑表 [${data.m},${kg}]；本步读取 sA[${m0}:${m1}, ${g0}:${g1}]`;
+      $('caption-scale-w').textContent=`逻辑表 [${ng},${kg}]；本步读取 sW[${nG0}:${nG1}, ${g0}:${g1}]`;
+      $('scale-equation').textContent=`本 BK tile 跨 ${g1-g0} 个 K-scale 组、${nG1-nG0} 个 N-scale 组。对应 ${(m1-m0)*(g1-g0)} 个逻辑 A scales、${(nG1-nG0)*(g1-g0)} 个逻辑 W scales（未计跨步复用）。每个 K-scale 组分别计算 dot × sA × sW，再累加；不能只乘一个统一 scale。`;
+      $('tile-equation').textContent=`输出 tile(${tm},${tn}) 保持不变；当前处理 FP8 A/W 的 K=[${k0},${k1})，按组 g=${g0}…${g1-1} 缩放累加。B 图表示数学 B=Wᵀ，实际读取的是 preshuffle 后 W 的物理地址。`;
+    }
+    renderCU();renderStage();
+  }
+  function renderStage(){
+    $('stage-title').textContent=stages[stage][0];$('stage-text').textContent=stages[stage][1];
+    const target=data&&data.mode==='fp8';
+    if(target){
+      const override={
+        1:'已核查的 CK Tile 4-wave WPABQuantB 路径：A 从 global 预取并写入 LDS ping/pong；preshuffle 后的 B flat 数据从 global 装入 wave 寄存器，不再把 B tile 存入同一段 LDS。scales 按各自布局加载。',
+        2:'等待 A 的 LDS 写入和 B 的寄存器载入就绪；需要跨 wave 消费 A 时保留工作组屏障。B 绕过 LDS 不代表所有等待或同步都能删除。',
+        3:'A 从 LDS 读成 MFMA fragment，B 使用预排后直接加载的寄存器 fragment。preshuffle 提前做了数据排列工作，计算时仍要满足具体 MFMA 与量化布局。',
+        4:'对每个 128-K scale 组，先清零临时 FP32 accumulator，执行该组 FP8 MFMA，再做 total_acc += group_acc × sA × sW。BK=256 包含两组，必须各用自己的 scale。',
+        5:'推进 K、轮换 A 的 LDS ping/pong，重叠下一段 B/scale 加载。寄存器中可能同时保存总acc、分组临时acc、B fragment和scales，不能只按输出元素估算真实寄存器占用。',
+        6:'当前目标 CKTile preshuffle tuner 不使用 Split-K；完成所有 K-scale 分组缩放累加后，转换为 BF16/FP16并写出。不能把随 K 变化的 scales 都挪到最终一次乘法。'
+      };
+      if(override[stage])$('stage-text').textContent=override[stage];
+    }
+    $('target-data-path').hidden=!target;
+    $('node-lds').innerHTML=target?'<strong>A LDS ping / pong</strong>仅 A tile 的双缓冲<br><span class="small muted">B flat load 直接去寄存器</span>':'<strong>LDS buffer</strong>A tile + B tile<br><span class="small muted">swizzle / ping-pong</span>';
+    $('node-acc').innerHTML=target?'<strong>FP32 acc + scales</strong>分组 dot → 缩放 → 总acc<br><span class="small muted">按 K-scale 分组执行</span>':'<strong>FP32 accumulator</strong>跨 K 循环保留<br><span class="small muted">最后 epilogue 写回</span>';
+    document.querySelectorAll('[data-stage]').forEach(b=>{b.classList.toggle('active',Number(b.dataset.stage)===stage);b.setAttribute('aria-pressed',String(Number(b.dataset.stage)===stage));});
+    const hot=stage===0?[]:stage===1?['node-global','node-lds']:stage===2?['node-lds']:stage===3?['node-lds','node-fragment']:stage===4?['node-fragment','node-acc']:stage===5?['node-global','node-lds','node-acc']:['node-acc','node-global'];
+    for(const id of ['node-global','node-lds','node-fragment','node-acc'])$(id).classList.toggle('active',hot.includes(id));
+    $('prev-stage').disabled=stage===0;$('next-stage').disabled=stage===6;
+  }
+  function renderWaves(){
+    if(!data)return;
+    const wm=data.bm<32?1:2,wn=data.waves/wm;
+    $('wave-box').style.gridTemplateColumns=`repeat(${wn},1fr)`;
+    $('wave-box').replaceChildren();
+    for(let i=0;i<wm;i++)for(let j=0;j<wn;j++){
+      const el=document.createElement('div');el.className='wave';
+      const strong=document.createElement('strong');strong.textContent=`Wave ${i*wn+j}`;
+      const span=document.createElement('span');span.textContent=`逻辑 ${data.bm/wm} × ${data.bn/wn} 输出`;
+      const sub=document.createElement('span');sub.textContent='64 lanes 协同';el.append(strong,span,sub);$('wave-box').appendChild(el);
+    }
+    $('wave-caption').textContent=`示意 wave grid = ${wm} × ${wn}，共 ${data.threads} threads。此图只展示逻辑分配，不保证任意选择都能映射到某条 MFMA；真实实现可能有不同布局或局部 K 归约。`;
+  }
+  function renderCU(){
+    if(!data)return;
+    const round=Number($('round').value),start=round*GemmModel.CU;
+    const {tm,tn,part}=selection(),selected=GemmModel.encode(tm,tn,part,data);
+    $('round-label').textContent=`第 ${round+1} / ${data.rounds} 批 · ${Math.min(GemmModel.CU,data.jobs-start)} 个任务`;
+    for(let cu=0;cu<GemmModel.CU;cu++){
+      const job=start+cu, active=job<data.jobs;
+      cuElements[cu].classList.toggle('assigned',active);
+      cuElements[cu].classList.toggle('selected',job===selected);
+      cuElements[cu].title=active?`示意 CU ${cu} ← 任务 ${job}（非真实绑定）`:`示意 CU ${cu}：此批无任务`;
+    }
+    $('queue').replaceChildren();
+    for(let job=start;job<Math.min(start+4,data.jobs);job++){
+      const t=GemmModel.decode(job,data),el=document.createElement('span');el.className='job';el.textContent=`#${job} tile(${t.tm},${t.tn}) K分区${t.part}`;$('queue').appendChild(el);
+    }
+    if(data.jobs-start>4){const el=document.createElement('span');el.className='small muted';el.textContent=`… 共 ${data.jobs-start} 个后续任务`;$('queue').appendChild(el);}
+    $('cu-detail').textContent=`选中任务 #${selected}：输出 tile(${tm},${tn})，K分区 ${part}。在本演示排队规则下位于第 ${Math.floor(selected/256)+1} 批、示意 CU ${selected%256}。真实 kernel 的 CU 归属不能从这个编号推断。`;
+  }
+  function renderMeasured(){
+    const us=Number($('measured-us').value);
+    $('measured-result').textContent=data&&Number.isFinite(us)&&us>0
+      ? `输入的实测耗时 ${fmt(us)} µs → 有效 ${fmt(data.flops/(us*1e6))} TFLOP/s（${fmt(data.flops/1e9)} GFLOPs）。这是算术换算，未验证测量口径。`
+      : '填入目标路径的实测耗时后才计算有效 TFLOPS。';
+  }
+  function parseList(id){
+    const text=$(id).value.trim();if(!text)throw new Error('候选列表不能为空。');
+    const arr=[...new Set(text.split(/[,，\s]+/).map(Number))];
+    if(arr.some(v=>!Number.isInteger(v)||v<1||v>4096))throw new Error('候选值请输入 1–4096 的正整数，用逗号分隔。');
+    return arr;
+  }
+  function generatePlan(){
+    try{
+      if(!data)throw new Error('先填写有效的 M/N/K。');
+      const lists=['bm','bn','bk','waves','buffers','split'].map(k=>parseList(`search-${k}`));
+      if(data.mode==='fp8'&&(lists[2].some(x=>x<128||x%128!==0)||lists[3].some(x=>x!==4)||lists[4].some(x=>x!==2)||lists[5].some(x=>x!==1)))throw new Error('当前目标教学模型限 BK 为128的倍数、4 waves、A双缓冲、Split-K=1；其他pipeline请用真实实例表另行实验。');
+      const total=lists.reduce((a,b)=>a*b.length,1);if(total>20000)throw new Error('超过 20,000 个候选，请缩小范围后分阶段搜索。');
+      if(lists[3].some(x=>![1,2,4,8,16].includes(x)))throw new Error('本生成器 waves 接受 1/2/4/8/16；后端是否支持仍需验证。');
+      const candidates=[];let cutEmpty=0,cutLds=0;
+      for(const bm of lists[0])for(const bn of lists[1])for(const bk of lists[2])for(const waves of lists[3])for(const buffers of lists[4])for(const split of lists[5]){
+        if(split>Math.ceil(data.k/bk)){cutEmpty++;continue;}
+        const d=GemmModel.compute({m:data.m,n:data.n,k:data.k,mode:data.mode,bm,bn,bk,waves,buffers,split});
+        if($('prune-lds').checked&&d.ldsBytes>GemmModel.LDS_CU){cutLds++;continue;}
+        candidates.push(d);
+      }
+      plan={m:data.m,n:data.n,k:data.k,candidates};
+      $('candidate-status').classList.remove('error');
+      $('candidate-status').textContent=`原始 ${fmt(total)} 组合 → 保留 ${fmt(candidates.length)}；跳过空 K 分区 ${cutEmpty}、超过简化 LDS 界 ${cutLds}。全部仍待编译、正确性与性能验收。`;
+      $('candidate-rows').replaceChildren();
+      for(const d of candidates.slice(0,12)){
+        const tr=document.createElement('tr');
+        for(const value of [`${d.bm} / ${d.bn} / ${d.bk}`,`${d.waves} / ${d.buffers} / ${d.split}`,fmt(d.jobs),fmt(d.ldsBytes/1024),'未编译 / 未计时']){const td=document.createElement('td');td.textContent=value;tr.appendChild(td);}
+        $('candidate-rows').appendChild(tr);
+      }
+      $('export-csv').disabled=candidates.length===0;
+    }catch(e){plan=null;$('export-csv').disabled=true;$('candidate-rows').replaceChildren();$('candidate-status').classList.add('error');$('candidate-status').textContent=e.message;}
+  }
+  function exportCSV(){
+    if(!plan)return;
+    const header=['M','N','K','dtype','BM','BN','BK','waves_per_workgroup','lds_buffer_copies_model','split_k','workgroups','lds_model_KiB','accumulator_values_per_lane','first_batch_CU_fraction_model','MN_fill','K_fill','backend','source_commit','correctness','median_us','p95_us','effective_tflops'];
+    const rows=plan.candidates.map(d=>[d.m,d.n,d.k,d.mode==='fp8'?'fp8_e4m3fn_fp32_blockscale128':'bf16',d.bm,d.bn,d.bk,d.waves,d.buffers,d.split,d.jobs,d.ldsBytes/1024,d.accumPerLane,d.firstCoverage,d.mnFill,d.kFill,'','','UNTESTED','','','']);
+    const csv=[header,...rows].map(row=>row.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\r\n');
+    const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob);
+    const link=document.createElement('a');link.href=url;link.download=`mi355x-gemm-candidates-${plan.m}x${plan.n}x${plan.k}.csv`;
+    document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  const presets={large:{m:4096,n:4096,k:8192,bm:128,bn:128,bk:128,split:1},small:{m:64,n:8192,k:3584,bm:64,bn:128,bk:128,split:1},tail:{m:1000,n:3000,k:4097,bm:128,bn:128,bk:64,split:1}};
+  document.querySelectorAll('[data-preset]').forEach(button=>button.addEventListener('click',()=>{
+    if(button.dataset.preset==='tail'){$('mode').value='bf16';configurePlannerMode();}
+    for(const [key,value] of Object.entries(presets[button.dataset.preset]))$(key).value=String(value);
+    for(const id of ['tile-m','tile-n','part','k-step','round'])$(id).value='0';
+    $('waves').value='4';$('buffers').value='2';renderShape();
+  }));
+  for(const key of keys)$(key).addEventListener('input',()=>renderShape());
+  function configurePlannerMode(){
+    const target=$('mode').value==='fp8';
+    for(const [k,v] of Object.entries(target?{bm:'16,32,64,128',bn:'128,256',bk:'128,256',waves:'4',buffers:'2',split:'1'}:{bm:'64,128,256',bn:'64,128,256',bk:'32,64,128',waves:'4,8',buffers:'1,2,3',split:'1,2,4,8'}))$(`search-${k}`).value=v;
+    for(const key of ['waves','buffers','split'])$(`search-${key}`).disabled=target;
+    $('planner-mode-note').textContent=target?'当前仅生成目标4-wave / A双缓冲模型的结构候选，BK≥128、Split-K=1。真实CKTile实例还包括其他wave/pipeline；使用上方专用tuner和实例表，不能直接把这个CSV作为其三列shape输入。':'当前为BF16通用结构搜索，可演示Split-K；不是目标FP8 preshuffle的合法配置表。';
+  }
+  $('mode').addEventListener('change',()=>{configurePlannerMode();renderShape();});
+  for(const id of ['tile-m','tile-n','part','k-step'])$(id).addEventListener('input',renderSelection);
+  $('matrix-c').addEventListener('click',event=>{
+    if(!data)return;const rect=$('matrix-c').getBoundingClientRect();
+    $('tile-n').value=String(Math.min(data.gn-1,Math.max(0,Math.floor((event.clientX-rect.left)/rect.width*data.n/data.bn))));
+    $('tile-m').value=String(Math.min(data.gm-1,Math.max(0,Math.floor((event.clientY-rect.top)/rect.height*data.m/data.bm))));renderSelection();
+  });
+  document.querySelectorAll('[data-stage]').forEach(button=>button.addEventListener('click',()=>{stage=Number(button.dataset.stage);renderStage();}));
+  $('prev-stage').addEventListener('click',()=>{stage=Math.max(0,stage-1);renderStage();});
+  $('next-stage').addEventListener('click',()=>{stage=Math.min(6,stage+1);renderStage();});
+  $('round').addEventListener('input',renderCU);
+  $('locate-selected').addEventListener('click',()=>{if(!data)return;const s=selection();$('round').value=String(Math.floor(GemmModel.encode(s.tm,s.tn,s.part,data)/256));renderCU();});
+  $('measured-us').addEventListener('input',renderMeasured);
+  for(const key of ['bm','bn','bk','waves','buffers','split'])$(`search-${key}`).addEventListener('input',invalidatePlan);
+  $('prune-lds').addEventListener('change',invalidatePlan);
+  $('generate').addEventListener('click',generatePlan);$('export-csv').addEventListener('click',exportCSV);
+  configurePlannerMode();renderShape(false);generatePlan();
+})();
+
+</script></body></html>

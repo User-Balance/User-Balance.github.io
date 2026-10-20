@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Linux SSHD 部署与 SSH 互信指南</title>
+<style>
+:root{--bg:#f3f6fa;--paper:#fff;--ink:#1e2b3b;--muted:#607086;--line:#d9e2ec;--blue:#285fc0;--blue-bg:#edf3ff;--green:#16745c;--green-bg:#eaf7f1;--amber:#a46217;--amber-bg:#fff4e3;--red:#a73f49;--red-bg:#fff0f2;--code:#13253d;--shadow:0 15px 45px rgba(40,61,92,.1)}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.75 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #8bb4fb;outline-offset:3px}h1{font-size:clamp(31px,4.4vw,54px);line-height:1.12;letter-spacing:-.045em;margin:10px 0 17px}h2{font-size:26px;line-height:1.4;letter-spacing:-.025em;margin:0 0 15px}h3{font-size:19px;line-height:1.5;margin:25px 0 11px}p{margin:0 0 15px}li{margin:7px 0}.page{max-width:1480px;margin:auto;padding:38px 34px 55px}.eyebrow,.section-no{font-size:12px;letter-spacing:.13em;font-weight:700;color:var(--blue)}.lede{max-width:1060px;color:var(--muted);font-size:17px}.top-links{display:flex;flex-wrap:wrap;gap:8px 15px;margin:20px 0 26px;font-size:13px}.top-links a{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:5px 9px}.shell{display:grid;grid-template-columns:198px minmax(0,1fr);gap:25px}.toc{position:sticky;top:25px;align-self:start;display:grid;gap:4px;font-size:13px}.toc a{color:var(--muted);padding:7px 9px;border-radius:7px;line-height:1.45}.toc a:hover{background:var(--blue-bg);color:var(--blue)}main{min-width:0}.section{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:28px 31px;margin-bottom:22px;box-shadow:var(--shadow)}.section-no{margin-bottom:6px}.muted{color:var(--muted)}.small{font-size:13px}.callout{background:var(--blue-bg);border-left:3px solid var(--blue);border-radius:0 9px 9px 0;padding:14px 18px;margin:17px 0}.callout.green{background:var(--green-bg);border-color:var(--green)}.callout.amber{background:var(--amber-bg);border-color:var(--amber)}.callout.red{background:var(--red-bg);border-color:var(--red)}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:9px;margin:17px 0 21px}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.65}th,td{padding:12px 14px;vertical-align:top;text-align:left;border-bottom:1px solid var(--line);min-width:130px}th{background:#f0f4f8;color:#3d5672;font-weight:600}tbody tr:nth-child(even){background:#fbfcfe}tr:last-child td{border-bottom:0}code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em;background:#eef2f7;padding:2px 4px;border-radius:4px;overflow-wrap:anywhere}pre{position:relative;margin:17px 0;padding:18px 20px;border-radius:10px;background:var(--code);color:#dfebff;overflow:auto;font:13px/1.72 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}pre code{padding:0;background:none;color:inherit;overflow-wrap:normal}.code-wrap{position:relative}.copy{position:absolute;right:9px;top:9px;border:1px solid #58718f;background:transparent;color:#deebff;border-radius:5px;padding:3px 9px;font-size:12px;z-index:1}.copy:hover{background:#294562}.diagram{border:1px solid var(--line);border-radius:12px;background:#f8fafc;overflow:auto;margin:18px 0}.diagram svg{display:block;width:100%;min-width:760px;height:auto}.diagram-caption{font-size:12px;color:var(--muted);padding:9px 12px;border-top:1px solid var(--line)}.tabs,.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:17px 0 13px}.tab,.btn{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:7px;padding:8px 14px;font-size:14px;min-height:39px}.tab.active,.tab[aria-pressed=true],.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.tab-panel[hidden]{display:none}.steps{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin:18px 0 14px}.step{border:1px solid var(--line);background:#f4f7fb;border-radius:7px;padding:10px 7px;text-align:center;color:var(--muted);font-size:12px;line-height:1.4}.step strong{display:block;color:var(--ink);font-size:14px}.step.active{background:var(--blue);border-color:var(--blue);color:#fff}.step.active strong{color:#fff}.step-detail{padding:16px 19px;background:var(--blue-bg);border-left:3px solid var(--blue);border-radius:0 9px 9px 0;min-height:108px}.step-detail h3{margin:0 0 5px}.step-detail p{margin:0;font-size:14px}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.card{border:1px solid var(--line);border-radius:10px;background:#f8fafc;padding:14px}.card h3{font-size:16px;margin:0 0 7px}.card p{font-size:13px;margin:0;color:var(--muted)}.badge{display:inline-block;padding:2px 7px;border-radius:4px;background:var(--blue-bg);color:var(--blue);font-size:12px}.badge.green{background:var(--green-bg);color:var(--green)}.badge.amber{background:var(--amber-bg);color:var(--amber)}.checklist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:17px 0}.check{display:flex;gap:9px;align-items:flex-start;padding:11px 12px;background:#f6f8fb;border:1px solid var(--line);border-radius:8px;font-size:13px}.check input{accent-color:var(--blue);margin-top:4px}.progress{height:8px;background:#e6ebf1;border-radius:99px;overflow:hidden;margin:10px 0}.progress i{display:block;width:0;height:100%;background:var(--green);transition:width .2s ease}.progress-label{font-size:12px;color:var(--muted)}.answer{padding:14px 16px;border-left:3px solid var(--green);background:var(--green-bg);border-radius:0 9px 9px 0;min-height:72px}.footer{text-align:center;color:var(--muted);font-size:12px;margin-top:28px}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+@media(max-width:1120px){.shell{grid-template-columns:1fr}.toc{position:static;display:flex;flex-wrap:wrap;gap:4px}.toc a{background:#eaf0f6;padding:5px 8px;font-size:12px}.page{padding:28px 22px}.section{padding:25px}}
+@media(max-width:760px){.page{padding:21px 12px}.section{padding:20px 16px}.grid-2,.grid-3,.checklist{grid-template-columns:1fr}.steps{grid-template-columns:repeat(4,minmax(0,1fr))}.lede{font-size:16px}.table-wrap table{min-width:650px}h2{font-size:23px}}
+@media(max-width:400px){.section{padding:18px 12px}.steps{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media print{body{background:#fff;font-size:10pt}.page{padding:0}.shell{display:block}.toc,.top-links,.copy,.tabs,.btn{display:none}.section{box-shadow:none;border:0;padding:10px 0}.table-wrap{overflow:visible}.table-wrap table{min-width:0;font-size:9pt}pre{white-space:pre-wrap;overflow-wrap:anywhere}}
+</style>
+<meta name="description" content="Linux SSHD 与 SSH 互信：中文图解、术语与实践指南。资料基于 2026-10-20 的记录。">
+<link rel="stylesheet" href="assets/article-nav.css">
+</head>
+<body>
+<nav class="archive-nav" aria-label="学习手册导航"><a href="index.html">← 技术学习手册 · 返回门户</a><span>Linux 运维 · 资料日期 2026-10-20 · 归档 2026-10-20</span></nav>
+
+<div class="page">
+<header>
+<div class="eyebrow">LINUX SERVER · SSHD · KEY BASED TRUST</div>
+<h1>部署 sshd，建立 SSH 互信</h1><p class="small"><a href="index.html">← 返回知识门户</a> · 公开学习版 · 2026-10-20 修订</p>
+<p class="lede">从服务器安装 OpenSSH、启动并验证 sshd，到生成密钥、确认主机指纹、部署 authorized_keys，再到双向互信、多节点分发、配置加固和排障。命令使用示例主机名；每个代码框标注执行位置或配置文件类型，请按环境替换后分步操作。页面中的图示把“谁证明谁、哪把钥匙放在哪里、哪一步发生在客户端/服务端”画清楚。</p>
+<div class="top-links"><a href="#mental-model">先看整体图</a><a href="#install">安装 sshd</a><a href="#keys">生成密钥</a><a href="#trust">建立互信</a><a href="#cluster">多节点</a><a href="#security">安全加固</a><a href="#troubleshoot">排障</a><a href="#checklist">执行清单</a></div>
+</header>
+<div class="shell">
+<nav class="toc" aria-label="目录"><a href="#mental-model">01 / 心智模型</a><a href="#install">02 / 安装与启动</a><a href="#config">03 / sshd 配置</a><a href="#keys">04 / 密钥与文件</a><a href="#trust">05 / 单向/双向互信</a><a href="#cluster">06 / 多节点</a><a href="#security">07 / 安全加固</a><a href="#troubleshoot">08 / 排障</a><a href="#checklist">09 / 清单</a></nav>
+<main>
+<section class="section" id="mental-model">
+<div class="section-no">01 / 先建立心智模型</div><h2>SSH 不是“把密码换成文件”，而是两次不同的信任</h2>
+<div class="grid-2"><div class="card"><h3>主机信任：我连的是哪台服务器？</h3><p>服务器有自己的 host key，例如 <code>/etc/ssh/ssh_host_ed25519_key</code>。客户端把主机名（也可能是哈希）、密钥类型与服务器<strong>公钥本体</strong>保存到 <code>~/.ssh/known_hosts</code>；指纹是公钥的摘要，用来核对身份。第一次连接前应通过控制台、资产系统或管理员确认指纹，再接受。</p></div><div class="card"><h3>用户认证：服务器允许哪个用户登录？</h3><p>客户端用私钥签名，服务器用目标账号的 <code>~/.ssh/authorized_keys</code> 中的公钥验证。私钥永远留在客户端；只复制公钥。</p></div></div>
+<div class="diagram"><svg viewBox="0 0 1120 390" role="img" aria-label="客户端、服务器、主机密钥和用户密钥关系图"><defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6d87a4"/></marker></defs><rect x="28" y="36" width="294" height="292" rx="16" fill="#edf3ff" stroke="#a9c3f0"/><text x="175" y="68" text-anchor="middle" font-size="20" font-weight="700" fill="#1e2b3b">客户端 Client</text><rect x="58" y="99" width="234" height="68" rx="10" fill="#fff" stroke="#cbd9ee"/><text x="175" y="126" text-anchor="middle" font-size="15">~/.ssh/id_ed25519</text><text x="175" y="150" text-anchor="middle" font-size="12" fill="#a73f49">私钥：只留本机，chmod 600</text><rect x="58" y="194" width="234" height="58" rx="10" fill="#fff" stroke="#cbd9ee"/><text x="175" y="219" text-anchor="middle" font-size="15">~/.ssh/known_hosts</text><text x="175" y="239" text-anchor="middle" font-size="12" fill="#607086">保存服务端 host 公钥</text><rect x="413" y="118" width="294" height="154" rx="16" fill="#eaf7f1" stroke="#a4d7c1"/><text x="560" y="151" text-anchor="middle" font-size="20" font-weight="700">SSH 连接协议</text><text x="560" y="181" text-anchor="middle" font-size="14">TCP 22 · KEX · host key</text><text x="560" y="207" text-anchor="middle" font-size="14">userauth · session · channel</text><text x="560" y="236" text-anchor="middle" font-size="13" fill="#16745c">私钥不离开客户端</text><rect x="798" y="36" width="294" height="292" rx="16" fill="#fff4e3" stroke="#efc98f"/><text x="945" y="68" text-anchor="middle" font-size="20" font-weight="700">服务器 Server</text><rect x="828" y="99" width="234" height="68" rx="10" fill="#fff" stroke="#efd6ad"/><text x="945" y="126" text-anchor="middle" font-size="15">/etc/ssh/ssh_host_*_key</text><text x="945" y="150" text-anchor="middle" font-size="12" fill="#a46217">主机私钥：sshd 持有</text><rect x="828" y="194" width="234" height="58" rx="10" fill="#fff" stroke="#efd6ad"/><text x="945" y="219" text-anchor="middle" font-size="15">~/.ssh/authorized_keys</text><text x="945" y="239" text-anchor="middle" font-size="12" fill="#607086">目标用户允许的客户端公钥</text><path d="M292 132H413" stroke="#285fc0" stroke-width="2.5" marker-end="url(#a1)"/><text x="350" y="119" text-anchor="middle" font-size="12" fill="#285fc0">私钥签名</text><path d="M707 154H828" stroke="#a46217" stroke-width="2.5" marker-end="url(#a1)"/><text x="767" y="141" text-anchor="middle" font-size="12" fill="#a46217">host key 证明</text><rect x="58" y="269" width="234" height="38" rx="8" fill="#fff" stroke="#cbd9ee"/><text x="175" y="293" text-anchor="middle" font-size="13">~/.ssh/id_ed25519.pub</text><path d="M292 288H744V223H828" stroke="#16745c" stroke-width="2.2" stroke-dasharray="8 7" marker-end="url(#a1)"/><text x="560" y="310" text-anchor="middle" font-size="12" fill="#16745c">公钥复制：id_ed25519.pub → authorized_keys</text></svg><div class="diagram-caption">客户端先验证服务器身份，再由服务器验证登录用户的公钥。双向互信只是把这套关系在反方向再配置一次。</div></div>
+<h3>首次连接：从可信渠道核对 host key</h3><p>SSH 传输层中，服务器用主机私钥签名密钥交换相关数据，客户端验证签名并检查该公钥是否属于目标主机。用户认证则签名包含会话标识符和认证请求的数据，并不是服务器随意发来一个“challenge 字符串”。</p><p class="small"><strong>服务端控制台 / 已确认身份的管理通道：查看主机公钥指纹</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>sudo ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub</code></pre></div>
+<p class="small"><strong>客户端：首次连接并人工核对同一密钥类型的 SHA256 指纹</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>ssh -o StrictHostKeyChecking=ask ops@server.example.com
+# 核对与可信来源完全一致后才输入 yes；不一致就中止。
+# 已保存的主机记录可以用 -F 查询；端口非 22 时使用 [host]:port。
+ssh-keygen -F server.example.com
+ssh-keygen -F '[server.example.com]:2222'</code></pre></div>
+<p class="small"><strong>known_hosts 的结构示意（不是 shell；省略内容不是有效公钥）</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="text"><code>server.example.com ssh-ed25519 AAAAC3...完整Base64公钥...
+[server.example.com]:2222 ssh-ed25519 AAAAC3...完整Base64公钥...</code></pre></div>
+<p class="small">若启用 HashKnownHosts，主机字段会是 <code>|1|...</code>，而非可读域名。<code>ssh-keyscan</code> 只能采集网络返回的候选公钥，不能证明其身份；必须与可信来源核对后才加入 known_hosts。<code>authorized_keys</code> 则是“可选限制字段 + 密钥类型 + 公钥 + 注释”，通常不含服务器域名。</p><div class="callout amber"><strong>最重要的区别：</strong><code>known_hosts</code> 决定客户端是否相信“这台服务器”；<code>authorized_keys</code> 决定服务器是否允许“这个客户端密钥登录某个用户”。删除 known_hosts 不能修复公钥登录失败；删除 authorized_keys 也不能修复 host key 冲突。</div>
+</section>
+
+<section class="section" id="install">
+<div class="section-no">02 / 安装、启动、端口与服务名</div><h2>先让 sshd 稳定监听，再配置公钥登录</h2>
+<p>Debian/Ubuntu 通常使用 systemd 服务名 <code>ssh</code>；RHEL/CentOS/Fedora 通常使用 <code>sshd</code>。命令先在当前控制台或已有会话执行，避免关闭唯一管理通道。</p>
+<div class="tabs" role="tablist"><button class="tab active" type="button" data-tab="debian" aria-pressed="true">Ubuntu / Debian</button><button class="tab" type="button" data-tab="rhel" aria-pressed="false">RHEL / CentOS / Fedora</button></div>
+<div id="panel-debian" class="tab-panel"><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code># 安装服务端和客户端
+sudo apt-get update
+sudo apt-get install -y openssh-server openssh-client
+
+# 启用并立即启动 sshd（服务名是 ssh）
+sudo systemctl enable --now ssh
+
+sudo systemctl status ssh --no-pager
+sudo ss -lntp | grep -E ':(22|2222)\b' || true
+sudo journalctl -u ssh -n 80 --no-pager</code></pre></div><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code># 如果启用了 UFW：先允许 SSH
+sudo ufw allow OpenSSH
+sudo ufw status verbose
+
+# 自定义端口时，先在防火墙放行，再改 sshd_config
+# sudo ufw allow 2222/tcp</code></pre></div></div>
+<div id="panel-rhel" class="tab-panel" hidden><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code># 安装服务端和客户端
+sudo dnf install -y openssh-server openssh-clients
+
+# 启用并立即启动 sshd
+sudo systemctl enable --now sshd
+
+sudo systemctl status sshd --no-pager
+sudo ss -lntp | grep -E ':(22|2222)\b' || true
+sudo journalctl -u sshd -n 80 --no-pager</code></pre></div><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code># firewalld：允许默认 SSH 服务
+sudo firewall-cmd --permanent --add-service=ssh
+sudo firewall-cmd --reload
+sudo firewall-cmd --list-services
+
+# 自定义端口 2222：先放行新端口，再修改监听配置；新会话验证前保留 22
+# sudo firewall-cmd --permanent --add-port=2222/tcp
+# sudo firewall-cmd --reload</code></pre></div></div>
+<h3>Ubuntu 的 socket activation 与普通 ssh.service 不同</h3><p>部分 Ubuntu 22.10+ 安装默认由 <code>ssh.socket</code> 持有监听 socket，来连接时再触发服务；镜像、升级路径与 Ubuntu 版本会影响实际行为。先检查状态，不要只凭“Ubuntu”判断。本文的 <code>reload ssh</code> 用于认证等 daemon 配置；在 socket 模式下，它不保证更改监听端口。</p><p class="small"><strong>Ubuntu 服务端：只读识别实际监听方式</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>systemctl status ssh.socket ssh.service --no-pager
+systemctl cat ssh.socket
+systemctl show ssh.socket -p Listen -p ActiveState
+sudo ss -lntp</code></pre></div>
+<p class="small">若要改 Port/ListenAddress：普通服务模式先改 sshd 配置并校验，再 reload/按发行版文档重启服务；socket 模式还要按该版本的 Ubuntu 文档更新 socket 配置。带 sshd socket generator 的版本通常需 <code>systemctl daemon-reload</code> 重新生成，再重启对应 socket；旧版可能需显式配置 <code>ssh.socket.d</code> 的 ListenStream。保持控制台/旧连接，检查实际监听，再测试新端口。不要机械复制不同 Ubuntu 版本的端口迁移命令。</p><h3>RHEL/Fedora：自定义端口还受 SELinux 约束</h3><p class="small"><strong>RHEL/Fedora 服务端：查策略，确认 2222 未被其他服务占用后再添加</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>sudo dnf install -y policycoreutils-python-utils
+sudo semanage port -l | grep -E '^ssh_port_t|(^|[ ,])2222([ ,]|$)'
+# 若 2222 不存在于任何其他服务的端口标签中，才执行：
+sudo semanage port -a -t ssh_port_t -p tcp 2222
+# 已经是 ssh_port_t 则无需重复添加；属于别的类型时先选另一端口或确认冲突。
+# 回滚时只删除本次新添的规则，且先恢复并验证旧端口：
+# sudo semanage port -d -t ssh_port_t -p tcp 2222</code></pre></div>
+<p class="small">SELinux 端口标签、firewalld/UFW、安全组以及 sshd/socket 监听是独立条件。无需通过关闭 SELinux 解决端口策略；SELinux 不存在或 disabled 的系统不执行 semanage 步骤。</p><div class="diagram"><svg viewBox="0 0 1120 215" role="img" aria-label="sshd安装启动监听防火墙流水线"><defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6d87a4"/></marker></defs><g font-family="system-ui,sans-serif"><rect x="22" y="70" width="160" height="80" rx="11" fill="#edf3ff" stroke="#a9c3f0"/><text x="102" y="101" text-anchor="middle" font-weight="700">安装包</text><text x="102" y="126" text-anchor="middle" font-size="12">openssh-server</text><path d="M182 110H245" stroke="#6d87a4" stroke-width="2" marker-end="url(#a2)"/><rect x="245" y="70" width="160" height="80" rx="11" fill="#eaf7f1" stroke="#a4d7c1"/><text x="325" y="101" text-anchor="middle" font-weight="700">systemd</text><text x="325" y="126" text-anchor="middle" font-size="12">enable --now</text><path d="M405 110H468" stroke="#6d87a4" stroke-width="2" marker-end="url(#a2)"/><rect x="468" y="70" width="160" height="80" rx="11" fill="#fff4e3" stroke="#efc98f"/><text x="548" y="101" text-anchor="middle" font-weight="700">sshd</text><text x="548" y="126" text-anchor="middle" font-size="12">读取配置并监听</text><path d="M628 110H691" stroke="#6d87a4" stroke-width="2" marker-end="url(#a2)"/><rect x="691" y="70" width="160" height="80" rx="11" fill="#edf3ff" stroke="#a9c3f0"/><text x="771" y="101" text-anchor="middle" font-weight="700">防火墙</text><text x="771" y="126" text-anchor="middle" font-size="12">安全组 / ufw / firewalld</text><path d="M851 110H914" stroke="#6d87a4" stroke-width="2" marker-end="url(#a2)"/><rect x="914" y="70" width="184" height="80" rx="11" fill="#eaf7f1" stroke="#a4d7c1"/><text x="1006" y="101" text-anchor="middle" font-weight="700">客户端测试</text><text x="1006" y="126" text-anchor="middle" font-size="12">ssh -vvv user@host</text></g></svg><div class="diagram-caption">端口问题按层排查：进程是否监听 → 主机防火墙 → 云安全组/网络 ACL → 客户端路由。</div></div>
+<div class="callout green"><strong>远程变更原则：</strong>保持当前 SSH 会话，再开一个新会话验证；配置通过 <code>sshd -t</code> 后用 <code>systemctl reload</code>，不要先关闭唯一管理通道。</div>
+</section>
+
+<section class="section" id="config">
+<div class="section-no">03 / sshd_config 与安全变更顺序</div><h2>先备份，验证，再 reload</h2>
+<div class="diagram"><svg viewBox="0 0 1120 220" role="img" aria-label="sshd配置变更安全流程"><defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6d87a4"/></marker></defs><g font-family="system-ui,sans-serif"><rect x="35" y="70" width="190" height="86" rx="12" fill="#edf3ff" stroke="#a9c3f0"/><text x="130" y="103" text-anchor="middle" font-weight="700">备份</text><text x="130" y="130" text-anchor="middle" font-size="12">sshd_config.bak</text><path d="M225 113H288" stroke="#6d87a4" stroke-width="2" marker-end="url(#a3)"/><rect x="288" y="70" width="190" height="86" rx="12" fill="#fff4e3" stroke="#efc98f"/><text x="383" y="103" text-anchor="middle" font-weight="700">编辑</text><text x="383" y="130" text-anchor="middle" font-size="12">sshd_config.d/</text><path d="M478 113H541" stroke="#6d87a4" stroke-width="2" marker-end="url(#a3)"/><rect x="541" y="70" width="190" height="86" rx="12" fill="#eaf7f1" stroke="#a4d7c1"/><text x="636" y="103" text-anchor="middle" font-weight="700">sshd -t</text><text x="636" y="130" text-anchor="middle" font-size="12">语法 / 文件 / 权限</text><path d="M731 113H794" stroke="#6d87a4" stroke-width="2" marker-end="url(#a3)"/><rect x="794" y="70" width="190" height="86" rx="12" fill="#edf3ff" stroke="#a9c3f0"/><text x="889" y="103" text-anchor="middle" font-weight="700">reload</text><text x="889" y="130" text-anchor="middle" font-size="12">不中断已建立会话</text><path d="M984 113H1047" stroke="#6d87a4" stroke-width="2" marker-end="url(#a3)"/><rect x="1047" y="70" width="55" height="86" rx="12" fill="#eaf7f1" stroke="#a4d7c1"/><text x="1074" y="109" text-anchor="middle" font-weight="700" font-size="12">新</text><text x="1074" y="132" text-anchor="middle" font-size="11">会话</text></g></svg><div class="diagram-caption">配置文件可能通过 Include 加载 drop-in；用 <code>sshd -T</code> 查看最终生效值。</div></div>
+<div class="callout amber"><strong>OpenSSH 不是“最后一个配置覆盖前面”：</strong>对多数标量设置，<strong>先读取到的值生效</strong>。Include 位于主文件哪里、drop-in 按词法排序的位置、已有 cloud-init/vendor 配置、Match 条件都会影响结果。<code>99-hardening.conf</code> 不能默认覆盖 <code>50-cloud-init.conf</code>，也不能覆盖主文件中更早的值。少数可累计选项有不同语义，应查 sshd_config 手册。</div><p class="small"><strong>服务端 shell：检查配置顺序并备份主文件 + 所有 drop-in</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>sudo grep -nE '^[[:space:]]*(Include|Match|PubkeyAuthentication|PasswordAuthentication|KbdInteractiveAuthentication|PermitRootLogin)' /etc/ssh/sshd_config
+sudo find /etc/ssh/sshd_config.d -maxdepth 1 -type f -name '*.conf' -print 2&gt;/dev/null
+# 记下本次备份目录；以下变量仅在当前 shell 有效。
+ssh_backup="/var/backups/ssh-guide-$(date +%Y%m%d-%H%M%S)-$$"
+ssh_dropin=/etc/ssh/sshd_config.d/00-local-ssh-guide.conf
+sudo install -d -m 700 "$ssh_backup"
+sudo cp -a /etc/ssh/sshd_config "$ssh_backup/sshd_config"
+if sudo test -d /etc/ssh/sshd_config.d; then
+  sudo cp -a /etc/ssh/sshd_config.d "$ssh_backup/sshd_config.d"
+fi
+printf '备份目录：%s\n' "$ssh_backup"
+sudo install -d -m 755 /etc/ssh/sshd_config.d
+sudoedit "$ssh_dropin"</code></pre></div>
+<p>以下内容保存到上一步打开的文件。确认主文件在合适的全局位置有 <code>Include /etc/ssh/sshd_config.d/*.conf</code>；没有 Include 时，新文件不生效，应在备份后用 <code>sudoedit /etc/ssh/sshd_config</code> 有意识地配置。<code>00-</code> 仅帮助较早排序，仍必须验证有效值。示例要求已有可用的普通运维用户和 sudo 权限；若当前只靠 root 或 keyboard-interactive 登录，先完成迁移，再收紧对应配置。</p><p class="small"><strong>配置文件内容：/etc/ssh/sshd_config.d/00-local-ssh-guide.conf（不是 shell）</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="sshd_config"><code>PubkeyAuthentication yes
+PasswordAuthentication yes
+KbdInteractiveAuthentication no
+PermitRootLogin no
+MaxAuthTries 4
+LoginGraceTime 30
+# AllowGroups sshusers</code></pre></div>
+<p class="small"><strong>服务端 shell：校验与有效配置，包含目标连接的 Match 条件</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>sudo /usr/sbin/sshd -t
+# 将 user、host、addr、laddr、lport 换成实际连接信息。
+# host 是客户端主机名，addr 是客户端地址，laddr/lport 是服务端地址/端口。
+sudo /usr/sbin/sshd -T -C user=ops,host=client.example.com,addr=192.0.2.10,laddr=192.0.2.20,lport=22 | grep -E '^(pubkeyauthentication|passwordauthentication|kbdinteractiveauthentication|permitrootlogin|maxauthtries|allowusers|allowgroups) '
+# 仅选择本发行版的一个服务名；示例为 Debian/Ubuntu。
+ssh_unit=ssh.service
+# RHEL/Fedora 则把上一行改为：ssh_unit=sshd.service
+sudo /usr/sbin/sshd -t &amp;&amp; sudo systemctl reload "$ssh_unit"</code></pre></div>
+<p class="small"><code>sshd -t</code> 成功只说明配置/密钥等基础检查通过，不证明账号、路由、PAM、Match、firewall 或公钥登录可用。必须保持旧连接并在另一终端重新登录。下面所有服务操作沿用已确认的 <code>ssh_unit</code>。</p><div class="grid-2"><div class="card"><h3>不要混淆的文件</h3><p><code>sshd_config</code> 是服务端；<code>ssh_config</code> 是客户端全局配置；<code>~/.ssh/config</code> 是客户端按 Host 匹配的连接配置；<code>authorized_keys</code> 是服务端目标用户允许的公钥。</p></div><div class="card"><h3>验证有效配置</h3><p><code>sshd -t</code> 检查语法；<code>sshd -T</code> 输出综合后的值。Match 条件要用 <code>sshd -T -C user=...,host=...,addr=...</code> 核对。</p></div></div>
+</section>
+<section class="section" id="keys">
+<div class="section-no">04 / 生成密钥与理解文件权限</div><h2>公钥可以复制，私钥不能复制</h2>
+<div class="diagram"><svg viewBox="0 0 1120 350" role="img" aria-label="SSH密钥文件关系图"><defs><marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6d87a4"/></marker></defs><g font-family="system-ui,sans-serif"><rect x="34" y="40" width="304" height="270" rx="16" fill="#edf3ff" stroke="#a9c3f0"/><text x="186" y="72" text-anchor="middle" font-size="19" font-weight="700">客户端 ~/.ssh</text><rect x="70" y="105" width="232" height="65" rx="10" fill="#fff" stroke="#cbd9ee"/><text x="186" y="131" text-anchor="middle" font-size="14">id_ed25519</text><text x="186" y="153" text-anchor="middle" font-size="12" fill="#a73f49">私钥 · 600 · 不外传</text><rect x="70" y="198" width="232" height="65" rx="10" fill="#fff" stroke="#cbd9ee"/><text x="186" y="224" text-anchor="middle" font-size="14">id_ed25519.pub</text><text x="186" y="246" text-anchor="middle" font-size="12" fill="#16745c">公钥 · 可部署</text><rect x="399" y="106" width="320" height="150" rx="16" fill="#eaf7f1" stroke="#a4d7c1"/><text x="559" y="143" text-anchor="middle" font-size="20" font-weight="700">公钥认证</text><text x="559" y="174" text-anchor="middle" font-size="14">签名绑定会话的认证请求</text><text x="559" y="200" text-anchor="middle" font-size="14">服务器用 authorized_keys 验证</text><text x="559" y="228" text-anchor="middle" font-size="12" fill="#607086">网络中不会发送私钥</text><rect x="780" y="40" width="306" height="270" rx="16" fill="#fff4e3" stroke="#efc98f"/><text x="933" y="72" text-anchor="middle" font-size="19" font-weight="700">服务器目标用户</text><rect x="816" y="105" width="234" height="65" rx="10" fill="#fff" stroke="#efd6ad"/><text x="933" y="131" text-anchor="middle" font-size="14">~/.ssh</text><text x="933" y="153" text-anchor="middle" font-size="12">700 · 目录不可被他人写</text><rect x="816" y="198" width="234" height="65" rx="10" fill="#fff" stroke="#efd6ad"/><text x="933" y="224" text-anchor="middle" font-size="14">authorized_keys</text><text x="933" y="246" text-anchor="middle" font-size="12">600 · 一行一个公钥</text><path d="M302 231H399" stroke="#16745c" stroke-width="2.5" stroke-dasharray="8 7" marker-end="url(#a4)"/><path d="M719 231H816" stroke="#16745c" stroke-width="2.5" stroke-dasharray="8 7" marker-end="url(#a4)"/><text x="350" y="217" text-anchor="middle" font-size="12" fill="#16745c">复制 .pub</text><text x="768" y="217" text-anchor="middle" font-size="12" fill="#16745c">追加一行</text></g></svg><div class="diagram-caption">权限错误是公钥登录失败的高频原因：目标用户的 home、<code>~/.ssh</code>、<code>authorized_keys</code>不能被不可信用户写入。</div></div>
+<p class="small"><strong>客户端 shell：使用专用名称；已有文件时不覆盖</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>umask 077
+install -d -m 700 ~/.ssh
+ssh_key="$HOME/.ssh/id_ed25519_ops_guide"
+if [ -e "$ssh_key" ] || [ -e "$ssh_key.pub" ]; then
+  printf '该路径已有密钥文件，请核对后复用或另选名称：%s\n' "$ssh_key"
+else
+  ssh-keygen -t ed25519 -a 100 -f "$ssh_key" \
+    -C "$(whoami)@$(hostname)-ops-guide"
+fi
+# 生成时交互输入 passphrase；不要为省事覆盖旧 key。
+ssh-keygen -lf "$ssh_key.pub"
+stat -c '%A %a %n' ~/.ssh "$ssh_key" "$ssh_key.pub"</code></pre></div>
+<p>上述 stat 是 GNU/Linux 语法，macOS 可用 <code>stat -f</code>。FIPS 环境可能不允许 Ed25519，应按当地策略使用 RSA 3072+ 和支持的签名算法。私钥口令保护磁盘上的私钥；它与远程账号密码不同。</p><p class="small"><strong>客户端 shell：优先复用当前登录会话的 agent，解锁一小时</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code># SSH_AUTH_SOCK 已配置时复用现有 agent；没有时才启动。
+if [ -z "${SSH_AUTH_SOCK:-}" ]; then
+  eval "$(ssh-agent -s)"
+fi
+ssh-add -t 1h ~/.ssh/id_ed25519_ops_guide
+ssh-add -l
+ssh -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_ops_guide ops@server.example.com
+# 已核对 host key 且 agent 已解锁后，验证脚本模式：
+ssh -o BatchMode=yes -o IdentitiesOnly=yes \
+  -i ~/.ssh/id_ed25519_ops_guide ops@server.example.com 'id -un'</code></pre></div>
+<div class="callout"><strong>BatchMode 不会自动解密私钥：</strong><code>BatchMode=yes</code> 禁止密码、私钥口令和交互确认；首次 host key 未确认或加密 key 未在 agent 中解锁时，会失败。它用于“无人值守是否就绪”的验证。cron/systemd 不自动继承终端的 agent 环境；自动化应配置专用受限凭据或受控 agent 生命周期。不要默认开启 ForwardAgent；ProxyJump 通常不需要 agent 转发。</div></section>
+
+<section class="section" id="trust">
+<div class="section-no">05 / 从单向登录到双向 SSH 互信</div><h2>互信是“按用户、按方向、按主机”的双向公钥部署</h2>
+<div class="diagram"><svg viewBox="0 0 1120 300" role="img" aria-label="A和B双向SSH互信流程图"><defs><marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6d87a4"/></marker></defs><g font-family="system-ui,sans-serif"><rect x="47" y="65" width="280" height="170" rx="18" fill="#edf3ff" stroke="#a9c3f0"/><text x="187" y="103" text-anchor="middle" font-size="21" font-weight="700">Node A / ops</text><text x="187" y="136" text-anchor="middle" font-size="14">A 私钥 + A 公钥</text><text x="187" y="166" text-anchor="middle" font-size="13">A 的 authorized_keys</text><text x="187" y="198" text-anchor="middle" font-size="12" fill="#607086">接收 B 的公钥</text><rect x="793" y="65" width="280" height="170" rx="18" fill="#fff4e3" stroke="#efc98f"/><text x="933" y="103" text-anchor="middle" font-size="21" font-weight="700">Node B / ops</text><text x="933" y="136" text-anchor="middle" font-size="14">B 私钥 + B 公钥</text><text x="933" y="166" text-anchor="middle" font-size="13">B 的 authorized_keys</text><text x="933" y="198" text-anchor="middle" font-size="12" fill="#607086">接收 A 的公钥</text><path d="M327 125H793" stroke="#285fc0" stroke-width="2.8" marker-end="url(#a5)"/><text x="560" y="111" text-anchor="middle" font-size="13" fill="#285fc0">A → B：A 私钥签名，B 验证 A 公钥</text><path d="M793 190H327" stroke="#a46217" stroke-width="2.8" marker-end="url(#a5)"/><text x="560" y="215" text-anchor="middle" font-size="13" fill="#a46217">B → A：B 私钥签名，A 验证 B 公钥</text></g></svg><div class="diagram-caption">双向互信不是“共享密码”，而是 A 的公钥进入 B 的授权文件，同时 B 的公钥进入 A 的授权文件。</div></div>
+<div class="steps" id="trust-steps"><button class="step active" type="button" data-step="0"><strong>1. A生成</strong>密钥</button><button class="step" type="button" data-step="1"><strong>2. A→B</strong>部署公钥</button><button class="step" type="button" data-step="2"><strong>3. A验证</strong>登录B</button><button class="step" type="button" data-step="3"><strong>4. B生成</strong>密钥</button><button class="step" type="button" data-step="4"><strong>5. B→A</strong>部署公钥</button><button class="step" type="button" data-step="5"><strong>6. B验证</strong>登录A</button><button class="step" type="button" data-step="6"><strong>7. 双向</strong>完成</button></div>
+<div class="step-detail"><h3 id="trust-step-title"></h3><p id="trust-step-text"></p></div><div class="row"><button type="button" class="btn" id="trust-prev">上一步</button><button type="button" class="btn" id="trust-next">下一步</button></div>
+<h3>推荐命令：先做 A → B，再做 B → A</h3><p>分别在 A、B 的 ops 账号运行上一节的防覆盖密钥生成步骤，每台保留自己的 <code>id_ed25519_ops_guide</code>。接着按方向执行；每次首次连接先核对对方 host key。A、B 都必须安装服务端且 ops 账号已存在。</p><p class="small"><strong>只在 Node A / ops 执行：部署 A 公钥并登录 B</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>ssh-copy-id -i ~/.ssh/id_ed25519_ops_guide.pub ops@node-b
+ssh -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_ops_guide \
+  ops@node-b 'hostname; id -un'</code></pre></div>
+<p class="small"><strong>切换到 Node B / ops 后执行：部署 B 公钥并登录 A</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>ssh-copy-id -i ~/.ssh/id_ed25519_ops_guide.pub ops@node-a
+ssh -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_ops_guide \
+  ops@node-a 'hostname; id -un'</code></pre></div>
+<div class="callout amber"><strong>ssh-copy-id 的边界：</strong>它使用 SSH 连接并遵守 host key 检查，但不能替你确定首次看到的指纹是否可信。目标必须已有密码、已有密钥或控制台等可用的授权部署通道；它不能绕过认证。非默认端口可增加 <code>-p 2222</code>。</div><h3>没有 ssh-copy-id 时：手工追加公钥</h3><p class="small"><strong>Node A / ops：只把公钥经 SSH 送到 B（避免重复执行造成重复行）</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>cat ~/.ssh/id_ed25519_ops_guide.pub | \
+  ssh ops@node-b 'umask 077; install -d -m 700 ~/.ssh; cat &gt;&gt; ~/.ssh/authorized_keys; chmod 600 ~/.ssh/authorized_keys'</code></pre></div>
+<p class="small"><strong>仅在 Node B 上，以管理员修复目标 ops 账号权限（按实际 home/group 调整）</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>sudo chown -R "ops:$(id -gn ops)" ~ops/.ssh
+sudo chmod 700 ~ops/.ssh
+sudo chmod 600 ~ops/.ssh/authorized_keys
+# 仅有 SELinux 的系统执行；出错要查原因，不要吞掉错误。
+# sudo restorecon -Rv ~ops/.ssh</code></pre></div>
+<p class="small">手工追加不会自动去重，也不会给新账号创建 home。修复权限时先用 <code>getent passwd ops</code>、<code>namei -l ~ops/.ssh/authorized_keys</code> 确认目标路径和归属；不要对不明目录递归 chown。</p></section>
+
+<section class="section" id="cluster">
+<div class="section-no">06 / 多节点部署与互信模型</div><h2>先决定你需要集中登录还是全互信网格</h2>
+<div class="grid-3"><div class="card"><h3>集中运维</h3><p>控制节点公钥进入所有工作节点。工作节点之间不自动互信，适合管理员登录、发布和采集。</p><span class="badge green">推荐默认</span></div><div class="card"><h3>双向点对点</h3><p>A 和 B 互加公钥，适合少量节点的作业调度或数据同步。</p><span class="badge amber">小规模</span></div><div class="card"><h3>全互信网格</h3><p>N 个节点每个都能登录其他 N-1 个节点，维护和撤销成本按方向快速增长。</p><span class="badge">谨慎使用</span></div></div>
+<div class="diagram"><svg viewBox="0 0 1120 360" role="img" aria-label="多节点SSH信任拓扑"><g font-family="system-ui,sans-serif"><rect x="30" y="38" width="220" height="280" rx="16" fill="#edf3ff" stroke="#a9c3f0"/><text x="140" y="73" text-anchor="middle" font-size="19" font-weight="700">Controller</text><text x="140" y="100" text-anchor="middle" font-size="12">运维/配置管理</text><circle cx="140" cy="182" r="44" fill="#285fc0"/><text x="140" y="177" text-anchor="middle" fill="#fff" font-weight="700">ops.pub</text><text x="140" y="198" text-anchor="middle" fill="#fff" font-size="12">公钥</text><text x="140" y="277" text-anchor="middle" font-size="12" fill="#607086">集中分发、轮换、撤销</text><rect x="382" y="42" width="165" height="100" rx="13" fill="#eaf7f1" stroke="#a4d7c1"/><text x="464" y="77" text-anchor="middle" font-weight="700">node-01</text><text x="464" y="103" text-anchor="middle" font-size="12">authorized_keys</text><rect x="382" y="190" width="165" height="100" rx="13" fill="#eaf7f1" stroke="#a4d7c1"/><text x="464" y="225" text-anchor="middle" font-weight="700">node-02</text><text x="464" y="251" text-anchor="middle" font-size="12">authorized_keys</text><rect x="740" y="42" width="165" height="100" rx="13" fill="#fff4e3" stroke="#efc98f"/><text x="822" y="77" text-anchor="middle" font-weight="700">node-03</text><text x="822" y="103" text-anchor="middle" font-size="12">authorized_keys</text><rect x="740" y="190" width="165" height="100" rx="13" fill="#fff4e3" stroke="#efc98f"/><text x="822" y="225" text-anchor="middle" font-weight="700">node-04</text><text x="822" y="251" text-anchor="middle" font-size="12">authorized_keys</text><path d="M250 150L382 93M250 208L382 240M250 150L740 93M250 208L740 240" stroke="#285fc0" stroke-width="2.4" stroke-dasharray="7 7"/><path d="M547 93L740 93M547 240L740 240" stroke="#a46217" stroke-width="2.2" stroke-dasharray="4 7"/><text x="625" y="82" text-anchor="middle" font-size="12" fill="#a46217">可选：节点间互信</text></g></svg><div class="diagram-caption">集中运维模式把控制节点公钥分发到目标节点；不等于节点之间可以互相登录。</div></div>
+<h3>Ansible：先满足引导登录，再分发公钥</h3><p>前提：控制机可连接这些地址，已从可信来源建立每台主机的 known_hosts；远端已有 ops 用户、Python 3 和所需 sudo 权限。示例地址为文档保留地址，需要替换。安装 ansible-core 与 ansible.posix collection；下面展示密码引导（-k）与 sudo 密码（-K），也可以用你已有的 bootstrap 私钥替换 -k。</p><p class="small"><strong>控制机 shell：建立独立 Ansible 环境</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>python3 -m venv .venv-ssh-guide
+. .venv-ssh-guide/bin/activate
+python3 -m pip install ansible-core
+ansible-galaxy collection install ansible.posix</code></pre></div>
+<p class="small"><strong>保存为 inventory.ini（INI 文件，不是 shell）</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="ini"><code>[workers]
+node-01 ansible_host=192.0.2.11
+node-02 ansible_host=192.0.2.12
+node-03 ansible_host=192.0.2.13
+
+[workers:vars]
+ansible_user=ops
+ansible_python_interpreter=/usr/bin/python3</code></pre></div>
+<p class="small"><strong>保存为 ssh-keys.yml（YAML 文件，不是 shell）</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="yaml"><code>---
+- name: Deploy controller public key
+  hosts: workers
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Add public key without removing existing keys
+      ansible.posix.authorized_key:
+        user: ops
+        state: present
+        manage_dir: true
+        exclusive: false
+        key: "{{ lookup('ansible.builtin.file', lookup('ansible.builtin.env', 'HOME') + '/.ssh/id_ed25519_ops_guide.pub') }}"</code></pre></div>
+<p class="small"><strong>控制机 shell：按顺序执行；-k/-K 会提示输入所需密码</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code># 先预览；确认目标和差异后再执行下一行。
+ansible-playbook -i inventory.ini ssh-keys.yml -k -K --check --diff
+ansible-playbook -i inventory.ini ssh-keys.yml -k -K
+# 加密私钥先用 ssh-add 解锁，再验证 key 登录；不关闭 host key 检查。
+ssh-add -t 1h ~/.ssh/id_ed25519_ops_guide
+ansible workers -i inventory.ini -m ansible.builtin.command -a 'id -un' \
+  --private-key ~/.ssh/id_ed25519_ops_guide \
+  --ssh-common-args='-o IdentitiesOnly=yes -o BatchMode=yes'</code></pre></div>
+<p class="small">密码引导是否需要 sshpass 取决于 ansible-core 版本/SSH 插件；若报缺失，可在 Debian/Ubuntu 控制机安装 <code>sudo apt-get install sshpass</code>，其他发行版按包管理器与仓库情况处理，或使用已有 bootstrap key。<code>-k</code> 是 SSH 密码，<code>-K</code> 是提权密码；已有免密 sudo 时可省略 -K。不要把密码写进公开 inventory。验证命令通过 inventory 的 ansible_host 连接，不要求 node-01 等别名在 DNS 中存在。</p><div class="callout red"><strong>不要把私钥放进所有节点：</strong>全网共享一把私钥会让任意一台节点泄露后影响全部节点，也无法知道是哪台机器发起连接。服务账号应使用专用 key、命令限制和最小权限。</div>
+</section>
+
+<section class="section" id="security">
+<div class="section-no">07 / 安全加固与可回滚变更</div><h2>先让公钥登录成功，再关闭密码登录</h2>
+<div class="table-wrap"><table><thead><tr><th>配置项</th><th>作用</th><th>建议</th><th>风险</th></tr></thead><tbody><tr><td><code>PubkeyAuthentication</code></td><td>启用公钥认证</td><td><code>yes</code></td><td>无公钥可用时不会自动修复账号问题</td></tr><tr><td><code>PasswordAuthentication</code></td><td>密码认证</td><td>确认公钥登录后改 <code>no</code></td><td>过早关闭可能锁住管理员</td></tr><tr><td><code>PermitRootLogin</code></td><td>root 直接登录</td><td>通常 <code>no</code>；使用普通用户 + sudo</td><td>救援场景需保留控制台方案</td></tr><tr><td><code>AllowUsers/AllowGroups</code></td><td>限制主体</td><td>明确列出运维账号</td><td>拼错账号/组名会拒绝合法用户</td></tr><tr><td><code>MaxAuthTries</code></td><td>单连接尝试次数</td><td>4–6 起步</td><td>agent中身份过多时需要 IdentitiesOnly</td></tr><tr><td><code>AllowTcpForwarding</code></td><td>端口转发</td><td>按业务需要限制</td><td>关闭可能影响跳板/隧道</td></tr></tbody></table></div>
+<p class="small"><strong>客户端新终端：确认仅公钥就能登录，不回退到密码</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>ssh -o PreferredAuthentications=publickey -o PasswordAuthentication=no \
+  -o KbdInteractiveAuthentication=no -o IdentitiesOnly=yes \
+  -i ~/.ssh/id_ed25519_ops_guide ops@server.example.com 'id -un; hostname'</code></pre></div>
+<p>确认成功后，服务端编辑第 03 节同一 drop-in，把下列三项调整为 no；不要追加到 shell 或随意创建另一个更晚的配置。若 PAM/AuthenticationMethods 要求多因素认证，应保留组织策略，并专门测试其组合。</p><p class="small"><strong>修改现有 sshd 配置中的值（不是 shell）</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="sshd_config"><code>PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no</code></pre></div>
+<p class="small"><strong>服务端 shell：使用第 03 节确认的服务名，校验并重新加载</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code># Debian/Ubuntu：ssh_unit=ssh.service；RHEL/Fedora：ssh_unit=sshd.service
+sudo /usr/sbin/sshd -t &amp;&amp; sudo systemctl reload "$ssh_unit"
+# 再用 sshd -T -C ... 检查实际用户连接的有效配置；随后新开连接验证。</code></pre></div>
+<h3>回滚：恢复主文件，以及本次修改/新建的 drop-in</h3><p>以下使用第 03 节保存的 <code>ssh_backup</code>、<code>ssh_dropin</code> 和 <code>ssh_unit</code>。若换了 shell，先从记录恢复这三个变量。只回滚本次指定文件，避免覆盖其他管理员的并发改动；若还编辑了其他文件，也应逐一从对应备份恢复。端口、SELinux、防火墙、socket unit 修改需要分别回滚。</p><p class="small"><strong>服务端旧会话或控制台：检查备份后执行回滚</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code># :? 在变量未设置时直接报错，避免使用空路径。
+: "${ssh_backup:?请设置第03节的实际备份目录}"
+: "${ssh_dropin:?请设置本次drop-in绝对路径}"
+: "${ssh_unit:?请设置本发行版服务名}"
+# 固定目标文件名，避免误删其他配置。
+if [ "$ssh_dropin" = /etc/ssh/sshd_config.d/00-local-ssh-guide.conf ] &amp;&amp; \
+   sudo test -f "$ssh_backup/sshd_config"; then
+  if sudo cp -a "$ssh_backup/sshd_config" /etc/ssh/sshd_config &amp;&amp; {
+    if sudo test -f "$ssh_backup/sshd_config.d/00-local-ssh-guide.conf"; then
+      sudo cp -a "$ssh_backup/sshd_config.d/00-local-ssh-guide.conf" "$ssh_dropin"
+    else
+      # 备份里不存在该文件，说明它是本次新建；回滚时移除。
+      sudo rm -f -- "$ssh_dropin"
+    fi
+  }; then
+    sudo /usr/sbin/sshd -t &amp;&amp; sudo systemctl reload "$ssh_unit"
+  else
+    printf '恢复文件失败，停止 reload；请从控制台检查。\n'
+  fi
+else
+  printf '目标路径或备份不匹配，停止回滚。\n'
+fi</code></pre></div>
+<p>服务账号可以在 <code>authorized_keys</code> 行前加 <code>from=</code>、<code>command=</code>、<code>no-agent-forwarding</code>、<code>no-port-forwarding</code>、<code>no-X11-forwarding</code>。记录每把 key 的用途、负责人和轮换日期。</p>
+</section>
+
+<section class="section" id="troubleshoot">
+<div class="section-no">08 / 排障：先定位层级，再改配置</div><h2>用一条决策树判断网络、sshd、host key 还是用户认证</h2>
+<div class="diagram"><svg viewBox="0 0 1120 430" role="img" aria-label="SSH排障决策树"><g font-family="system-ui,sans-serif"><rect x="425" y="22" width="270" height="58" rx="10" fill="#edf3ff" stroke="#a9c3f0"/><text x="560" y="57" text-anchor="middle" font-size="16" font-weight="700">ssh user@host 失败？</text><path d="M560 80V106M560 106H151M560 106H430M560 106H709M560 106H979" stroke="#6d87a4" stroke-width="2"/><rect x="36" y="106" width="230" height="70" rx="10" fill="#fff4e3" stroke="#efc98f"/><text x="151" y="135" text-anchor="middle" font-weight="700">timeout</text><text x="151" y="158" text-anchor="middle" font-size="12">网络 / 安全组 / 路由</text><rect x="315" y="106" width="230" height="70" rx="10" fill="#eaf7f1" stroke="#a4d7c1"/><text x="430" y="135" text-anchor="middle" font-weight="700">refused</text><text x="430" y="158" text-anchor="middle" font-size="12">sshd未监听 / 防火墙</text><rect x="594" y="106" width="230" height="70" rx="10" fill="#fff4e3" stroke="#efc98f"/><text x="709" y="135" text-anchor="middle" font-weight="700">host key</text><text x="709" y="158" text-anchor="middle" font-size="12">known_hosts冲突</text><rect x="874" y="106" width="210" height="70" rx="10" fill="#fff0f2" stroke="#e1a7ae"/><text x="979" y="135" text-anchor="middle" font-weight="700">Permission denied</text><text x="979" y="158" text-anchor="middle" font-size="12">用户公钥认证</text><path d="M151 176V214M430 176V214M709 176V214M979 176V214" stroke="#6d87a4" stroke-width="2"/><rect x="34" y="214" width="235" height="145" rx="10" fill="#f8fafc" stroke="#d9e2ec"/><text x="151" y="241" text-anchor="middle" font-weight="700">网络分支</text><text x="51" y="270" font-size="12">nc -vz host 22</text><text x="51" y="297" font-size="12">云安全组 / ACL</text><text x="51" y="324" font-size="12">ip route / ping</text><rect x="315" y="214" width="230" height="145" rx="10" fill="#f8fafc" stroke="#d9e2ec"/><text x="430" y="241" text-anchor="middle" font-weight="700">服务分支</text><text x="332" y="270" font-size="12">systemctl status sshd</text><text x="332" y="297" font-size="12">sudo sshd -t</text><text x="332" y="324" font-size="12">firewall-cmd / ufw</text><rect x="594" y="214" width="230" height="145" rx="10" fill="#f8fafc" stroke="#d9e2ec"/><text x="709" y="241" text-anchor="middle" font-weight="700">host key分支</text><text x="611" y="270" font-size="12">核对 host.pub 指纹</text><text x="611" y="297" font-size="12">确认后 ssh-keygen -R</text><text x="611" y="324" font-size="12">重新接受新指纹</text><rect x="874" y="214" width="210" height="145" rx="10" fill="#f8fafc" stroke="#d9e2ec"/><text x="979" y="241" text-anchor="middle" font-weight="700">公钥分支</text><text x="891" y="270" font-size="12">用户名 / home</text><text x="891" y="297" font-size="12">~/.ssh 权限</text><text x="891" y="324" font-size="12">authorized_keys / SELinux</text></g></svg><div class="diagram-caption">日志：<code>journalctl -u ssh</code>、<code>journalctl -u sshd</code>、<code>/var/log/auth.log</code> 或 <code>/var/log/secure</code>。</div></div>
+<div class="row"><button class="btn primary" type="button" data-problem="network">网络/端口</button><button class="btn" type="button" data-problem="hostkey">Host key 冲突</button><button class="btn" type="button" data-problem="pubkey">Permission denied</button><button class="btn" type="button" data-problem="agent">Too many authentication failures</button><button class="btn" type="button" data-problem="selinux">SELinux / 权限</button></div><div class="answer" id="problem-answer" aria-live="polite"></div>
+<p class="small"><strong>客户端 shell：连接诊断</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>ssh -vvv -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_ops_guide ops@server.example.com
+nc -vz server.example.com 22
+ssh-add -l</code></pre></div>
+<p class="small"><strong>服务端 shell：监听、日志和目标文件；使用正确发行版服务名</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>sudo ss -lntp | grep ':22'
+# Debian/Ubuntu：ssh_unit=ssh.service；RHEL/Fedora：ssh_unit=sshd.service
+sudo journalctl -u "$ssh_unit" -n 100 --no-pager
+sudo /usr/sbin/sshd -T | grep -E '^(pubkeyauthentication|authorizedkeysfile|strictmodes|passwordauthentication) '
+namei -l ~ops/.ssh/authorized_keys
+# SELinux 系统另查拒绝记录；按实际路径恢复标签：
+# sudo ausearch -m AVC -ts recent
+# sudo restorecon -Rv ~ops/.ssh</code></pre></div>
+<div class="grid-2"><div class="card"><h3>Host key verification failed</h3><p>先确认服务器是否重装、IP是否复用或DNS是否指向新主机。确认无误后才用 <code>ssh-keygen -R host</code> 清除旧记录；不要长期使用 StrictHostKeyChecking=no。</p></div><div class="card"><h3>Too many authentication failures</h3><p>用 <code>ssh-add -l</code> 查看 agent；连接时加 <code>IdentitiesOnly=yes -i key</code>。必要时移除多余身份。</p></div></div>
+</section>
+
+<section class="section" id="checklist">
+<div class="section-no">09 / 可勾选执行清单</div><h2>按顺序完成一次安全部署</h2>
+<div class="checklist" id="checklist-box"><label class="check"><input type="checkbox">确认发行版、目标用户、IP/DNS、端口和云安全组</label><label class="check"><input type="checkbox">安装 openssh-server 并确认服务名</label><label class="check"><input type="checkbox">确认 sshd 监听：ss -lntp</label><label class="check"><input type="checkbox">确认 host key 指纹的可信来源</label><label class="check"><input type="checkbox">客户端生成 Ed25519 密钥并保护私钥</label><label class="check"><input type="checkbox">使用 ssh-copy-id 或手工追加公钥</label><label class="check"><input type="checkbox">修复 ~/.ssh=700、authorized_keys=600 和归属</label><label class="check"><input type="checkbox">明确测试单向还是双向互信</label><label class="check"><input type="checkbox">新开会话验证公钥登录</label><label class="check"><input type="checkbox">修改 sshd 配置前备份并执行 sshd -t</label><label class="check"><input type="checkbox">reload 后再次测试，确认旧会话仍在</label><label class="check"><input type="checkbox">最后再考虑关闭密码登录、限制用户与转发</label></div><div class="progress"><i id="progress-bar"></i></div><div class="progress-label" id="progress-label">0 / 12 项</div>
+<div class="callout green"><strong>最小可复现闭环：</strong>安装 → 监听 → host 指纹确认 → 生成 key → 部署公钥 → <code>ssh -o IdentitiesOnly=yes -i ...</code> 登录 → 查看日志 → 备份并加固 → 新会话复测。</div>
+<h3>命令速查：连接与跳板</h3>
+<p class="small"><strong>客户端 shell：连接命令</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="shell"><code>ssh -p 2222 -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_ops_guide ops@server.example.com
+# 下方 config 保存并核对两台主机身份后：
+ssh private-node
+ssh -o BatchMode=yes private-node 'hostname; id -un'</code></pre></div>
+<p class="small"><strong>客户端 ~/.ssh/config 内容：跳板和目标分别配置身份（不是 shell）</strong></p><div class="code-wrap"><button class="copy" type="button">复制</button><pre data-language="ssh_config"><code>Host bastion
+  HostName bastion.example.com
+  User bastion_user
+  IdentityFile ~/.ssh/id_ed25519_bastion
+  IdentitiesOnly yes
+  ForwardAgent no
+
+Host private-node
+  HostName 192.0.2.21
+  User ops
+  IdentityFile ~/.ssh/id_ed25519_ops_guide
+  IdentitiesOnly yes
+  ProxyJump bastion
+  ForwardAgent no</code></pre></div>
+<p class="small">跳板 key 是示例名称，需事先生成并部署；不要覆盖已有 key。ProxyJump 使用跳板提供 TCP 转发，目标 SSH 握手仍由本地客户端完成，必须分别验证跳板和目标 host key。跳板需要允许相应转发。配置保存后可执行 <code>chmod 600 ~/.ssh/config</code>；避免追加重复且冲突的 Host 块。</p><h3>参考手册</h3><p class="small"><a href="https://man.openbsd.org/sshd_config">sshd_config 与 Include/Match</a> · <a href="https://man.openbsd.org/sshd">sshd / authorized_keys / known_hosts</a> · <a href="https://man.openbsd.org/ssh_config">ssh_config / BatchMode / ProxyJump</a> · <a href="https://documentation.ubuntu.com/server/how-to/security/openssh-server/">Ubuntu OpenSSH server</a> · <a href="https://docs.ansible.com/ansible/latest/collections/ansible/posix/authorized_key_module.html">Ansible authorized_key</a> · <a href="https://www.rfc-editor.org/rfc/rfc4252#section-7">RFC 4252 §7 公钥认证签名数据</a></p></section>
+</main></div>
+<div class="footer">Linux SSHD / SSH 互信部署指南 · 可离线打开 · 学习材料，未对实际服务器执行 · 命令需按发行版、用户名、端口和安全策略替换占位符</div>
+</div><div class="sr" id="live" aria-live="polite"></div>
+<script>
+document.querySelectorAll('.copy').forEach(function(btn){btn.addEventListener('click',async function(){var code=btn.parentElement.querySelector('code');try{await navigator.clipboard.writeText(code.textContent);btn.textContent='已复制'}catch(e){var r=document.createRange();r.selectNodeContents(code);var s=window.getSelection();s.removeAllRanges();s.addRange(r);btn.textContent='已选中'}document.getElementById('live').textContent=btn.textContent;setTimeout(function(){btn.textContent='复制'},1800)})});
+document.querySelectorAll('[data-tab]').forEach(function(btn){btn.addEventListener('click',function(){var id=btn.dataset.tab;document.querySelectorAll('[data-tab]').forEach(function(b){var on=b.dataset.tab===id;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on))});document.querySelectorAll('.tab-panel').forEach(function(p){p.hidden=p.id!=='panel-'+id})})});
+var trust=[['第1步：Node A 生成密钥','在A的目标用户上生成专用key。私钥留在A，公钥稍后放进B。','先按第04节检查文件，再生成专用 key；已有 key 不覆盖'],['第2步：A → B 部署公钥','用已有密码或控制台登录方式把A的公钥追加到B上的目标用户。','ssh-copy-id -i ~/.ssh/id_ed25519_ops_guide.pub ops@node-b'],['第3步：A验证登录B','指定身份测试；私钥先由 agent 解锁、host key 先核对，再用 BatchMode 检测自动化是否就绪。','ssh -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_ops_guide ops@node-b'],['第4步：Node B 生成密钥','切换到B的目标用户，生成B自己的key，不复制A的私钥。','先按第04节检查文件，再生成专用 key；已有 key 不覆盖'],['第5步：B → A 部署公钥','把B的公钥放进A上目标用户的authorized_keys。','ssh-copy-id -i ~/.ssh/id_ed25519_ops_guide.pub ops@node-a'],['第6步：B验证登录A','从B反向发起连接，确认方向和用户正确。','ssh -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_ops_guide ops@node-a'],['第7步：双向互信完成','A→B与B→A是两条独立认证链。','ssh -o BatchMode=yes -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_ops_guide ops@node-b hostname']];var ti=0;function renderTrust(){var x=trust[ti];document.getElementById('trust-step-title').textContent=x[0];document.getElementById('trust-step-text').innerHTML=x[1]+'<br><code>'+x[2]+'</code>';document.querySelectorAll('[data-step]').forEach(function(b){var on=Number(b.dataset.step)===ti;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on))});document.getElementById('trust-prev').disabled=ti===0;document.getElementById('trust-next').disabled=ti===trust.length-1}document.querySelectorAll('[data-step]').forEach(function(b){b.addEventListener('click',function(){ti=Number(b.dataset.step);renderTrust()})});document.getElementById('trust-prev').addEventListener('click',function(){ti=Math.max(0,ti-1);renderTrust()});document.getElementById('trust-next').addEventListener('click',function(){ti=Math.min(trust.length-1,ti+1);renderTrust()});renderTrust();
+var problems={network:'先在客户端执行 nc -vz host 22；服务端执行 ss -lntp。timeout多半是路由、安全组或ACL；refused多半是服务未监听或主机防火墙。',hostkey:'先通过可信渠道确认新host key指纹。确认主机变更无误后执行 ssh-keygen -R host，再重新连接并核对新指纹。不要长期使用 StrictHostKeyChecking=no。',pubkey:'核对目标用户名、服务器端authorized_keys路径、~/.ssh=700、authorized_keys=600、文件归属、sshd -T的PubkeyAuthentication/AuthorizedKeysFile，以及SELinux restorecon。',agent:'用 ssh-add -l 查看agent中身份；连接时加 IdentitiesOnly=yes -i key。必要时移除多余agent key，避免MaxAuthTries前耗尽尝试次数。',selinux:'执行 namei -l ~user/.ssh/authorized_keys、restorecon -Rv ~user/.ssh，并查看journalctl -u sshd。SELinux拒绝时检查audit日志，不要随意关闭SELinux。'};function renderProblem(name){document.getElementById('problem-answer').textContent=problems[name];document.querySelectorAll('[data-problem]').forEach(function(b){b.classList.toggle('primary',b.dataset.problem===name)})}document.querySelectorAll('[data-problem]').forEach(function(b){b.addEventListener('click',function(){renderProblem(b.dataset.problem)})});renderProblem('network');
+var checks=[].slice.call(document.querySelectorAll('#checklist-box input'));function updateProgress(){var n=checks.filter(function(x){return x.checked}).length;document.getElementById('progress-bar').style.width=(n/checks.length*100)+'%';document.getElementById('progress-label').textContent=n+' / '+checks.length+' 项';document.getElementById('live').textContent='已完成 '+n+' 项'}checks.forEach(function(x){x.addEventListener('change',updateProgress)});
+</script>
+</body></html>

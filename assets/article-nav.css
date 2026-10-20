@@ -1,0 +1,4 @@
+
+.archive-nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px;padding:12px 24px;border-bottom:1px solid #dce4ee;background:#fff;color:#40516a;font:13px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+.archive-nav a{color:#2459af;text-decoration:none}.archive-nav a:hover{text-decoration:underline}.archive-nav span{color:#617088}.archive-nav a:focus-visible{outline:3px solid #8bb4fb;outline-offset:3px}
+@media print{.archive-nav{display:none}}@media(max-width:600px){.archive-nav{padding:10px 14px;font-size:12px}}

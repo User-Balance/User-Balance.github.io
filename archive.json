@@ -1,0 +1,40 @@
+{
+  "archived_on": "2026-10-20",
+  "articles": [
+    {
+      "path": "ai-infra-mindmap.html",
+      "title": "AI Infra 全景脑图",
+      "category": "AI Infra",
+      "source_date": "2026-10-16",
+      "archived_on": "2026-10-20"
+    },
+    {
+      "path": "mi355x-operator-ecosystem-guide.html",
+      "title": "MI355X 算子生态与安装指南",
+      "category": "AMD 算子",
+      "source_date": "2026-10-16",
+      "archived_on": "2026-10-20"
+    },
+    {
+      "path": "mi355x-gemm-sweep-lab.html",
+      "title": "MI355X FP8 GEMM 分块与 Sweep",
+      "category": "AMD 算子",
+      "source_date": "2026-10-16",
+      "archived_on": "2026-10-20"
+    },
+    {
+      "path": "nvidia-h20-b200-architecture-lab.html",
+      "title": "H20 / B200 架构与 GEMM Sweep",
+      "category": "NVIDIA 架构",
+      "source_date": "2026-10-19",
+      "archived_on": "2026-10-20"
+    },
+    {
+      "path": "sshd-ssh-mutual-trust-guide.html",
+      "title": "Linux SSHD 与 SSH 互信",
+      "category": "Linux 运维",
+      "source_date": "2026-10-20",
+      "archived_on": "2026-10-20"
+    }
+  ]
+}

@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>H20 / B200：架构、数据流与 GEMM Sweep</title>
+<style>
+:root{--bg:#f4f6f8;--paper:#fff;--ink:#1d2b3b;--muted:#5b6b7d;--line:#dce3e9;--green:#246449;--greenbg:#eaf5ee;--blue:#285eb6;--bluebg:#edf3ff;--amber:#995b18;--amberbg:#fff5e5;--code:#152335}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.78 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}button,input,select{font:inherit}button{cursor:pointer}a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #91b8fa;outline-offset:3px}h1{font-size:clamp(32px,4.8vw,56px);line-height:1.1;letter-spacing:-.045em;margin:13px 0 20px}h2{font-size:27px;line-height:1.4;letter-spacing:-.02em;margin:0 0 16px}h3{font-size:19px;line-height:1.5;margin:25px 0 12px}p{margin:0 0 15px}li{margin:7px 0}.page{max-width:1460px;padding:40px 36px 55px;margin:auto}.eyebrow,.secno{font-size:12px;letter-spacing:.12em;font-weight:700;color:var(--green)}.secno{margin-bottom:8px}.lede{font-size:18px;max-width:1090px;color:var(--muted)}.links{display:flex;flex-wrap:wrap;gap:9px 17px;font-size:13px;margin:22px 0 27px}.links a{border:1px solid var(--line);border-radius:7px;padding:5px 9px;background:var(--paper)}.shell{display:grid;grid-template-columns:174px minmax(0,1fr);gap:25px}.toc{position:sticky;top:26px;align-self:start;display:grid;gap:5px;font-size:13px}.toc a{color:var(--muted);padding:7px 9px;border-radius:7px;line-height:1.5}.toc a:hover{background:var(--greenbg);color:var(--green)}main{min-width:0}.section{background:var(--paper);padding:29px 31px;border:1px solid var(--line);border-radius:15px;margin-bottom:23px;min-width:0}.muted{color:var(--muted)}.small{font-size:13px}.callout{background:var(--bluebg);border-left:3px solid var(--blue);padding:14px 18px;margin:18px 0;border-radius:0 8px 8px 0}.callout.amber{background:var(--amberbg);border-color:var(--amber)}.callout.green{background:var(--greenbg);border-color:var(--green)}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:9px;margin:18px 0}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.65}th,td{padding:12px 14px;vertical-align:top;text-align:left;min-width:120px;border-bottom:1px solid var(--line)}th{font-weight:600;background:#f0f4f7;color:#39516a}tr:last-child td{border-bottom:0}tbody tr:nth-child(even){background:#fafcfd}code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.87em;background:#edf1f6;padding:2px 4px;border-radius:4px;overflow-wrap:anywhere}pre{padding:18px 20px;border-radius:10px;background:var(--code);color:#e0eaff;font-size:13px;line-height:1.7;overflow:auto;margin:18px 0}pre code{background:none;color:inherit;padding:0;font-size:inherit;overflow-wrap:normal}.btn{border:1px solid var(--line);color:var(--ink);background:var(--paper);border-radius:7px;padding:8px 14px;font-size:13px;min-height:40px}.btn:hover{border-color:var(--green);color:var(--green)}.btn.primary,.btn[aria-pressed=true]{background:var(--green);color:#fff;border-color:var(--green)}.btn:disabled{opacity:.45;cursor:default}.tabbar{display:flex;flex-wrap:wrap;gap:9px;margin:19px 0 15px}.tabbar .btn{font-size:15px;padding:9px 19px}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:17px 0}.metric{padding:11px 12px;border-bottom:2px solid var(--line)}.metric .label{font-size:12px;color:var(--muted)}.metric .value{font-size:25px;font-weight:600;line-height:1.5;font-variant-numeric:tabular-nums}.metric .detail{font-size:12px;color:var(--muted)}.chip-layout{display:grid;grid-template-columns:1.15fr .85fr;gap:22px;align-items:start;margin:20px 0}.chip-shell{border:1px solid #c4d5cc;padding:17px;background:#f7faf8;border-radius:12px}.chip-label{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;margin-bottom:11px}.dies{display:flex;gap:8px;margin:10px 0}.die{flex:1;text-align:center;font-size:12px;padding:9px;border:1px solid #b3cdbc;border-radius:6px;background:#eaf3ed}.sm-pool{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px}.sm{aspect-ratio:1;min-width:0;padding:0;border:1px solid #bad4c3;border-radius:4px;background:#deeee3;color:#37644a;font-size:10px;line-height:1}.sm.active{background:var(--green);color:#fff;border-color:var(--green)}.memory-bar{padding:11px;text-align:center;background:#e4ebf5;border-radius:6px;margin:12px 0 0;font-size:13px;color:#35557d}.inspector{border-top:3px solid var(--green);padding-top:13px}.inspector h3{margin-top:0}.subparts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.subpart{background:var(--greenbg);padding:11px;border-radius:7px;text-align:center;font-size:12px;color:#3a6150}.subpart strong{display:block;color:var(--ink);font-size:14px}.field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);min-width:85px;flex:1}.field input,.field select{padding:7px 9px;background:#fff;border:1px solid #bdcad5;border-radius:6px;color:var(--ink);width:100%;font-size:15px;min-height:40px}.controls{display:flex;align-items:end;flex-wrap:wrap;gap:10px;padding:15px;background:#f6f8fb;border:1px solid var(--line);border-radius:10px;margin:16px 0}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}.status{font-size:13px;color:var(--muted);margin:11px 0}.status.error{color:#a03931}.path{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:20px 0}.pathnode{padding:16px 8px;border:1px solid var(--line);border-radius:8px;background:#f4f7fa;min-height:109px;text-align:center;font-size:12px;line-height:1.55}.pathnode strong{display:block;font-size:15px;margin:0 0 7px}.pathnode.active{background:var(--greenbg);border-color:var(--green)}.steptext{border-left:3px solid var(--green);background:var(--greenbg);border-radius:0 9px 9px 0;padding:17px 20px;min-height:105px}.steptext h3{margin:0 0 6px}.steptext p{margin:0;font-size:14px}.hierarchy{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:18px 0}.hierarchy>div{padding:15px 12px;background:#f3f6fa;border:1px solid var(--line);border-radius:8px;font-size:13px}.hierarchy strong{display:block;font-size:16px;margin-bottom:5px}.diagram-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin:18px 0}.matrix{height:230px;position:relative;border:1px solid #b8c8d7;border-radius:6px;background:#f8fafc;background-image:linear-gradient(to right,#d5e0eb 1px,transparent 1px),linear-gradient(to bottom,#d5e0eb 1px,transparent 1px);overflow:hidden;cursor:crosshair}.highlight{position:absolute;border:2px solid var(--green);background:rgba(36,100,73,.22);min-width:3px;min-height:3px;pointer-events:none}.range-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px}.equation{font:13px/1.75 ui-monospace,SFMono-Regular,Menlo,monospace;background:#f0f4f9;border-radius:8px;padding:15px 17px;overflow-wrap:anywhere;margin:13px 0}.source-list{padding-left:22px;font-size:14px}.source-list li{margin:10px 0}.badge{display:inline-block;font-size:11px;padding:2px 6px;background:var(--greenbg);color:var(--green);border-radius:4px}.badge.amber{background:var(--amberbg);color:var(--amber)}.footer{text-align:center;font-size:12px;color:var(--muted);margin-top:28px}details{border:1px solid var(--line);border-radius:9px;padding:12px 15px;margin:16px 0}summary{cursor:pointer;font-weight:600}details[open] summary{margin-bottom:12px}
+@media(max-width:1160px){.shell{grid-template-columns:1fr}.toc{position:static;display:flex;flex-wrap:wrap;gap:4px}.toc a{background:#eaf0f4;padding:5px 8px;font-size:12px}.page{padding:28px 23px}.section{padding:25px}}
+@media(max-width:760px){.page{padding:22px 12px}.section{padding:20px 16px}.chip-layout,.diagram-grid{grid-template-columns:1fr}.metrics,.hierarchy{grid-template-columns:repeat(2,minmax(0,1fr))}.path{grid-template-columns:repeat(2,minmax(0,1fr))}.pathnode{min-height:85px}h2{font-size:23px}.lede{font-size:16px}.table-wrap table{min-width:620px}.controls .field{min-width:90px}.sm-pool{grid-template-columns:repeat(10,minmax(0,1fr))}.sm{font-size:10px}}
+@media(max-width:390px){.metric{padding:10px 6px}.metric .value{font-size:22px}.section{padding:18px 12px}.subparts{grid-template-columns:1fr}.sm{font-size:9px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{body{background:#fff;font-size:10pt}.page{padding:0}.shell{display:block}.toc,.links,.btn{display:none}.section{border:0;padding:10px 0;break-inside:auto}h2,h3{break-after:avoid}.chip-layout{grid-template-columns:1fr 1fr}.table-wrap{overflow:visible}.table-wrap table{min-width:0;font-size:9pt}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:9pt}.path{grid-template-columns:repeat(5,minmax(0,1fr))}}
+</style><meta name="description" content="H20 / B200 架构与 GEMM Sweep：中文图解、术语与实践指南。资料基于 2026-10-19 的记录。">
+<link rel="stylesheet" href="assets/article-nav.css">
+</head><body>
+<nav class="archive-nav" aria-label="学习手册导航"><a href="index.html">← 技术学习手册 · 返回门户</a><span>NVIDIA 架构 · 资料日期 2026-10-19 · 归档 2026-10-20</span></nav>
+<div class="page">
+<header><div class="eyebrow">NVIDIA GPU LAB · HOPPER / BLACKWELL</div><h1>H20 与 B200<br>从 SM 到 GEMM。</h1><p class="lede">芯片由哪些单元组成，数据怎样进入 Tensor Core，输出 tile 如何映射到线程与 SM，以及怎样为 FP8 GEMM 建立可复现的 sweep。</p><div class="links"><a href="#chip-lab">交互架构图</a><a href="#dataflow">逐步看数据流</a><a href="#tile-lab">MNK / CTA / cluster</a><a href="#sweep-tools">真实调优入口</a><a href="mi355x-gemm-sweep-lab.html">对照 MI355X 教程</a></div></header>
+<div class="shell"><nav class="toc" aria-label="目录"><a href="#definitions">01 / tile 是什么</a><a href="#specifications">02 / 型号与规格</a><a href="#chip-lab">03 / SM 内部</a><a href="#dataflow">04 / 数据流</a><a href="#h20-details">Hopper 路径</a><a href="#b200-details">Blackwell 路径</a><a href="#tile-lab">05 / MNK 与调度</a><a href="#fp8-contract">06 / FP8 与 scales</a><a href="#sweep-strategy">07 / 搜索策略</a><a href="#sweep-tools">08 / 工具与命令</a><a href="#measurement">09 / 验收与排障</a><a href="#device-probe">实机参数采集</a><a href="#sources">来源与边界</a></nav><main>
+<section class="section" id="definitions"><div class="secno">01 / 先澄清“tile 单元”</div><h2>Tile 是计算分块；SM 才是承载线程块的硬件单元</h2><p>讨论算子时，tile 通常指 <strong>BM×BN 输出块、BK 长度的 K 段，或一条矩阵操作的逻辑形状</strong>。它是程序的分工方式，不是芯片上固定数量的一排“tile 核”。你想问的硬件规模，最接近 <strong>SM 数量</strong>和每 SM 的 <strong>Tensor Core 数量</strong>。</p><div class="hierarchy"><div><strong>GPU / package</strong>一颗 CUDA 可见设备。B200 由两个 die 协同组成一颗 GPU。</div><div><strong>SM</strong>Streaming Multiprocessor；容纳 warps、寄存器、shared memory 和计算单元。</div><div><strong>Tensor Core</strong>SM 内的专用矩阵运算硬件。程序发出 MMA 类指令，通常不指定第几个物理 Tensor Core。</div><div><strong>软件 tile</strong>程序选择的数据块；同一硬件运行不同 BM/BN/BK 会得到不同任务数量。</div></div><div class="table-wrap"><table><thead><tr><th>MI355X 中的概念</th><th>NVIDIA 中的对应概念</th><th>不能直接照搬的地方</th></tr></thead><tbody><tr><td>CU</td><td>SM</td><td>职责相近；内部执行资源、指令、峰值与存储大小不同，不能按个数直接比较算力。</td></tr><tr><td>Wave64</td><td>Warp32</td><td>4 个 waves 是 256 threads；4 个 warps 是 128 threads。</td></tr><tr><td>Workgroup</td><td>Thread block / CTA</td><td>普通 CTA 的全部 warps 在一个 SM 上；不同 CTA 的 shared memory 默认独立。</td></tr><tr><td>LDS</td><td>Shared memory / SMEM</td><td>都是显式管理的片上协作存储；bank、swizzle、同步、容量与搬运机制不同。</td></tr><tr><td>MFMA</td><td>MMA / WGMMA / tcgen05.mma</td><td>调用与协作粒度、fragment 布局和 accumulator 存储位置不同。</td></tr><tr><td>无简单一对一项</td><td>Thread-block cluster / TMEM</td><td>cluster 是多个 CTA 的协作层；B200 TMEM 是 Tensor Core 专用存储，不能当普通 shared memory 使用。</td></tr></tbody></table></div></section>
+
+<section class="section"><h3 style="margin-top:0">再补两个硬件层级：GPC 与 TPC</h3><p><strong>GPC</strong> 是芯片内更大的处理组织，包含多个 <strong>TPC</strong>；TPC继续组织SM。Hopper典型TPC包含2个SM，但产品会屏蔽部分资源，不能仅用SM总数反推出有效GPC/TPC布局。本页不给未核实的H20/B200 GPC数量。</p><div class="equation">硬件：GPU package → die → GPC → TPC → SM → 矩阵/向量/访存等执行资源<br>软件：kernel grid → 可选cluster → CTA/block → warp → thread/lane<br>矩阵：输出tile → MMA逻辑tile → 各线程的fragment</div><p class="small muted">三条层级相互映射，但不是一一对应。cluster通过显式API让CTA协作，硬件调度保证所需的共驻留；它不是任意挑选两个物理SM或两个die。</p></section><section class="section" id="specifications"><div class="secno">02 / 先分清架构、SKU 与实机值</div><h2>H20 参考 78 SM；B200 实机记录 148 SM</h2><p>下表将 <strong>官方架构/产品指标</strong>、<strong>公开实机记录</strong>与<strong>次级规格参考</strong>分开。SM 数会影响可并行任务规模，但不会单独决定 Tensor Core 峰值或实际 GEMM 速度。</p>
+<div class="table-wrap"><table><thead><tr><th>指标</th><th>H20（常见96GB SKU）</th><th>B200（DGX出货口径）</th><th>如何理解</th></tr></thead><tbody>
+<tr><td>架构 / 编程目标</td><td>Hopper，CC 9.0 / SM90</td><td>Blackwell，CC 10.0 / SM100</td><td>优化 kernel 常用 90a / 100a 等架构特化目标；不与 RTX Blackwell 的 SM120 混用。</td></tr>
+<tr><td>有效 SM</td><td><strong>78</strong> <span class="badge amber">公开实机报道</span></td><td><strong>148</strong> <span class="badge amber">CUTLASS用户实机日志</span></td><td>完整卡参考。用 multiProcessorCount 核验，MIG/分区会改变可见资源。不是软件 tile 数。</td></tr>
+<tr><td>Tensor Core 代际与数量</td><td>第4代；官方 Hopper 每SM 4个；78×4=<strong>312</strong>（条件推算）</td><td><strong>第5代</strong>；本轮未找到每SM物理数量的官方明文，不列未经证实的总数</td><td>这些是硬件矩阵单元；kernel 通过矩阵指令使用，通常不逐个指定物理 Tensor Core。</td></tr>
+<tr><td>FP32 CUDA cores</td><td>Hopper 128/SM；78×128=<strong>9,984</strong>（条件推算）</td><td>本页不以未经官方确认的核心总数描述B200算力，使用官方Tensor dense峰值与实测</td><td>标量/向量执行资源，不用它直接计算 Tensor GEMM 吞吐。</td></tr>
+<tr><td>GPU die</td><td>Hopper 单 GPU die</td><td><strong>两个 die 组成一颗 GPU</strong>，NV-HBI 内部接口 10 TB/s</td><td>两个 die、两个 SM、两个 CUDA devices 是三个不同层级。</td></tr>
+<tr><td>显存 / HBM 带宽</td><td><strong>96 GB HBM3 / 4 TB/s</strong> <span class="badge amber">次级SKU资料</span></td><td><strong>180 GB HBM3e / 8 TB/s</strong> <span class="badge">DGX官方产品口径</span></td><td>容量影响模型/缓冲能否装下；带宽限制数据供给。与NVLink带宽不同。</td></tr>
+<tr><td>L2 cache</td><td>常见60 MB，建议以实机查询为主</td><td>不要把guide中GB200 GPU的126 MB一句话直接当B200保证；读取l2CacheSize</td><td>决定重复A/W流量能否来自片上缓存；不是shared memory。</td></tr>
+<tr><td>BF16 / FP16 Tensor dense</td><td><strong>148 TFLOP/s</strong> <span class="badge amber">次级dense规格</span></td><td><strong>约2.2 PFLOP/s</strong> <span class="badge">官方技术简报取整</span></td><td>理论峰值；使用时必须匹配精度、功耗与运行条件。</td></tr>
+<tr><td>FP8 Tensor dense</td><td><strong>296 TFLOP/s</strong> <span class="badge amber">次级dense规格</span></td><td><strong>4.5 PFLOP/s</strong> <span class="badge">官方技术简报</span></td><td>B200宣传的9 PFLOP/s是相应2:4 sparse口径，不能拿来计算普通dense利用率。</td></tr>
+<tr><td>FP4 Tensor dense</td><td>没有Blackwell原生FP4矩阵路径</td><td><strong>9 PFLOP/s</strong>；sparse 18 PFLOP/s</td><td>换FP4属于更改数值合同，不能直接视为FP8同精度加速。</td></tr>
+<tr><td>NVLink / 功率</td><td>常见900 GB/s双向合计 / 400 W参考</td><td>1.8 TB/s双向互连口径 / 最高1000 W</td><td>NVLink用于GPU间通信；实测功率上限、时钟和冷却状态影响持续性能。</td></tr>
+</tbody></table></div>
+<div class="callout amber"><strong>为什么 B200 有180和192两种写法？</strong>当前DGX B200产品页写8卡共1440 GB、64 TB/s，即每卡180 GB、8 TB/s；官方技术简报的HGX B200表还出现“up to192 GB / 7.7 TB/s”。本页采用前者并保留差异，不能没有证据就把差额归因于ECC。</div>
+<p class="small muted">容量单位：产品资料的GB/MB与程序输出的GiB/MiB先换算再比较。H20本轮未取得完整官方公开datasheet；公开实机报道/次级值已标注，不将H100规格冒充H20。B200 148SM来自公开用户运行日志，不包装成NVIDIA产品保证。</p>
+<p class="small">证据：<a href="https://wccftech.com/nvidia-china-compliant-h20-gpu-41-percent-fewer-cores-lower-performance-vs-top-hopper-h100/">H20 78SM公开实机报道</a> · <a href="https://flopper.io/gpu/nvidia-h20-96gb/spec-sheet">H20 dense规格参考</a> · <a href="https://github.com/NVIDIA/cutlass/issues/2222">B200 #SM148日志</a> · <a href="https://github.com/NVIDIA/cutlass/issues/2274">B200另一条设备日志</a> · <a href="https://www.nvidia.com/en-us/data-center/dgx-b200/">DGX B200官方规格</a> · <a href="https://resources.nvidia.com/en-us-blackwell-architecture/blackwell-architecture-technical-brief">Blackwell官方技术简报</a></p>
+</section>
+
+
+<section class="section" id="chip-lab"><div class="secno">03 / 交互架构图</div><h2>选一颗 GPU，再查看一个 SM</h2><p class="muted">SM 方格只表示数量与逻辑分组，不是硅片平面图。点击任意 SM 查看同一架构下的单元资源；可以用实机采集值覆盖 SM 数量。</p><div class="tabbar" aria-label="GPU型号"><button type="button" class="btn primary" data-chip="h20" aria-pressed="true">H20 · Hopper</button><button type="button" class="btn" data-chip="b200" aria-pressed="false">B200 · Blackwell</button></div><div class="metrics"><div class="metric"><div class="label">当前示意有效 SM 数</div><div class="value" id="sm-count-value"></div><div class="detail" id="sm-count-note"></div></div><div class="metric"><div class="label">每 SM Tensor Cores</div><div class="value" id="tc-count"></div><div class="detail" id="tc-gen"></div></div><div class="metric"><div class="label">Warp 执行粒度</div><div class="value">32 threads</div><div class="detail">warpgroup = 4 warps = 128 threads</div></div><div class="metric"><div class="label">每 SM shared memory 架构上限</div><div class="value">228 KiB</div><div class="detail">不等于每 CTA 可用容量；与 L1 carveout 有关</div></div></div>
+<div class="controls"><label class="field" style="max-width:220px">可见 SM 数（完整卡 / 分区以实机为准）<input id="sm-count" type="number" min="1" max="256" value="78"></label><div class="small muted" style="flex:1">修改此值仅更新教学计数，不能修改硬件。Hopper每SM的物理计数也不能推导H20实际时钟或tensor吞吐；B200的未核实物理计数不在这里填写。</div></div>
+<div class="chip-layout"><div class="chip-shell"><div class="chip-label"><strong id="chip-title"></strong><span class="badge" id="cc-label"></span></div><div id="die-boxes" class="dies"></div><p class="small muted" id="die-note"></p><div id="sm-pool" class="sm-pool" aria-label="SM数量示意"></div><div class="memory-bar" id="l2-bar"></div><div class="memory-bar" id="hbm-bar"></div></div><div class="inspector"><h3 id="inspector-title"></h3><p class="small muted" id="sm-description"></p><div class="subparts"><div class="subpart"><strong>Warp schedulers</strong>调度 ready warps<br>等待内存时切换其他工作</div><div class="subpart"><strong>CUDA / load-store</strong>地址、标量/向量处理<br>数据搬运和 epilogue</div><div class="subpart"><strong id="sm-tc-label">4 Tensor Cores</strong><span id="sm-matrix-name"></span><br>矩阵乘加专用执行路径</div><div class="subpart"><strong>Register file</strong>64K × 32-bit = 256 KiB<br>不是 64 KiB</div></div><div class="memory-bar">统一 L1 / texture / shared：256 KiB；shared 是其中划出的一部分</div><div class="memory-bar" id="tmem-bar"></div><p class="small muted" style="margin-top:12px">架构上限：最多 64 resident warps / 2048 threads、32 CTA/SM；每 thread 最多 255 registers。它们不能同时取满；实际由资源使用和分配粒度共同决定。</p></div></div><div class="callout" id="chip-meaning"></div></section>
+
+<section class="section" id="dataflow"><div class="secno">04 / 从内存到矩阵单元</div><h2>同样是 GEMM，两代芯片的 accumulator 去向不同</h2><p>下面选择的是现代高性能路径，而非所有 kernel 都必须遵循的唯一流程。H20 可以用其他 MMA 路径；B200 也可以运行兼容代码，但要评估是否真正利用了新架构。</p><div class="path"><div class="pathnode" id="path-0"></div><div class="pathnode" id="path-1"></div><div class="pathnode" id="path-2"></div><div class="pathnode" id="path-3"></div><div class="pathnode" id="path-4"></div></div><div class="steptext" aria-live="polite"><h3 id="flow-title"></h3><p id="flow-text"></p></div><div class="row"><button type="button" class="btn" id="flow-prev">上一步</button><button type="button" class="btn" id="flow-next">下一步</button><span class="small muted" id="flow-index"></span></div><div class="callout amber"><strong>TMA 与 TMEM 不是同一概念。</strong>TMA 是搬运机制；SMEM 是共享存储；TMEM 是 Blackwell 的 Tensor Core 专用存储。Hopper WGMMA 的 accumulator 在寄存器，Blackwell tcgen05 的结果首先写到 TMEM，再按需要搬到寄存器做缩放或 epilogue。</div></section>
+
+<section id="h20-details" class="section">
+  <div class="eyebrow">HOPPER / H20 · 从工作分工到硬件执行</div>
+  <h2>H20：一个 SM 内，搬运与矩阵计算怎样合作？</h2>
+  <p>把 <strong>SM</strong> 理解成可驻留多个 CTA 的计算单元，把 <strong>tile</strong> 理解成程序选择的一块矩阵。SM 数由芯片决定；tile 数由 M/N/K 和 BM/BN/BK 决定。一个 SM 能先后处理很多 tile，同一时刻的驻留数还要看寄存器和 shared memory。</p>
+
+  <h3>先看数量：96 GB H20 的参考配置与核验边界</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>层级/指标</th><th>H20 96 GB 参考值</th><th>怎样使用这个数字</th></tr></thead>
+    <tbody>
+      <tr><td>有效 SM</td><td><strong>78</strong>（公开实机报道）</td><td>可作为教学图的默认值；运行时用 <code>multiProcessorCount</code> 覆盖。它不是完整 GH100 的 144 SM，也不是 H100 SXM 的 132 SM。</td></tr>
+      <tr><td>Tensor Core</td><td>Hopper 每 SM 4 个，第 4 代；按 78 SM 计为 <strong>312</strong></td><td>4/SM 来自官方 Hopper 架构；全卡数是条件推算。Tensor Core 数量不等于可并行的 CTA 数，更不等于可独立调度的 tile 数。</td></tr>
+      <tr><td>FP32 CUDA cores</td><td>Hopper 每 SM 128 个；按 78 SM 计为 <strong>9,984</strong></td><td>执行标量/向量运算。矩阵主循环主要使用 Tensor Core，不能拿 CUDA cores 数直接推算 GEMM TFLOPS。</td></tr>
+      <tr><td>显存 / HBM 带宽</td><td><strong>96 GB HBM3 / 4.0 TB/s</strong></td><td>常见 96 GB SKU 的二级来源规格；容量决定能放下什么，带宽决定搬数据速度上限。</td></tr>
+      <tr><td>Tensor dense 峰值</td><td>FP16/BF16 <strong>148 TFLOPS</strong>；FP8 <strong>296 TFLOPS</strong></td><td>二级来源的 dense 口径，仅作估算参考；实测受功率、频率、SKU影响。2:4 sparse 峰值不能充当普通 dense GEMM 的利用率分母。</td></tr>
+      <tr><td>L2 / NVLink / 功率</td><td>常见 60 MB / 900 GB/s 双向合计 / 400 W</td><td>二级来源参考值。L2 用 <code>l2CacheSize</code> 核验，功率读实际 <code>power.limit</code>；NVLink 不参与普通单卡 GEMM 内部的 SM 数据搬运。</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note"><strong>证据说明：</strong>本轮没有取得 H20 完整官方公开 datasheet；NVIDIA 官方论坛对此建议联系销售。上表产品数值已明确标作公开实机报道/二级来源，Hopper 的单 SM 结构另由官方文档确认。对不同 H20 SKU、MIG 实例或云端配额，先读取实际设备属性。<a href="https://forums.developer.nvidia.com/t/do-we-have-manual-datasheet-for-nvidia-h20/303749" target="_blank" rel="noreferrer">官方论坛</a> · <a href="https://wccftech.com/nvidia-china-compliant-h20-gpu-41-percent-fewer-cores-lower-performance-vs-top-hopper-h100/" target="_blank" rel="noreferrer">78 SM 实机报道</a> · <a href="https://flopper.io/gpu/nvidia-h20-96gb/spec-sheet" target="_blank" rel="noreferrer">dense 规格参考</a></p>
+
+  <h3>Warp、warpgroup、CTA：三个不同层级</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>对象</th><th>规模</th><th>在 GEMM 中干什么</th></tr></thead>
+    <tbody>
+      <tr><td>Warp</td><td>32 threads / lanes</td><td>基本指令执行分组。NVIDIA warp32 与 MI355X wave64 不能按线程数直接互换调优配置。</td></tr>
+      <tr><td>Warpgroup</td><td>4 个连续、按 4 对齐的 warps = 128 threads</td><td>Hopper <code>wgmma.mma_async</code> 的协作范围；共同发起一次 WGMMA，结果 fragment 分布在参与线程的寄存器中。</td></tr>
+      <tr><td>CTA / thread block</td><td>程序决定线程数，可含多个 warps/warpgroups</td><td>同一 CTA 在同一个 SM 上执行，拥有自己的 shared memory 和组内同步。一个 producer warpgroup + 两个 consumer warpgroups 是可选设计，不是硬件固定配置。</td></tr>
+      <tr><td>Thread block cluster</td><td>多个 CTA 的显式协作组</td><td>可跨 SM、在同一 GPC 内协同驻留，使用 distributed shared memory 或 TMA multicast；普通 CTA 不会自动获得这些能力。</td></tr>
+    </tbody>
+  </table></div>
+  <p>一个 CTA 不必只负责一个 tile：persistent kernel 可以让同一批 CTA 从任务调度器不断领取新 tile；反过来，Global Split-K 也可以让多个 CTA 计算同一个输出 tile 的不同 K 段。</p>
+
+  <h3>典型 Hopper TMA + WGMMA 主循环</h3>
+  <pre class="diagram">逻辑矩阵：A[M,K]，W[N,K]，C = A × Wᵀ
+
+GPU grid：将 C 切成 BM × BN 输出 tile
+                    │ CUDA 调度 CTA 到 SM（不承诺固定 CTA→SM 编号）
+                    ▼
+┌──────────────── 一个 SM / 一个 CTA 的数据通路 ────────────────┐
+│ producer：发起 TMA，装入第 k 个 A[BM,BK]、W[BN,BK]           │
+│                                                            │
+│ HBM ↔ L2 ── TMA ──▶ shared stage 0/1/… ──▶ Tensor Cores    │
+│                         │ 输入ready          ▲              │
+│                         └─ mbarrier ──────── consumer        │
+│                                       warpgroup：128线程    │
+│                                       发 WGMMA / commit     │
+│                                              │ wait完成     │
+│                                              ▼              │
+│                              FP32累加 fragment：通用寄存器  │
+│                                              │              │
+│                           缩放 / bias / cast / 写回 C       │
+└────────────────────────────────────────────────────────────┘
+计算 stage k 时，尽量预取 stage k+1；stage复用前要确认消费者已完成。</pre>
+  <p><strong>TMA 是搬运引擎，WGMMA 是矩阵运算指令。</strong>TMA 可绕过通用寄存器完成 global↔shared 传输，不需要把整块输入先装进线程寄存器。图中展示常见 shared/shared 操作数路径；部分 WGMMA 形式也支持 A 来自寄存器。shared 的布局、swizzle、descriptor 与指令操作数要求必须匹配。</p>
+
+  <h3>128 粒度 FP8 blockscale：缩放发生在哪里？</h3>
+  <p>沿用 A8W8 场景：A 的 scale 可按每行、每 K128 一份，W 的 scale 可按每 N128×K128 一份。具体 shape 和布局仍以算子接口为准。</p>
+  <pre class="formula">C[m,n] = Σg { dot(A_fp8[m,128g:128g+128],
+                     W_fp8[n,128g:128g+128])
+                 × sA[m,g] × sW[floor(n/128),g] }</pre>
+  <p><strong>Hopper 普通 FP8 WGMMA 不会自动消费这些任意 FP32 scale 张量。</strong>内核要让不同 K128 的部分和分别缩放后再合并。WGMMA 的立即数缩放/累加开关也不是这个 blockscale 接口。若 scale 随 K 分组变化，不能把所有 K 的裸 dot 相加后只在最终 epilogue 乘一次 scale。</p>
+  <p>FP8 WGMMA 的一条指令可采用 <code>m64nNk32</code> 家族；算法的一个 K128 分组会包含若干次指令 K32 步进。<strong>指令 K、软件 BK、量化 group K128 是三种粒度</strong>，sweep 要保持三者的分组与归约语义正确。</p>
+
+  <h3>资源指标怎样约束 tile 和 pipeline？</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Hopper / CC 9.0 架构上限</th><th>含义</th><th>调优影响</th></tr></thead>
+    <tbody>
+      <tr><td>64 warps / SM；32 CTA / SM</td><td>warp32 对应最多 2,048 resident threads；这是上限</td><td>GEMM 往往先受 shared 或 registers 限制。occupancy 高并不自动更快。</td></tr>
+      <tr><td>64K × 32-bit registers / SM = 256 KiB</td><td>所有驻留 CTA 分配共享同一寄存器资源池；每 thread 最多 255</td><td>BM×BN 增大可提高数据复用，也会增大 FP32 accumulators；spill 到 local memory 可能损失性能。</td></tr>
+      <tr><td>统一 L1/shared/texture 256 KiB；shared 最多 228 KiB / SM</td><td>shared carveout 与 L1 共享容量；单 CTA opt-in 最多 227 KiB</td><td><code>stages × BK × (BM+BN) × 输入字节数</code> 是A/B缓冲粗估，另加padding、scales、barriers与epilogue空间。</td></tr>
+      <tr><td>单 CTA 最多 1,024 threads</td><td>合法线程数上限；不能理解为建议配置</td><td>WGMMA consumer 通常按 128-thread warpgroup 组织；producer、consumer 数量必须与kernel实现一致。</td></tr>
+      <tr><td>Cluster portable 上限 8 CTA</td><td>更大非portable cluster 是否可用由具体设备/API查询</td><td>cluster变大不总是更好：可能减少可驻留clusters，增加尾波浪费。</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">上表为官方 Hopper 调优文档的架构上限；对实际 H20 用设备属性核验。真实驻留量用 <code>cudaOccupancyMaxActiveBlocksPerMultiprocessor</code>，cluster 用 <code>cudaOccupancyMaxActiveClusters</code>。不要把 32 CTA/SM 直接填入性能估算。</p>
+  <p class="sources">官方原理来源：<a href="https://docs.nvidia.com/cuda/hopper-tuning-guide/index.html" target="_blank" rel="noreferrer">Hopper Tuning Guide</a> · <a href="https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/" target="_blank" rel="noreferrer">Hopper Architecture In-Depth</a> · <a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-multiply-accumulate-instructions" target="_blank" rel="noreferrer">PTX WGMMA</a></p>
+</section>
+
+<section id="b200-details" class="section">
+  <div class="eyebrow">BLACKWELL · SM100</div>
+  <h2>B200：两个 die 组成一个 GPU，新增 TMEM 计算通路</h2>
+  <p class="lead">对 kernel 开发最有用的变化，是 Tensor Core 的输入、累加与线程寄存器进一步分离：TMA 搬数据，SMEM 缓冲输入，<code>tcgen05.mma</code> 做矩阵计算，TMEM 保存累加结果。</p>
+  <div class="callout"><strong>三个“2”不要混淆：</strong>一块 B200 有两个 die；2SM MMA 是一对 CTA 在两个 SM 上合作；GB200 Superchip 是 Grace CPU 与两颗 Blackwell GPU 的系统组合。它们是不同层级。</div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>层级 / 资源</th><th>指标与含义</th><th>对 sweep 的影响</th></tr></thead>
+    <tbody>
+      <tr><td>GPU 封装</td><td>两个 die 通过 NV-HBI 连接，接口 10 TB/s；CUDA 视为一颗 GPU</td><td>不把两个 die 当两个 CUDA device，也不手工假定 CTA 会分到某个 die</td></tr>
+      <tr><td>HBM3e</td><td>按 DGX B200 当前产品页：单 GPU 180 GB、8 TB/s</td><td>小 M / 低复用 GEMM 常先看 DRAM 吞吐与 cache 命中</td></tr>
+      <tr><td>单 SM：线程与寄存器</td><td>64 warps 上限；32 threads/warp；64K 个 32-bit registers；最多 32 CTAs</td><td>CTA 的寄存器 / SMEM 消耗决定实际驻留，硬件上限不能同时套用</td></tr>
+      <tr><td>单 SM：L1 / SMEM</td><td>256 KiB 统一空间；最多 228 KiB SMEM；单 CTA 最多 227 KiB</td><td>增加 pipeline stages 能隐藏搬运，也增加 SMEM 用量</td></tr>
+      <tr><td>TMEM 地址视图</td><td>SM100a/f：每 CTA 视图为 128 行 × 512 列 × 32 bits，最大 256 KiB；列数按 32 起、2 的幂分配</td><td>大 accumulator tile 或双缓冲可能令分配跳档；这是视图上限，不代表每个 CTA 都多送 256 KiB 物理内存</td></tr>
+      <tr><td>CTA cluster</td><td>portable 最大 8 CTAs；B200 可 opt-in 到 16</td><td>multicast/协作复用与可同时调度的 cluster 数量之间需要权衡</td></tr>
+      <tr><td>Tensor Core 理论峰值</td><td>单 B200：FP8 4.5 / 9 PFLOPS；BF16 约 2.2 / 4.5 PFLOPS；FP4 9 / 18 PFLOPS（dense / sparse）</td><td>普通 dense GEMM 使用 dense 峰值作分母；2:4 sparse 峰值不能用于普通 FP8</td></tr>
+      <tr><td>GPU 间 NVLink 5</td><td>每 GPU 1.8 TB/s 双向互连口径</td><td>影响多 GPU 通信；单 GPU HBM roofline 不使用这个带宽</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">规格口径：官方技术简报还列出 HGX B200 “up to 192 GB / 7.7 TB/s”，本页采用当前 DGX B200 产品页的 180 GB / 8 TB/s。可用容量和有效 SM 数以你的设备查询为准；不能把 GB200 NVL72、B300 或 RTX GB202 的数字直接放进 B200。</p>
+  <h3>一次 GEMM tile 的数据旅程</h3>
+  <div class="hierarchy">
+    <article class="flowcard"><span class="step">01 · INPUT</span><h4>HBM → L2 → SMEM</h4><p>A/B 的 FP8 tile 与 scale 从显存读取。producer 对 A/B 发起 TMA，异步写入 SMEM 的下一阶段缓冲；FP32 scales 可以采用独立加载路径；mbarrier 表示数据已经就绪。</p></article>
+    <article class="flowcard"><span class="step">02 · MMA</span><h4>SMEM → Tensor Core → TMEM</h4><p>等待输入后发起 <code>tcgen05.mma</code>。典型路径 A/B 在 SMEM，FP32 累加在 TMEM；PTX 也允许 A 来自 TMEM。计算与后续 tile 搬运重叠。</p></article>
+    <article class="flowcard"><span class="step">03 · EPILOGUE</span><h4>TMEM → 寄存器 → 输出</h4><p><code>tcgen05.ld</code> 将结果读到线程寄存器。当前K128软件blockscale在每个分组读回后缩放累加；完成全部K后，再执行bias、激活或类型转换；通过 global store 或 SMEM + TMA store 写出。</p></article>
+  </div>
+  <div class="callout"><strong>异步流水的核心：</strong>buffer 0 正在计算时，buffer 1 可以装入下一块。必须在“读输入前”及“覆盖旧 buffer 前”分别满足同步条件；多设 stages 本身不保证更快。</div>
+  <h3>为什么 tcgen05 与 Hopper 的 WGMMA 不一样？</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>操作</th><th>SM100 的执行要求</th><th>正确理解</th></tr></thead>
+    <tbody>
+      <tr><td><code>tcgen05.mma</code></td><td>单线程可发起，计算异步完成</td><td>发起者少，不代表整块 GEMM 只需要一个线程；加载、同步、结果搬运仍需要协作</td></tr>
+      <tr><td>TMEM alloc/dealloc</td><td>1CTA 路径需一个 warp；2CTA 路径需两边各一个 warp 集体参与</td><td>“single-thread issue”不能推广到全部 TMEM 指令</td></tr>
+      <tr><td>TMEM load/store</td><td>一个 warp 可访问本 CTA TMEM 的 1/4；完整范围需要一个 warpgroup</td><td>结果读取仍有固定 lane/layout 规则</td></tr>
+      <tr><td>1SM / 2SM MMA</td><td>一 CTA 或同一 cluster 中的一对 CTA 合作</td><td>2SM 可让更大的 MMA tile 协作执行，并增加布局、同步和调度约束</td></tr>
+    </tbody>
+  </table></div>
+  <p>普通 CTA 的所有线程仍在一个 SM 内执行。2SM 路径是<strong>两个 CTA 各自在一个 SM 上</strong>，通过专门指令协作；不是一个 CTA 被拆到两个 SM，也不是 global Split-K。</p>
+  <h3>保留你的 FP8 × FP8、128 粒度 scale 语义</h3>
+  <p>你目前的 K128 blockscale 与 Blackwell 的 MXFP8 硬件 microscaling 并不自动相同。MXFP8 常见 K32 分组、E8M0 scale，还要求特定 scale 布局。保留原语义时，每个 K128 分组的 dot 必须先结合它自己的 scale，再合并到最终结果；跨不同 scale 分组的裸 dot 不能先合并后统一乘一次 scale。</p>
+  <p class="note">评估 MXFP8 路径时，将重新量化/scale 转换视为数值合同变化：验证误差，并分别报告转换开销、纯 GEMM 延迟与完整算子延迟。TMEM、SMEM 和 scales 的具体布局由选用的 kernel 决定。</p>
+  <p class="sources">依据：<a href="https://docs.nvidia.com/cuda/blackwell-tuning-guide/index.html" target="_blank" rel="noopener">Blackwell Tuning Guide</a> · <a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensor-memory" target="_blank" rel="noopener">PTX Tensor Memory</a> · <a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tcgen05-issue-granularity" target="_blank" rel="noopener">tcgen05 发起粒度</a> · <a href="https://docs.nvidia.com/cutlass/latest/media/docs/cpp/blackwell_functionality.html" target="_blank" rel="noopener">CUTLASS Blackwell</a> · <a href="https://www.nvidia.com/en-us/data-center/dgx-b200/" target="_blank" rel="noopener">DGX B200 规格</a> · <a href="https://resources.nvidia.com/en-us-blackwell-architecture/blackwell-architecture-technical-brief" target="_blank" rel="noopener">官方技术简报</a>。核对日期：2026-10-19。</p>
+</section>
+
+
+<section class="section" id="tile-lab"><div class="secno">05 / 一次 GEMM 产生多少工作</div><h2>BM/BN 决定任务数量；K 和 BK 决定每个任务的计算长度</h2><p>沿用你的逻辑合同：<code>A[M,K] × W[N,K]ᵀ → D[M,N]</code>，FP8 输入、FP32 累加、BF16 输出。此处为 <strong>1 个 CTA 算 1 个输出 tile 的教学模型</strong>，不是 CUTLASS 的配置生成器；persistent、tcgen05 2-SM、Stream-K 等需采用各自的工作分配模型。</p><div class="row"><button class="btn" type="button" data-shape="small">小 M · 64×8192×7168</button><button class="btn" type="button" data-shape="large">大矩阵 · 4096×4096×8192</button><button class="btn" type="button" data-shape="tail">尾部 · 1000×3000×4097</button></div><div class="controls">
+<label class="field">M<input id="m" type="number" min="1" max="65536" value="64"></label><label class="field">N<input id="n" type="number" min="1" max="65536" value="8192"></label><label class="field">K<input id="k" type="number" min="1" max="65536" value="7168"></label>
+<label class="field">BM<select id="bm"><option>16</option><option>32</option><option selected>64</option><option>128</option><option>256</option></select></label><label class="field">BN<select id="bn"><option>64</option><option selected>128</option><option>256</option></select></label><label class="field">BK<select id="bk"><option selected>128</option><option>256</option></select></label><label class="field">总 warps / CTA<select id="warps"><option>4</option><option selected>8</option><option>12</option></select></label><label class="field">A/B 缓冲份数<select id="stages"><option>2</option><option selected>3</option><option>4</option></select></label><label class="field">cluster M×N<select id="cluster"><option value="1,1">1×1</option><option value="2,1">2×1</option><option value="1,2">1×2</option><option value="2,2">2×2</option></select></label></div><div id="tile-error" class="status error" role="alert"></div><p class="small muted">BM16/32只展示数学任务划分；Hopper FP8 WGMMA原生M=64，实际可能需要padding、转置问题或其他指令路径。总warp数还包含搬运/epilogue角色，不能把每个warp都当成计算warp。</p>
+<div class="metrics"><div class="metric"><div class="label">有效输出 tiles / CTA</div><div class="value" id="tile-count"></div><div class="detail" id="tile-count-detail"></div></div><div class="metric"><div class="label">每 CTA 的 K 步数</div><div class="value" id="k-loops"></div><div class="detail" id="k-loops-detail"></div></div><div class="metric"><div class="label">简化 A/B shared / CTA</div><div class="value" id="shared-est"></div><div class="detail">FP8：buffers × BK × (BM+BN)</div></div><div class="metric"><div class="label">cluster 数量</div><div class="value" id="cluster-count"></div><div class="detail" id="cluster-detail"></div></div></div>
+<div class="diagram-grid"><div><div class="range-labels"><span>输出 D · M ↓</span><span>N →</span></div><div id="output-matrix" class="matrix"><div class="highlight" id="tile-highlight"></div></div><div class="controls"><label class="field">tile row<input id="tile-row" type="number" min="0" value="0"></label><label class="field">tile col<input id="tile-col" type="number" min="0" value="0"></label></div></div><div><h3 style="margin-top:0">选择输出块后，要读取哪些输入？</h3><div class="equation" id="tile-inputs"></div><div class="equation" id="tile-scales"></div><p class="small muted">tile 坐标相同的 M 行可以复用 A；N 列相同可复用 W。普通 CTA 的 shared memory 相互独立；cluster multicast / DSM 是显式合作机制，不能仅因两个 CTA 落在邻近 SM 就假定自动共享。</p></div></div>
+<div class="callout" id="grid-comment"></div><div class="callout amber" id="resource-comment"></div><p class="small muted">cluster 这里只把输出 grid 按 M/N 分组，展示一种补齐边界的映射。不是实际 launch trace，也不是 2-SM tcgen05 的开关。SMEM 估算不含 scale、barrier、padding、epilogue scratch；Hopper registers 与 B200 TMEM 还会额外约束合法性。</p><div class="controls"><label class="field" style="max-width:240px">填入完整目标算子实测耗时（µs）<input id="time-us" type="number" min="0.001" step="any" placeholder="不填写则不推测性能"></label><div class="small muted" id="tflops" aria-live="polite"></div></div></section>
+
+<section class="section" id="fp8-contract"><div class="secno">06 / 沿用你的 FP8 A8W8 目标</div><h2>128 粒度 FP32 blockscale，要与原生 MXFP8 分开比较</h2><div class="equation">D[m,n] ≈ Σg sA[m,g] × sW[⌊n/128⌋,g] × Σ(k∈group g) AQ[m,k] × WQ[n,k]<br>sA：逻辑 [M, ceil(K/128)]；sW：逻辑 [ceil(N/128), ceil(K/128)]；group g 长度 128。</div><p>数学合同可以保持一致，但不能把 AITER 的 <code>shuffle_weight</code> 输出或特殊 A-scale 字节布局，直接交给 NVIDIA kernel。需要按目标 API 的 stride、量化值布局、scale 布局、TMA descriptor 和对齐要求重新准备数据。</p><div class="table-wrap"><table><thead><tr><th>路线</th><th>scale 语义与执行方式</th><th>与当前问题是否相同</th></tr></thead><tbody><tr><td>Hopper FP8 blockwise</td><td>WGMMA 算各 K 分组的 FP8 dot，使用软件处理 FP32 scales，再累加。</td><td>可以实现当前合同；kernel 必须支持对应 A/B scale 几何。</td></tr><tr><td>Blackwell FP8 blockwise / groupwise</td><td>tcgen05 产生 TMEM 部分和；按实现读到寄存器做 FP32 分组缩放与总和累加。</td><td>可以实现当前合同；这条路线不能仅写“用了原生硬件缩放”。</td></tr><tr><td>Blackwell MXFP8 block-scaled MMA</td><td>典型每 32 个元素一个 E8M0（幂次）scale，使用对应 scale layout 与原生矩阵指令。</td><td>不是任意 FP32 scale128 的等价替换；量化误差和准备流程都可能改变。</td></tr><tr><td>Blackwell NVFP4</td><td>典型 16 元素 scale block、E4M3 scale 配合额外全局尺度；数据是 FP4。</td><td>已经改变输入精度与量化合同，不能把加速全部算作同一个 FP8 kernel 的优化。</td></tr><tr><td>库中新增加的 scale 模式</td><td>还可能有 UE8M0 的 128 等模式；版本、架构、shape 和 scale 编码有限定。</td><td>要逐 API 检查，不能仅凭“128”或“blockscale”同名判等。</td></tr></tbody></table></div><div class="callout"><strong>先固定数值，再比速度：</strong>用同一份 FP8 数值和逻辑 FP32 scales 建参考，分开测量权重准备、激活动态量化、主 GEMM、必要缩放/归约和最终 epilogue。静态 W 的预排布可摊销；每次生成的 A 与 scales 不能凭空省略。</div><p>BK=256 若跨两个 K128 分组，就要分别应用两组 scales；不能先把两组的裸 dot 混合后只乘一个 scale。BK 是否可取 128/256 还要看具体指令、copy pipeline 与实例约束。</p></section>
+
+<section class="section" id="sweep-strategy"><div class="secno">07 / 先决定扫哪一层</div><h2>Sweep 是搜索合法实现，不只是把 BM/BN/BK 穷举一遍</h2><div class="table-wrap"><table><thead><tr><th>层次</th><th>主要旋钮</th><th>H20 关注点</th><th>B200 关注点</th></tr></thead><tbody><tr><td>语义与后端</td><td>dtype、scale 几何、epilogue、库/自写 kernel</td><td>同合同 FP32 blockscale baseline；不能用 H100 峰值衡量 H20。</td><td>软件 FP32 blockwise 与原生 MX 模式分别建基线。</td></tr><tr><td>输出 tile</td><td>BM/BN、tile 访问顺序</td><td>少量 SM 上的数据复用与小 M 并行度；检查 tail。</td><td>更多 SM / 更高算力需要足够工作；大 tile 与 grid 不足的矛盾更明显。</td></tr><tr><td>K 与流水</td><td>BK、缓冲数、prefetch distance</td><td>TMA 与 WGMMA 重叠；SMEM 与 accumulator registers 平衡。</td><td>TMA 与 tcgen05 重叠；还要跟踪 TMEM 分配、生命周期与读回。</td></tr><tr><td>Warp specialization</td><td>producer / consumer 分工、总 warps、寄存器分配</td><td>WGMMA consumer 以 warpgroup 协作；搬运 warp 不应被误计为全部计算 warp。</td><td>单线程可 issue 某些 tcgen05 操作，但其他线程仍承担 TMA、调度和 epilogue。</td></tr><tr><td>跨 CTA 合作</td><td>cluster M/N、TMA multicast、DSM</td><td>降低重复 A/B 搬运；cluster 资源占用与同步成本。</td><td>可再探索 1-SM/2-SM MMA 实现；不是任意 CTA 自动分裂到两个 SM。</td></tr><tr><td>算法分工</td><td>persistent、Split-K、Stream-K、grouped</td><td>仅在所选 kernel 实现支持时搜索，归约与清零成本要计入。</td><td>同样要求支持；针对大量小 GEMM、cluster 尾部与 scheduler 做选择。</td></tr><tr><td>布局与 epilogue</td><td>SMEM swizzle、TMA tile、scale 重排、融合、store vector</td><td>避免 bank conflict、寄存器 spill、单独缩放开销。</td><td>避免 TMEM load、寄存器二次累加、转换/写回成为瓶颈。</td></tr></tbody></table></div><h3>推荐的四轮实验</h3><ol><li><strong>同合同基线：</strong>保存当前实现与库候选；固定 M/N/K、dtype/scales、stride、workspace 和运行模式。</li><li><strong>粗搜结构：</strong>按 shape 分组，选实现已有的合法 tile/pipeline。小 M 先验证工作是否足够，大 GEMM 先看算力与搬运是否重叠。</li><li><strong>局部搜索：</strong>保留 top-k，扫 stages、cluster、raster/swizzle、warp 分工；这些轴互相影响，不能永远只调一个轴。</li><li><strong>独立复测：</strong>验证数值、缓存条件与正式计时，最后在真实调用路径中验证配置命中和端到端收益。</li></ol><div class="callout green"><strong>选择赢家的目标：</strong>相同数值合同下的完整算子耗时与业务加权总时间。不是更高 occupancy、更大的 tile 或更多 Tensor Core 数量本身。</div></section>
+
+<section id="sweep-tools" class="section">
+  <div class="secno">08 / 固定版本的可运行起点</div><h2>GEMM 如何 sweep：先锁定数学契约，再搜索执行方案</h2>
+  <p>沿用你关心的 FP8 A8W8、128 粒度 blockscale。下列示例采用常见的 <b>A 每行 K128 一份 FP32 scale，W 每个 N128×K128 块一份 FP32 scale，输出 BF16</b>。如果实际 scale 形状不同，应先修改契约再比较。AMD 的 B preshuffle 布局不能直接作为 NVIDIA kernel 的输入布局。</p>
+  <div class="callout"><b>三个“blockscale”不要混：</b>FP32 scale + K128 软件缩放；MXFP8 + K32 的 UE8M0 原生缩放；NVFP4 + K16 的 UE4M3 缩放。它们的 scale 精度、布局和舍入不同。当前 cuBLAS 还提供实验性的 K128 UE8M0 模式，它也不等于任意 FP32 K128 scale。更换量化契约需要另做精度与端到端计时。</div>
+
+  <h3>从哪一层动手</h3>
+  <div class="table-wrap"><table><thead><tr><th>手段</th><th>实际搜索什么</th><th>适合怎样使用</th></tr></thead><tbody>
+  <tr><td>cuBLASLt</td><td>多个 heuristic 算法、workspace 上限、layout / transpose、支持的 epilogue</td><td>先建立相同 scale 契约的库基线；heuristic 第一个不保证最快。返回不支持就记录，别替换成普通 FP8 GEMM 冒充同一基线。</td></tr>
+  <tr><td>CUTLASS profiler</td><td>已编译的 tile、pipeline / schedule、1SM / 2SM 实例，以及 runtime raster、swizzle、cluster</td><td>B200 的官方 blockwiseGemm 能直接筛选 1×128 / 128×128 FP32 scale。没有实例化的配置不会凭 CLI 自动出现。</td></tr>
+  <tr><td>CuTe DSL / C++ CuTe</td><td>MMA tile、TMA copy / multicast、warp 分工、SMEM/TMEM 生命周期、scale / epilogue 融合</td><td>需要深入内核时用；直接暴露数据布局与硬件指令。不同示例支持的搜索轴不同。</td></tr>
+  <tr><td>Triton autotune / Gluon</td><td>BLOCK_M/N/K、num_warps、num_stages、program 顺序；更低层布局可用 Gluon</td><td>适合快速测试少量合法候选。普通 tl.dot_scaled 教程使用 microscale，不能默认等同 FP32 K128 算法。</td></tr>
+  <tr><td>Nsight Compute</td><td>测量执行瓶颈，不替你搜索参数</td><td>只分析基线与少量优胜候选，查 SM/Tensor 利用率、内存流量、占用限制、stall、spill。</td></tr>
+  </tbody></table></div>
+
+  <h3>先粗扫，后精调</h3>
+  <div class="table-wrap"><table><thead><tr><th>轴</th><th>为什么影响速度</th><th>先看哪些候选与边界</th></tr></thead><tbody>
+  <tr><td>BM × BN</td><td>决定输出任务数量、数据复用、尾块浪费、累加器资源</td><td>先使用后端已有的 64/128/256 类 tile。小 M 可测试 Cᵀ = W × Aᵀ，把窄边移到 Tensor Core 更灵活的 N 方向；同时交换 scale 粒度与输出布局。</td></tr>
+  <tr><td>BK 与 scales</td><td>影响每阶段传输量、迭代次数、SMEM 与缩放频率</td><td>以 BK128 为起点；BK256 仍须保留两个 K128 scale 分组。改变 BK 不能改变数学上的 scale 分组。</td></tr>
+  <tr><td>Pipeline stages / warp specialization</td><td>重叠 TMA 与 MMA；更多 buffer 增加 SMEM，占用率可能下降</td><td>只测试该模板允许的 stages 与生产者/消费者配置；不要把“越多 warp、越多 stage”当作目标。</td></tr>
+  <tr><td>Cluster / TMA multicast</td><td>显式向多个 CTA 分发共用 A 或 W，可降低重复流量</td><td>按内核支持筛选 1×1、1×2、2×1、2×2。cluster 的尺寸会影响调度与尾块；不自动共享所有数据。</td></tr>
+  <tr><td>B200 1SM / 2SM、TMEM</td><td>改变 MMA 协作范围、TMEM 占用与传回寄存器的工作</td><td>同 shape 比较合法 1CTA/2CTA 版本；2SM 的 MMA tile 由两个 CTA 协作，不能把它当成一个普通 CTA tile 计算占用。</td></tr>
+  <tr><td>Raster / swizzle</td><td>改变相邻输出 tile 的访问时序，提高 L2 中 A/W 的复用机会</td><td>先扫沿 M / 沿 N，swizzle 1、2、4、8；观察 L2 流量与热/冷缓存两种成绩。</td></tr>
+  <tr><td>Global Split-K / Stream-K</td><td>小 M/N 大 K 时增加可并行任务，但需要额外归约/调度</td><td>仅在后端实现时测试 1、2、4、8 等值，计入 reduction。组内 K 分工不会增加跨 SM 的 CTA 数。</td></tr>
+  <tr><td>Scale layout / epilogue / packing</td><td>转换、FP32 scale 与输出操作可能成为主耗时</td><td>同时记录 kernel-only 与完整调用耗时。静态权重只预排一次，按复用次数摊销；动态 A 的量化成本通常每次都发生。</td></tr>
+  </tbody></table></div>
+
+  <h3>官方源码可复查的起点：CUTLASS v4.8.0</h3>
+  <p>固定提交 <code>098de2a652cf8f00fd70b2df54051c7eccbb855a</code>。以下命令已按该 tag 的 CMake、参数解析和示例核对，尚未在 H20 / B200 实机编译或测量。C++ 的 B200 <code>100a</code> 编译目标从 CUDA 12.8 起提供；下方 CuTe DSL 的 cu12 环境按其文档使用 CUDA 12.9，驱动至少 575.51.03。实际安装还需满足所选 PyTorch 与平台要求。</p>
+  <pre><code>git clone --branch v4.8.0 --depth 1 https://github.com/NVIDIA/cutlass.git
+cd cutlass
+git rev-parse HEAD</code></pre>
+
+  <details><summary>H20：从官方 FP8 groupwise 示例，扫 raster / swizzle</summary>
+    <p>示例已使用 <code>ScaleGranularityM=1, N=128, K=128</code>、FP32 scale、BF16 输出。默认 tile 256×128×128、cluster 1×2；更改 tile/stage/cluster 需要修改模板并重编译。这一组 shell 循环只扫描调度顺序。</p>
+    <pre><code>cmake -S . -B build-h20 -DCUTLASS_NVCC_ARCHS=90a
+cmake --build build-h20 --target \
+  67_hopper_fp8_warp_specialized_gemm_with_groupwise_scaling -j8
+
+GEMM_H20=./build-h20/examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_groupwise_scaling
+for raster in m n h; do
+  for swizzle in 1 2 4 8; do
+    "$GEMM_H20" --m=4096 --n=4096 --k=8192 \
+      --raster="$raster" --swizzle="$swizzle" \
+      --warmup=10 --iterations=100
+  done
+done</code></pre>
+  </details>
+
+  <details><summary>B200：用 profiler 搜索 FP32 scale128 的合法 kernel</summary>
+    <p>编译 filter 来自官方 example81；为便于首次运行保留默认实例化级别。扩大编译搜索时再逐级调整 <code>CUTLASS_LIBRARY_INSTANTIATION_LEVEL</code>，并用 <code>--mode=enumerate</code> 检查生成了什么；直接用 max 可能产生巨量实例。性能命令保持验证开启，不沿用示例中关闭验证的设置。</p>
+    <pre><code>cmake -S . -B build-b200 \
+  -DCUTLASS_NVCC_ARCHS=100a \
+  -DCUTLASS_LIBRARY_KERNELS='cutlass3x*1x128f32xe4m3_*128x128f32xe4m3*' \
+  -DCUTLASS_UNITY_BUILD_ENABLED=ON
+cmake --build build-b200 --target cutlass_profiler -j8
+
+./build-b200/tools/profiler/cutlass_profiler \
+  --operation=blockwiseGemm --mode=enumerate
+
+./build-b200/tools/profiler/cutlass_profiler \
+  --operation=blockwiseGemm \
+  --enable-best-kernel-for-fixed-shape \
+  --m=4096 --n=4096 --k=8192 \
+  --scale_vec_size_m=1 --scale_vec_size_n=128 --scale_vec_size_k=128 \
+  --warmup-iterations=10 --profiling-iterations=100 \
+  --verification-enabled=true --output=b200_fp8_block128</code></pre>
+    <p>结果中还要筛选 A/B/D layout、输出 dtype、beta、融合操作与业务一致的行，再比较时间。CLI 中的普通 <code>--operation=Gemm</code> 不是这套 FP32 blockwise 契约的替代项。</p>
+  </details>
+
+  <details><summary>B200：CuTe DSL 的两套合法 1CTA / 2CTA 示例配置</summary>
+    <p>安装脚本须与示例来自同一提交；使用独立 Python 环境。此 blockwise 示例单独加载 scales，再把 K128 局部结果从 TMEM 搬到寄存器缩放累加。它提供的 CLI 不支持任意 BN：当前示例 BN 固定 128，合法配置以源码校验函数为准。</p>
+    <pre><code>python3 -m venv .venv-cute
+source .venv-cute/bin/activate
+./python/CuTeDSL/setup.sh --cu12
+
+CUTE_FP8=examples/python/CuTeDSL/cute/blackwell/kernel/blockwise_gemm/blockwise_gemm.py
+python "$CUTE_FP8" \
+  --mnkl 4096,4096,8192,1 --mma_tiler_mn 128,128 \
+  --cluster_shape_mn 1,2 \
+  --ab_dtype Float8E4M3FN --scale_dtype Float32 --c_dtype BFloat16 \
+  --warmup_iterations 10 --iterations 100
+
+python "$CUTE_FP8" \
+  --mnkl 4096,4096,8192,1 --mma_tiler_mn 256,128 \
+  --cluster_shape_mn 2,1 --use_2cta_instrs \
+  --ab_dtype Float8E4M3FN --scale_dtype Float32 --c_dtype BFloat16 \
+  --warmup_iterations 10 --iterations 100</code></pre>
+    <p>程序默认做参考检查；仍需按业务精度要求检查误差阈值。添加 <code>--use_cold_l2</code> 可比较冷缓存情况。1CTA 与 2CTA 的这里两个配置只是对比起点，不代表最佳点。</p>
+  </details>
+
+  <details><summary>cuBLASLt 与 Triton：调参机制如何落地</summary>
+    <p><b>cuBLASLt：</b>完整设置 dtype、layout、transpose、A/B_SCALE_MODE 和 scale 指针 → 设置 workspace 预算 → <code>cublasLtMatmulAlgoGetHeuristic</code> 请求例如 32 个候选 → 筛掉不支持项 → 每项预热、CUDA event 多轮计时、数值校验 → 缓存最佳算法。缓存键包含 GPU、CUDA/cuBLAS 版本、shape、strides、scale 模式、epilogue 和 workspace。官方 <code>LtSgemmSimpleAutoTuning</code> 展示这个机制，但本身是 SGEMM 示例，不是可直接拿来跑 FP8 blockscale 的脚本。</p>
+    <p><b>Triton：</b>在已有正确的 K128 FP32-scale kernel 上，用 <code>triton.Config</code> 枚举少量 BM/BN/BK、num_warps、num_stages，再通过 <code>@triton.autotune</code> 计时选择。key 应覆盖 M/N/K 及改变算法选择的 layout / scale 信息；先剪掉编译或资源不合法的候选。若候选会原子累加，使用 <code>reset_to_zero</code> 或适当 hook 重置输出，避免重复跑改变答案。</p>
+    <div class="callout">普通 Triton FP8 <code>tl.dot</code> 路线必须按 K128 子和应用 FP32 scales。<code>tl.dot_scaled</code> 的 MXFP8 教程属于另一种 scale 编码；不能只把函数名换一下就认为数学契约相同。</div>
+  </details>
+
+  <h3>怎样确认“更快”是可信的</h3>
+  <p>每个候选先与 FP32 解量化参考做正确性比较，再预热；多轮计时看中位数与波动，报告实际 <code>2MNK / time</code>。同时保存 GPU 型号/SM 数、功耗/频率、驱动/CUDA/库版本、源码 SHA、完整配置、误差与耗时。保持相同数据、缓存策略、并发和功耗模式；复测少量优胜配置，避免把噪声当提升。</p>
+  <div class="table-wrap"><table><thead><tr><th>观察结果</th><th>下一步优先扫</th></tr></thead><tbody>
+    <tr><td>输出 tile 少，尾部只有少量 SM 工作</td><td>更小 tile、转置问题、实现支持的 Global Split-K / Stream-K；persistent 的逻辑 tile 数与 launch CTA 数分别统计。</td></tr>
+    <tr><td>HBM/L2 流量高，Tensor Core 等数据</td><td>连续访问与布局、raster/swizzle、TMA multicast；检查静态 W 是否已驻留 L2。</td></tr>
+    <tr><td>异步等待/屏障时间多</td><td>pipeline stage 数、生产者/消费者比例、scale load 与 MMA overlap。</td></tr>
+    <tr><td>寄存器/SMEM 限制驻留，出现 spill</td><td>tile、pipeline 深度、epilogue 融合范围；occupancy 是解释指标，不是越高越好。</td></tr>
+    <tr><td>B200 MMA 很快，但整体时间没明显下降</td><td>检查 TMEM→寄存器、FP32 scale 累加、输出/启动开销；只在允许改量化契约时另测原生 microscale。</td></tr>
+  </tbody></table></div>
+  <pre><code># 只对已筛选的候选采样；GEMM_H20 沿用上方的可执行文件路径
+ncu --set basic --launch-skip 10 --launch-count 1 \
+  --export h20_fp8_candidate \
+  "$GEMM_H20" --m=4096 --n=4096 --k=8192 \
+  --raster=m --swizzle=2 --warmup=10 --iterations=20
+
+# 先列出本机工具支持的分析 section，再按瓶颈增加采集
+ncu --list-sections</code></pre>
+  <p>示例程序可能含初始化/参考 kernel；正式报告应从捕获列表选出 GEMM，再用 <code>--kernel-name</code> 过滤。Nsight Compute 可能 replay kernel、控制缓存/时钟，采样用于解释瓶颈；最终 latency 用不带 profiler 的相同 benchmark 复测。</p>
+
+  <h3>可追溯来源与补充入口</h3>
+  <p><a href="https://github.com/NVIDIA/cutlass/blob/v4.8.0/examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_groupwise_scaling.cu" target="_blank" rel="noopener">Hopper groupwise 示例</a> · <a href="https://github.com/NVIDIA/cutlass/blob/v4.8.0/examples/81_blackwell_gemm_blockwise/README.md" target="_blank" rel="noopener">Blackwell blockwise 与 profiler</a> · <a href="https://github.com/NVIDIA/cutlass/blob/v4.8.0/media/docs/cpp/profiler.md" target="_blank" rel="noopener">Profiler 搜索参数</a> · <a href="https://github.com/NVIDIA/cutlass/blob/v4.8.0/examples/python/CuTeDSL/cute/blackwell/kernel/blockwise_gemm/blockwise_gemm.py" target="_blank" rel="noopener">CuTe DSL blockwise 源码</a> · <a href="https://github.com/NVIDIA/cutlass/blob/v4.8.0/media/docs/pythonDSL/quick_start.rst" target="_blank" rel="noopener">CuTe DSL 安装</a> · <a href="https://docs.nvidia.com/cuda/cublas/index.html#element-1d-and-128x128-2d-block-scaling-for-fp8-data-types" target="_blank" rel="noopener">cuBLAS scale 契约</a> · <a href="https://github.com/NVIDIA/CUDALibrarySamples/blob/a94482ebecf8b16d5b83ab276b7db3a84979f0e5/cuBLASLt/LtSgemmSimpleAutoTuning/sample_cublasLt_LtSgemmSimpleAutoTuning.cu" target="_blank" rel="noopener">cuBLASLt autotuning 机制示例</a> · <a href="https://triton-lang.org/main/python-api/generated/triton.autotune.html" target="_blank" rel="noopener">Triton autotune</a> · <a href="https://docs.nvidia.com/nsight-compute/NsightComputeCli/index.html" target="_blank" rel="noopener">Nsight Compute CLI</a></p>
+  <p>补充：<a href="https://github.com/deepseek-ai/DeepGEMM" target="_blank" rel="noopener">DeepGEMM</a> 是第三方的高性能实现参考，可用于 SM90/SM100 特定接口比较；应固定提交并检查该版本的 scale 类型、packing、shape 约束，它不是 NVIDIA 官方库，也不是任意 AITER preshuffle 输入的直接替换。</p>
+</section>
+
+
+<section class="section" id="measurement"><div class="secno">09 / 每个数字都要知道测了什么</div><h2>从“看起来快”到可复现的性能结果</h2><div class="table-wrap"><table><thead><tr><th>检查点</th><th>实践</th><th>容易混淆的口径</th></tr></thead><tbody><tr><td>正确性</td><td>固定 FP8/scales 数据，与按同合同反量化后的参考比较。覆盖不同 K/N 分组 scale 差异、尾部、零块与饱和。</td><td>FP8 量化误差、packing 错误、kernel 累加误差要分开。</td></tr><tr><td>计时</td><td>GPU event，同一 stream，warmup 后多轮、随机/交错候选顺序；JIT 和首次分配单独记录。</td><td>CPU launch 时间、kernel 时间、图捕获 replay 和完整算子时间不能混为一列。</td></tr><tr><td>缓存</td><td>热权重复用、轮换输入、冷/热缓存分别记录；按真实部署选择。</td><td>反复访问同一 buffer 的高吞吐不一定等于 HBM 可持续带宽。</td></tr><tr><td>资源</td><td>编译器资源报告 + Nsight Compute：registers、spill、shared、TMEM相关限制、active warps/CTAs、issue stall。</td><td>结构公式是估算；active SM、occupancy、Tensor Core busy 是不同指标。</td></tr><tr><td>峰值</td><td>只对同 dtype、dense/sparse、GPU SKU、功耗/时钟、正确算术量比较。</td><td>宣传表上的 structured sparsity 峰值不能拿来算 dense GEMM 利用率。</td></tr><tr><td>集成</td><td>记录实际 dispatch、量化/scale转换、pack、workspace、reduction 与融合操作。</td><td>GEMM-only 变快不保证整个 FP8 调用路径变快。</td></tr></tbody></table></div><h3>症状 → 下一轮 sweep</h3><div class="table-wrap"><table><thead><tr><th>看到什么</th><th>优先尝试</th></tr></thead><tbody><tr><td>小 M，输出 tiles 少于可见 SM</td><td>合法的小 BM/BN、grouped 调度；后端支持时再比较 Split-K/Stream-K 的总成本。</td></tr><tr><td>TMA 等待多，Tensor Core 没吃饱</td><td>stages/prefetch、tile 形状、cluster multicast、访问连续性；确认瓶颈不在 scales 或 epilogue。</td></tr><tr><td>Hopper accumulator 导致 register spill</td><td>缩小输出 tile、调整 consumer warpgroup 分工和寄存器预算、降低同时存活值。</td></tr><tr><td>Blackwell tcgen05 很快，TMEM/scale 读回占比高</td><td>缩放/累加组织、TMEM 生命周期、输出 tile、epilogue 与同步；不要默认原生 MX 与当前合同等价。</td></tr><tr><td>cluster 尾部浪费 / cluster occupancy 低</td><td>cluster shape、raster order、tile 数与 persistent scheduler；用 cluster occupancy API/工具确认。</td></tr><tr><td>只有 microbenchmark 快</td><td>找量化、转换、CPU dispatch、图捕获差异和真实 shape 分布。</td></tr></tbody></table></div><p>归档字段至少包括：GPU 完整型号、可见 SM、driver/CUDA、库与源码 SHA、编译目标、M/N/K/stride、dtype/scales/packing、tile/cluster/stages、workspace、正确性指标、计时口径、原始样本与 median、缓存条件、功耗/时钟状态。</p></section>
+
+<section class="section" id="device-probe"><div class="secno">用实机消除 SKU 与分区歧义</div><h2>查询真实 SM 数和资源上限</h2><p>本页附带一个只读 CUDA 查询程序，获取设备报告的 SM、warp、L2、shared、寄存器和 cluster 支持等信息。它不运行 GEMM、不改时钟、不安装依赖；需要在目标 CUDA 开发环境编译。</p><pre><code>nvcc -O2 nvidia-device-probe.cu -o nvidia-device-probe
+./nvidia-device-probe
+nvidia-smi --query-gpu=name,driver_version,memory.total,power.limit --format=csv</code></pre><p class="small muted">程序打印的显存用 GiB，产品表常用 GB，先统一单位再比较。MIG 或其他分区可能减少可见资源；查询不能自动给出 Tensor Core 峰值，SM 数也不能替代芯片规格。</p><a href="nvidia-device-probe.cu" class="btn" download>下载 CUDA 设备查询源码</a></section>
+
+<section class="section" id="sources"><div class="secno">来源与验证范围</div><h2>每个层级使用对应来源</h2><p>本页核查于2026-10-19。架构原理依据NVIDIA CUDA/PTX、调优指南与官方CUTLASS；H20产品数值和B200有效SM数补充了明确标注的公开实机/次级来源。未访问目标H20/B200，未编译或实测GPU性能。</p><ul class="source-list">
+<li><a href="https://docs.nvidia.com/cuda/hopper-tuning-guide/index.html">Hopper Tuning Guide</a>与<a href="https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/">Hopper架构详解</a>：单SM资源、TMA、cluster、Tensor Core代际。</li>
+<li><a href="https://docs.nvidia.com/cuda/blackwell-tuning-guide/index.html">Blackwell Tuning Guide</a>：CC10.0资源上限；不要混用CC12.0。</li>
+<li><a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-multiply-accumulate-instructions">PTX WGMMA</a>、<a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensor-memory">TMEM</a>、<a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tcgen05-issue-granularity">tcgen05 issue粒度</a>和<a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tcgen05-cta-pair">CTA pair</a>。</li>
+<li><a href="https://www.nvidia.com/en-us/data-center/dgx-b200/">DGX B200</a>与<a href="https://resources.nvidia.com/en-us-blackwell-architecture/blackwell-architecture-technical-brief">Blackwell Technical Brief</a>：双die、HBM/NVLink与dense/sparse规格；产品口径差异已保留。</li>
+<li><a href="https://github.com/NVIDIA/cutlass/tree/098de2a652cf8f00fd70b2df54051c7eccbb855a">CUTLASS v4.8.0固定源码</a>：示例67 groupwise、81 blockwise、CuTe DSL与profiler。</li>
+<li><a href="https://docs.nvidia.com/cuda/cublas/index.html">cuBLAS文档</a>、<a href="https://docs.nvidia.com/nsight-compute/NsightComputeCli/index.html">Nsight Compute CLI</a>、<a href="https://triton-lang.org/main/python-api/generated/triton.autotune.html">Triton autotune</a>。</li>
+</ul><div class="callout">交互数字仅计算矩阵分块、线程数、粗略缓冲量与任务覆盖；不模拟时钟、cache miss、真实SM分派或occupancy。只有填入实测耗时才换算有效TFLOPS；页内没有虚构benchmark曲线。</div><p>下一步可以把同一份实际shape清单分别送入H20与B200的同合同候选，再用设备报告替换默认SM数。先比较可复现的基线，再扩大tile/pipeline/cluster搜索。</p></section>
+</main></div><div class="footer">H20 / B200 · 架构与 GEMM sweep 教程 · 核查日期 2026-10-19 · 离线可用，无外部脚本依赖</div></div><script>
+const NvidiaModel=(()=>{
+  const configs={
+    h20:{name:'H20（常见96GB SKU）',architecture:'Hopper',cc:'SM90 / CC 9.0',sm:78,tensorGen:'第4代 Tensor Core',tcs:4,
+      smNote:'常见SKU参考；请用实机覆盖',dieCount:1,l2:'L2：H20 型号值请实机查询，不沿用 H100 50 MB',hbm:'常见96GB HBM3 · 约4 TB/s（SKU参考口径）'},
+    b200:{name:'B200（DGX出货口径）',architecture:'Blackwell',cc:'SM100 / CC 10.0',sm:148,tensorGen:'第5代 Tensor Core',tcs:null,
+      smNote:'公开B200实机日志参考',dieCount:2,l2:'L2：用设备l2CacheSize核验，不混用GB200 GPU的文档口径',hbm:'DGX B200口径：180 GB HBM3e · 8 TB/s / GPU'}
+  };
+  function compute(p){
+    for(const key of ['m','n','k','bm','bn','bk','warps','stages','sm','cm','cn'])if(!Number.isInteger(p[key])||p[key]<1)throw new Error(`${key} 必须是正整数`);
+    const gm=Math.ceil(p.m/p.bm),gn=Math.ceil(p.n/p.bn),kt=Math.ceil(p.k/p.bk);
+    const cgm=Math.ceil(gm/p.cm),cgn=Math.ceil(gn/p.cn),clusters=cgm*cgn,clusterSize=p.cm*p.cn;
+    const shared=p.stages*p.bk*(p.bm+p.bn),threads=p.warps*32;
+    return {...p,gm,gn,kt,tiles:gm*gn,clusters,clusterSize,paddedCTAs:clusters*clusterSize,
+      shared,threads,abSharedBound:Math.floor(228*1024/shared),threadBound:Math.floor(2048/threads),
+      firstCoverage:Math.min(1,gm*gn/p.sm),meanTilesPerSM:gm*gn/p.sm,
+      flops:2*p.m*p.n*p.k,kScaleGroups:Math.ceil(p.k/128),nScaleGroups:Math.ceil(p.n/128),
+      mnFill:p.m*p.n/(gm*p.bm*gn*p.bn)};
+  }
+  return {configs,compute};
+})();
+if(typeof module!=='undefined'&&module.exports)module.exports=NvidiaModel;
+
+(()=>{
+ const $=id=>document.getElementById(id),fmt=x=>new Intl.NumberFormat('zh-CN',{maximumFractionDigits:2}).format(x);
+ let chip='h20',step=0,selected=0,data=null;
+ const flow={
+   h20:[
+     ['HBM → L2','全局输入与缓存','A/W 量化值与 FP32 scales 存在 global memory；访问经缓存层级。tile顺序影响A/W复用，并不直接绑定某个SM。'],
+     ['TMA → SMEM','异步拷贝与swizzle','TMA 根据tensor descriptor搬运A/B tile到shared memory，可避免使用大量普通寄存器中转。producer发起后，consumer在所需mbarrier满足时消费；cluster multicast需显式设置。'],
+     ['WGMMA','4 warps协作','一个warpgroup由4个warps、128个threads组成。WGMMA异步矩阵运算按其支持的形状读取SMEM操作数（部分模式A可来自寄存器），以规定的协作与等待规则执行。'],
+     ['Registers','accumulator与scales','WGMMA的FP32结果分布在参与线程的寄存器中。当前FP32 K128 blockscale路径对每个分组的局部dot乘对应sA/sW，再加入总acc；寄存器活跃值与spill要实测。'],
+     ['Epilogue → D','转换、融合与写回','完整K归约后执行输出转换/bias/activation，写回global。若使用Split-K，非线性epilogue必须在合并后。计时分别记录kernel-only与实际输入准备/输出处理。']
+   ],
+   b200:[
+     ['HBM → L2','两die，一颗GPU','B200两个die通过内部互联协同，CUDA通常看到一颗GPU。不要把两个die当成两张卡，也不要把NVLink卡间带宽与die间带宽混用。'],
+     ['TMA → SMEM','数据与scale各有布局','A/B tile通过TMA进入shared memory；当前软件FP32 blockwise例子的scales由专门路径装入。cluster可显式multicast复用数据，异步barrier仍不可省略。'],
+     ['tcgen05.mma','1-SM或2-SM协作','第五代Tensor Core矩阵操作可由单个线程issue，随后异步完成；这不表示一个线程承担所有数学计算。2-SM模式需要支持的CTA pair/cluster与同步协议。'],
+     ['TMEM','Tensor Core专用存储','tcgen05把结果放到Tensor Memory。针对当前FP32 K128软件缩放，局部acc从TMEM取到寄存器，乘对应scales并更新总和；原生MX格式是另一条路径。TMEM不是SMEM，也不由普通指针load/store访问。'],
+     ['Registers → D','scale/epilogue可能成瓶颈','使用tcgen05.ld等路径取回结果，执行SIMT缩放/融合/转换，再store输出。MMA更快后，TMEM读回、scales与epilogue占比可能上升；应测完整算子。']
+   ]
+ };
+ function renderChip(){
+   const cfg=NvidiaModel.configs[chip],sm=Number($('sm-count').value);
+   if(!Number.isInteger(sm)||sm<1||sm>256){$('tile-error').textContent='可见SM数请输入1–256的整数。';data=null;renderTime();return;}
+   selected=Math.min(selected,sm-1);
+   document.querySelectorAll('[data-chip]').forEach(b=>{b.classList.toggle('primary',b.dataset.chip===chip);b.setAttribute('aria-pressed',String(b.dataset.chip===chip));});
+   $('sm-count-value').textContent=fmt(sm);$('sm-count-note').textContent=sm===cfg.sm?cfg.smNote:'按手动输入的设备可见资源计算';
+   $('tc-count').textContent=cfg.tcs===null?'未确认数量':String(cfg.tcs);$('tc-gen').textContent=cfg.tcs===null?'第5代Tensor Core；本轮未找到每SM数量的官方明文':`${cfg.tensorGen}；总数按该比率推算 ${sm*cfg.tcs}`;
+   $('chip-title').textContent=cfg.name;$('cc-label').textContent=cfg.cc;$('l2-bar').textContent=cfg.l2;$('hbm-bar').textContent=cfg.hbm;
+   $('die-boxes').replaceChildren();
+   for(let i=0;i<cfg.dieCount;i++){const e=document.createElement('div');e.className='die';e.textContent=cfg.dieCount===1?'Hopper GPU die':`GPU die ${i} · 由内部互联协同`;$('die-boxes').appendChild(e);}
+   $('die-note').textContent=chip==='h20'?'下面只展示可见SM数量，不还原GPC/TPC的物理布局。':'两个die属于同一GPU；下面SM池是统一逻辑视图，不假设两个die各有一半有效SM。';
+   $('sm-pool').replaceChildren();
+   for(let i=0;i<sm;i++){const b=document.createElement('button');b.type='button';b.className='sm';b.classList.toggle('active',i===selected);b.textContent=String(i);b.setAttribute('aria-label',`查看示意SM ${i}`);b.setAttribute('aria-pressed',String(i===selected));b.addEventListener('click',()=>{selected=i;renderChip();});$('sm-pool').appendChild(b);}
+   $('inspector-title').textContent=`示意 SM ${selected} · ${cfg.architecture}`;
+   $('sm-description').textContent='单元框是功能划分，不按面积或数量比例绘制。寄存器、shared、warp slots共同限制驻留，Tensor Core由指令路径使用。';
+   $('sm-matrix-name').textContent=chip==='h20'?'MMA / WGMMA':'tcgen05 / 第五代MMA';
+   $('sm-tc-label').textContent=chip==='h20'?'4 Tensor Cores':'第五代 Tensor Core 路径';
+   $('tmem-bar').textContent=chip==='h20'?'WGMMA accumulator → 普通寄存器 fragment':'TMEM：PTX逻辑视图 128 rows × 512 columns × 32 bit；按列管理';
+   $('chip-meaning').textContent=chip==='h20'
+     ? 'H20虽然属于Hopper，但SM数量、时钟和tensor吞吐是SKU参数。不能拿H100的132SM、HBM容量、L2或峰值来替代。这里使用常见78SM作示意，目标卡请以查询结果覆盖。'
+     : 'B200的优势不仅是更多SM。tcgen05、TMEM、cluster协作与新的低精度格式改变了kernel结构；SM数量不是Tensor吞吐的充分指标，2-SM kernel也不是普通CTA自动跨两个SM。';
+   renderFlow();renderTile(false);
+ }
+ function renderFlow(){
+   const states=flow[chip];for(let i=0;i<5;i++){
+     const node=$(`path-${i}`);node.replaceChildren();const title=document.createElement('strong'),text=document.createElement('span');title.textContent=states[i][0];text.textContent=states[i][1];node.append(title,text);node.classList.toggle('active',step===i);
+   }
+   $('flow-title').textContent=`${step+1}. ${states[step][0]} · ${states[step][1]}`;$('flow-text').textContent=states[step][2];
+   $('flow-index').textContent=`${NvidiaModel.configs[chip].architecture} · ${step+1}/5`;$('flow-prev').disabled=step===0;$('flow-next').disabled=step===4;
+ }
+ function params(){
+   const p={};for(const k of ['m','n','k','bm','bn','bk','warps','stages'])p[k]=Number($(k).value);
+   p.sm=Number($('sm-count').value);[p.cm,p.cn]=$('cluster').value.split(',').map(Number);
+   if(!Number.isInteger(p.sm)||p.sm<1||p.sm>256)throw new Error('可见SM数请输入1–256的整数。');
+   for(const k of ['m','n','k'])if(!Number.isInteger(p[k])||p[k]<1||p[k]>65536)throw new Error('M/N/K请输入1–65536的整数。');
+   return p;
+ }
+ function renderTile(clearTime=true){
+   try{data=NvidiaModel.compute(params());$('tile-error').textContent='';}catch(e){data=null;$('tile-error').textContent=e.message;renderTime();return;}
+   if(clearTime)$('time-us').value='';
+   $('tile-count').textContent=fmt(data.tiles);$('tile-count-detail').textContent=`${data.gm} × ${data.gn} 输出网格；非persistent模型`;
+   $('k-loops').textContent=fmt(data.kt);$('k-loops-detail').textContent=`${data.kScaleGroups} 个K128 scale组；${data.threads} threads/CTA`;
+   $('shared-est').textContent=`${fmt(data.shared/1024)} KiB`;
+   $('cluster-count').textContent=fmt(data.clusters);$('cluster-detail').textContent=`${data.clusterSize} CTA/cluster；边界补齐后${data.paddedCTAs} CTA`;
+   for(const [id,max]of[['tile-row',data.gm-1],['tile-col',data.gn-1]]){$(id).max=String(max);$(id).value=String(Math.max(0,Math.min(Number($(id).value)||0,max)));}
+   $('output-matrix').style.backgroundSize=`${100/data.gn*Math.ceil(data.gn/64)}% ${100/data.gm*Math.ceil(data.gm/64)}%`;
+   $('grid-comment').textContent=`${data.tiles} 个有效输出tile / ${data.sm} 个可见SM = 平均${fmt(data.meanTilesPerSM)}个tile/SM的总工作量。在每SM至少一个CTA的简化模型下，第一批最多覆盖${fmt(data.firstCoverage*100)}%的SM。这不是occupancy、真实执行轮次或调度trace；cluster调度约束还会改变可行分派。`;
+   $('resource-comment').textContent=data.shared>227*1024
+     ? `A/B完整缓冲估算已达${fmt(data.shared/1024)}KiB，超过单CTA 227KiB架构上限；该存储模型不能直接使用此配置。真实实现若复用缓冲或采用其他管线，要以实际smem报告确认。`
+     : `只按shared资源可得每SM最多${data.abSharedBound}个CTA的上界；线程槽位单独给出${data.threadBound}个，另有32 CTA/SM硬上限。还没考虑register、TMEM、barrier、cluster与padding，不能据此宣称真实驻留或性能。缓冲份数并不自动等于所有框架的num_stages。`;
+   renderSelection();renderTime();
+ }
+ function renderSelection(){
+   if(!data)return;
+   const row=Math.max(0,Math.min(Math.floor(Number($('tile-row').value)||0),data.gm-1)),col=Math.max(0,Math.min(Math.floor(Number($('tile-col').value)||0),data.gn-1));
+   $('tile-row').value=String(row);$('tile-col').value=String(col);
+   const m0=row*data.bm,m1=Math.min(m0+data.bm,data.m),n0=col*data.bn,n1=Math.min(n0+data.bn,data.n);
+   Object.assign($('tile-highlight').style,{left:`${n0/data.n*100}%`,top:`${m0/data.m*100}%`,width:`${(n1-n0)/data.n*100}%`,height:`${(m1-m0)/data.m*100}%`});
+   $('tile-inputs').textContent=`输出 D[${m0}:${m1}, ${n0}:${n1}]；读取 A[${m0}:${m1}, 0:${data.k}] 与 W[${n0}:${n1}, 0:${data.k}]。实际按BK=${data.bk}推进，两边K切片一起改变。`;
+   $('tile-scales').textContent=`sA逻辑表[${data.m},${data.kScaleGroups}]；sW逻辑表[${data.nScaleGroups},${data.kScaleGroups}]。本输出块需要sA行${m0}:${m1}、sW行${Math.floor(n0/128)}:${Math.ceil(n1/128)}，并依次读取全部K-scale组。逻辑M/N填充率${fmt(data.mnFill*100)}%，不是性能利用率。`;
+ }
+ function renderTime(){
+   const us=Number($('time-us').value);$('tflops').textContent=data&&Number.isFinite(us)&&us>0
+    ? `2MNK = ${fmt(data.flops/1e9)} GFLOPs；${fmt(us)} µs → ${fmt(data.flops/(us*1e6))} 有效 TFLOP/s。只做数值换算，未验证测量。`
+    : '未填实测耗时：不预测TFLOPS、不生成虚构speedup。';
+ }
+ document.querySelectorAll('[data-chip]').forEach(b=>b.addEventListener('click',()=>{chip=b.dataset.chip;selected=0;step=0;$('sm-count').value=String(NvidiaModel.configs[chip].sm);$('time-us').value='';renderChip();}));
+ $('sm-count').addEventListener('input',()=>{$('time-us').value='';renderChip();});
+ $('flow-prev').addEventListener('click',()=>{step=Math.max(0,step-1);renderFlow();});$('flow-next').addEventListener('click',()=>{step=Math.min(4,step+1);renderFlow();});
+ for(const id of ['m','n','k','bm','bn','bk','warps','stages','cluster'])$(id).addEventListener('input',()=>renderTile());
+ for(const id of ['tile-row','tile-col'])$(id).addEventListener('input',renderSelection);
+ $('time-us').addEventListener('input',renderTime);
+ $('output-matrix').addEventListener('click',e=>{if(!data)return;const r=$('output-matrix').getBoundingClientRect();$('tile-row').value=String(Math.floor((e.clientY-r.top)/r.height*data.m/data.bm));$('tile-col').value=String(Math.floor((e.clientX-r.left)/r.width*data.n/data.bn));renderSelection();});
+ const shapes={small:{m:64,n:8192,k:7168,bm:64,bn:128,bk:128},large:{m:4096,n:4096,k:8192,bm:128,bn:128,bk:128},tail:{m:1000,n:3000,k:4097,bm:128,bn:128,bk:128}};
+ document.querySelectorAll('[data-shape]').forEach(b=>b.addEventListener('click',()=>{for(const[k,v]of Object.entries(shapes[b.dataset.shape]))$(k).value=String(v);$('tile-row').value='0';$('tile-col').value='0';renderTile();}));
+ renderChip();
+})();
+
+</script></body></html>
