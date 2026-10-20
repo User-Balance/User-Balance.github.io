@@ -17,11 +17,11 @@
 <a class="skip" href="#library">跳到文章归档</a>
 <header class="site-header wrap">
   <a class="brand" href="index.html" aria-label="技术学习手册首页"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>技术学习手册<small>TECH FIELDNOTES</small></span></a>
-  <nav aria-label="主导航"><a href="#library">文章归档</a><a href="#learning-path">阅读路线</a><a href="#downloads">工具下载</a><a href="blog/">原有博客</a><a href="https://github.com/User-Balance">GitHub ↗</a></nav>
+  <nav aria-label="主导航"><a href="#library">文章归档</a><a href="#learning-path">阅读路线</a><a href="#about">关于</a></nav>
 </header>
 <main>
   <section class="hero wrap" aria-labelledby="hero-title">
-    <div class="hero-copy"><p class="eyebrow"><span></span> USER-BALANCE · PERSONAL TECHNICAL NOTEBOOK</p><h1 id="hero-title">从系统全景，<br>走进<span>计算细节。</span></h1><p class="hero-intro">把复杂概念拆开，把数据流画出来。<br>记录 AI 基础设施、GPU 内核优化与服务器运维，<br class="desktop-break">让每一次理解，都成为可以回看的手册。</p><div class="hero-actions"><a class="button" href="#library">浏览全部手册 <span aria-hidden="true">↗</span></a><a class="text-link" href="ai-infra-mindmap.html">从 AI Infra 全景开始 <span aria-hidden="true">→</span></a></div><div class="hero-meta"><span>05 <small>篇主题手册</small></span><span>03 <small>份配套资料</small></span><span class="meta-note">交互图解 · 中文整理 · 持续积累</span></div></div>
+    <div class="hero-copy"><p class="eyebrow"><span></span> USER-BALANCE · PERSONAL TECHNICAL NOTEBOOK</p><h1 id="hero-title">从系统全景，<br>走进<span>计算细节。</span></h1><p class="hero-intro">把复杂概念拆开，把数据流画出来。<br>记录 AI 基础设施、GPU 内核优化与服务器运维，<br class="desktop-break">让每一次理解，都成为可以回看的手册。</p><div class="hero-actions"><a class="button" href="#library">浏览全部手册 <span aria-hidden="true">↗</span></a><a class="text-link" href="ai-infra-mindmap.html">从 AI Infra 全景开始 <span aria-hidden="true">→</span></a></div><div class="hero-meta"><span><span id="article-total">05</span> <small>篇主题手册</small></span><span class="meta-note">交互图解 · 中文整理 · 持续积累</span></div></div>
     <div class="hero-figure">
       <div class="figure-label"><span>THE KNOWLEDGE MAP</span><span>FIG. 01</span></div>
       <svg viewBox="0 0 560 416" role="img" aria-labelledby="map-title map-desc">
@@ -43,39 +43,60 @@
   <section class="path-section" id="learning-path" aria-labelledby="path-title"><div class="wrap path-inner"><div class="path-heading"><p class="eyebrow">A SUGGESTED ROUTE</p><h2 id="path-title">沿着问题，循序展开</h2></div><ol class="reading-path"><li><a href="ai-infra-mindmap.html"><span>01</span><strong>看全景</strong><small>搭建 AI Infra 知识框架</small></a></li><li><a href="mi355x-operator-ecosystem-guide.html"><span>02</span><strong>认工具</strong><small>理解仓库、依赖与环境</small></a></li><li><a href="mi355x-gemm-sweep-lab.html"><span>03</span><strong>拆内核</strong><small>沿 MNK 追踪计算与调度</small></a></li><li><a href="nvidia-h20-b200-architecture-lab.html"><span>04</span><strong>作对照</strong><small>比较 AMD 与 NVIDIA 路线</small></a></li></ol></div></section>
 
   <section class="library wrap" id="library" aria-labelledby="library-title">
-    <div class="section-heading"><div><p class="eyebrow">THE COLLECTION</p><h2 id="library-title">文章归档<span class="sup-count"> / 05</span></h2></div><p>可交互的图解，<br>可反复查阅的工程笔记。</p></div>
-    <div class="toolbar"><div class="filters" role="group" aria-label="按主题筛选"><button type="button" class="filter is-active" data-category="all" aria-pressed="true">全部 <span>5</span></button><button type="button" class="filter" data-category="infra" aria-pressed="false">AI 全景</button><button type="button" class="filter" data-category="gpu" aria-pressed="false">GPU 与算子</button><button type="button" class="filter" data-category="ops" aria-pressed="false">系统运维</button></div><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span class="sr-only">搜索标题、术语或内容</span><input id="search" type="search" placeholder="搜索标题、术语或内容…" autocomplete="off"></label></div>
+    <div class="section-heading"><div><p class="eyebrow">THE COLLECTION</p><h2 id="library-title">文章归档<span class="sup-count" id="article-count-suffix"> / 05</span></h2></div><p>可交互的图解，<br>可反复查阅的工程笔记。</p></div>
+    <div class="toolbar"><div class="filters" role="group" aria-label="按主题筛选"><button type="button" class="filter is-active" data-category="all" aria-pressed="true">全部 <span id="all-filter-count">5</span></button><button type="button" class="filter" data-category="infra" aria-pressed="false">AI 全景</button><button type="button" class="filter" data-category="gpu" aria-pressed="false">GPU 与算子</button><button type="button" class="filter" data-category="ops" aria-pressed="false">系统运维</button><button type="button" class="filter" data-category="general" aria-pressed="false">其他主题</button></div><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span class="sr-only">搜索标题、术语或内容</span><input id="search" type="search" placeholder="搜索标题、术语或内容…" autocomplete="off"></label></div>
     <p id="result-status" class="result-status" role="status" aria-live="polite">共 5 篇手册</p>
     <div class="article-grid">
-      <article class="article-card feature-card" data-category="infra" data-search="AI Infra 基础设施 全景 脑图 训练 推理 强化学习 测评 框架 算子 runtime 量化 投机推理 MoE MFU PPO GRPO DPO">
-        <div class="card-content"><div class="card-topline"><span class="category-tag">AI 全景</span><span class="article-number">FIELDNOTE / 001</span></div><h3><a href="ai-infra-mindmap.html">AI Infra 全景脑图</a></h3><p>用工作负载与技术栈两条轴，串起训练、推理、强化学习和测评。先建立整体结构，再理解每个专业名词的位置。</p><div class="tag-list"><span>训练与推理</span><span>框架 / Runtime</span><span>术语索引</span></div><div class="card-bottom"><span>交互脑图 · 概念入门</span><a class="read-link" href="ai-infra-mindmap.html" aria-label="阅读 AI Infra 全景脑图">阅读手册 <span aria-hidden="true">↗</span></a></div></div>
-        <div class="feature-art" aria-hidden="true"><svg viewBox="0 0 360 250"><g fill="none" stroke="#a6b8a8" stroke-width="1.5"><path d="M180 78V111H72V141M180 111V141M180 111H288V141M72 176V205M180 176V205M288 176V205"/></g><rect x="116" y="35" width="128" height="44" rx="7" fill="#3b5947"/><text x="180" y="63" fill="#fff" text-anchor="middle" font-size="17">AI INFRA</text><g fill="#fffdf6" stroke="#c8d1bf"><rect x="25" y="141" width="94" height="35" rx="5"/><rect x="133" y="141" width="94" height="35" rx="5"/><rect x="241" y="141" width="94" height="35" rx="5"/></g><g text-anchor="middle" fill="#4c6452" font-size="12"><text x="72" y="164">工作负载</text><text x="180" y="164">系统软件</text><text x="288" y="164">计算硬件</text></g><g fill="#b5c6ad"><circle cx="72" cy="212" r="6"/><circle cx="180" cy="212" r="6"/><circle cx="288" cy="212" r="6"/></g><path d="M38 18H23V33M322 232H337V217" stroke="#97ac97" fill="none"/></svg></div>
+      <!-- PORTAL_ARTICLES_START -->
+      <article class="article-card" data-category="infra" data-search="AI Infra 全景脑图 AI Infra 用工作负载与技术栈两条轴，串起训练、推理、强化学习与偏好对齐、测评和系统性能。 AI Infra 训练 推理 框架 Runtime 量化 PPO GRPO DPO">
+        <div class="card-topline"><span class="category-tag infra">AI Infra</span><span class="article-number">001</span></div>
+        <h3><a href="ai-infra-mindmap.html">AI Infra 全景脑图</a></h3>
+        <p>用工作负载与技术栈两条轴，串起训练、推理、强化学习与偏好对齐、测评和系统性能。</p>
+        <div class="tag-list"><span>AI Infra</span><span>训练</span><span>推理</span><span>框架</span><span>Runtime</span><span>量化</span><span>PPO</span><span>GRPO</span><span>DPO</span></div>
+        <p class="verified">资料日期：2026-10-16</p>
+        <div class="card-bottom"><span>交互图解 · 学习手册</span><a class="read-link" href="ai-infra-mindmap.html" aria-label="阅读 AI Infra 全景脑图">阅读手册 <span aria-hidden="true">↗</span></a></div>
       </article>
-
-      <article class="article-card" data-category="gpu" data-search="AMD MI355X gfx950 AITER CK composable kernel CK Tile cktile FlyDSL Triton Gluon 仓库 版本 匹配 依赖 安装 ROCm 环境">
-        <div class="card-topline"><span class="category-tag amd">AMD · 开发生态</span><span class="article-number">002</span></div><div class="card-icon amd-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="4" y="4" width="15" height="15" rx="3"/><rect x="29" y="4" width="15" height="15" rx="3"/><rect x="4" y="29" width="15" height="15" rx="3"/><rect x="29" y="29" width="15" height="15" rx="3"/><path d="M19 11h10M11 19v10M37 19v10M19 37h10"/></svg></div><h3><a href="mi355x-operator-ecosystem-guide.html">MI355X 算子开发生态</a></h3><p>AITER、CK / CK Tile、FlyDSL 与 Gluon 各自解决什么问题？从依赖图到版本锁定，再到环境安装与验收。</p><div class="tag-list"><span>AITER / CK Tile</span><span>FlyDSL / Gluon</span><span>版本与安装</span></div><p class="verified">资料核查：2026-10-16 · 版本快照</p><div class="card-bottom"><span>依赖图解 · 安装指引</span><a class="read-link" href="mi355x-operator-ecosystem-guide.html" aria-label="阅读 MI355X 算子开发生态">阅读手册 <span aria-hidden="true">↗</span></a></div>
+      <article class="article-card" data-category="gpu" data-search="MI355X 算子生态与安装指南 AMD 算子 理解 AITER、CK / CK Tile、FlyDSL 与 Gluon 的职责、依赖和版本匹配，建立 MI355X 算子开发环境。 MI355X gfx950 ROCm AITER CK Tile FlyDSL Gluon 安装">
+        <div class="card-topline"><span class="category-tag gpu">AMD 算子</span><span class="article-number">002</span></div>
+        <h3><a href="mi355x-operator-ecosystem-guide.html">MI355X 算子生态与安装指南</a></h3>
+        <p>理解 AITER、CK / CK Tile、FlyDSL 与 Gluon 的职责、依赖和版本匹配，建立 MI355X 算子开发环境。</p>
+        <div class="tag-list"><span>MI355X</span><span>gfx950</span><span>ROCm</span><span>AITER</span><span>CK Tile</span><span>FlyDSL</span><span>Gluon</span><span>安装</span></div>
+        <p class="verified">资料日期：2026-10-16</p>
+        <div class="card-bottom"><span>交互图解 · 学习手册</span><a class="read-link" href="mi355x-operator-ecosystem-guide.html" aria-label="阅读 MI355X 算子生态与安装指南">阅读手册 <span aria-hidden="true">↗</span></a></div>
       </article>
-
-      <article class="article-card" data-category="gpu" data-search="AMD MI355X gfx950 GEMM 矩阵乘法 FP8 A8W8 B preshuffle bpreshuffle blockscale 128 sweep 调优 MNK BM BN BK CU wave workgroup MFMA LDS splitK split K">
-        <div class="card-topline"><span class="category-tag amd">AMD · 内核优化</span><span class="article-number">003</span></div><div class="card-icon amd-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="3" y="3" width="42" height="42" rx="3"/><path d="M17 3v42M31 3v42M3 17h42M3 31h42"/><rect class="icon-filled" x="17" y="17" width="14" height="14"/></svg></div><h3><a href="mi355x-gemm-sweep-lab.html">GEMM 分块、调度与 Sweep</a></h3><p>聚焦 FP8 A8W8、B preshuffle 与 blockscale 128。调整 MNK 和 tile，观察数据、scale、wave 与 CU 的关系。</p><div class="tag-list"><span>FP8 / Scale128</span><span>MNK 分块</span><span>候选 CSV</span></div><p class="verified">版本依据：2026-10-16 · 调度为教学示意</p><div class="card-bottom"><span>交互实验 · 调优流程</span><a class="read-link" href="mi355x-gemm-sweep-lab.html" aria-label="阅读 GEMM 分块、调度与 Sweep">阅读手册 <span aria-hidden="true">↗</span></a></div>
+      <article class="article-card" data-category="gpu" data-search="MI355X FP8 GEMM 分块与 Sweep AMD 算子 聚焦 FP8 A8W8、B preshuffle 与 blockscale 128，交互探索 MNK 分块、scale、wave、CU 和 sweep 参数。 GEMM FP8 A8W8 blockscale preshuffle MNK MFMA LDS Split-K Sweep">
+        <div class="card-topline"><span class="category-tag gpu">AMD 算子</span><span class="article-number">003</span></div>
+        <h3><a href="mi355x-gemm-sweep-lab.html">MI355X FP8 GEMM 分块与 Sweep</a></h3>
+        <p>聚焦 FP8 A8W8、B preshuffle 与 blockscale 128，交互探索 MNK 分块、scale、wave、CU 和 sweep 参数。</p>
+        <div class="tag-list"><span>GEMM</span><span>FP8</span><span>A8W8</span><span>blockscale</span><span>preshuffle</span><span>MNK</span><span>MFMA</span><span>LDS</span><span>Split-K</span><span>Sweep</span></div>
+        <p class="verified">资料日期：2026-10-16</p>
+        <div class="card-bottom"><span>交互图解 · 学习手册</span><a class="read-link" href="mi355x-gemm-sweep-lab.html" aria-label="阅读 MI355X FP8 GEMM 分块与 Sweep">阅读手册 <span aria-hidden="true">↗</span></a></div>
       </article>
-
-      <article class="article-card" data-category="gpu" data-search="NVIDIA 英伟达 H20 B200 Hopper Blackwell SM Tensor Core warp CTA cluster TMA WGMMA TMEM tcgen05 GEMM FP8 CUTLASS CuTe Triton sweep Nsight Compute">
-        <div class="card-topline"><span class="category-tag nvidia">NVIDIA · 架构对照</span><span class="article-number">004</span></div><div class="card-icon nvidia-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="10" y="10" width="28" height="28" rx="3"/><rect x="17" y="17" width="14" height="14" rx="1"/><path d="M17 3v7M24 3v7M31 3v7M17 38v7M24 38v7M31 38v7M3 17h7M3 24h7M3 31h7M38 17h7M38 24h7M38 31h7"/></svg></div><h3><a href="nvidia-h20-b200-architecture-lab.html">H20 与 B200：从 SM 到 GEMM</a></h3><p>对照 Hopper 与 Blackwell，追踪 TMA、WGMMA、tcgen05 和 TMEM 数据流，并把架构知识转成 sweep 参数。</p><div class="tag-list"><span>Hopper / Blackwell</span><span>Tensor Core</span><span>CUTLASS / Triton</span></div><p class="verified">资料核查：2026-10-19 · 实机数值另有标注</p><div class="card-bottom"><span>架构图解 · 参数实验</span><a class="read-link" href="nvidia-h20-b200-architecture-lab.html" aria-label="阅读 H20 与 B200 架构教程">阅读手册 <span aria-hidden="true">↗</span></a></div>
+      <article class="article-card" data-category="gpu" data-search="H20 / B200 架构与 GEMM Sweep NVIDIA 架构 对照 Hopper 与 Blackwell，从 SM、Tensor Core 到 TMA、WGMMA、tcgen05 和 TMEM，再建立 GEMM 调优实验。 NVIDIA H20 B200 FP8 CUDA TMA WGMMA TMEM CUTLASS CuTe Sweep">
+        <div class="card-topline"><span class="category-tag gpu">NVIDIA 架构</span><span class="article-number">004</span></div>
+        <h3><a href="nvidia-h20-b200-architecture-lab.html">H20 / B200 架构与 GEMM Sweep</a></h3>
+        <p>对照 Hopper 与 Blackwell，从 SM、Tensor Core 到 TMA、WGMMA、tcgen05 和 TMEM，再建立 GEMM 调优实验。</p>
+        <div class="tag-list"><span>NVIDIA</span><span>H20</span><span>B200</span><span>FP8</span><span>CUDA</span><span>TMA</span><span>WGMMA</span><span>TMEM</span><span>CUTLASS</span><span>CuTe</span><span>Sweep</span></div>
+        <p class="verified">资料日期：2026-10-19</p>
+        <div class="card-bottom"><span>交互图解 · 学习手册</span><a class="read-link" href="nvidia-h20-b200-architecture-lab.html" aria-label="阅读 H20 / B200 架构与 GEMM Sweep">阅读手册 <span aria-hidden="true">↗</span></a></div>
       </article>
-
-      <article class="article-card" data-category="ops" data-search="Linux 服务器 sshd SSH 互信 公钥 私钥 authorized_keys known_hosts Ubuntu Debian RHEL CentOS Fedora systemd 安装 部署 防火墙 SELinux ProxyJump Ansible 跳板机 运维">
-        <div class="card-topline"><span class="category-tag ops">LINUX · 系统运维</span><span class="article-number">005</span></div><div class="card-icon ops-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="3" y="8" width="42" height="32" rx="4"/><path d="M3 16h42M11 23l6 5-6 5M23 33h12"/><circle cx="9" cy="12" r=".7"/><circle cx="14" cy="12" r=".7"/></svg></div><h3><a href="sshd-ssh-mutual-trust-guide.html">部署 sshd，建立 SSH 互信</a></h3><p>从服务安装与端口检查，到公钥登录、双向互信和跳板机。用流程图理解密钥去向，配合命令与排障路径练习。</p><div class="tag-list"><span>sshd 部署</span><span>密钥与互信</span><span>排障流程</span></div><p class="verified">归档：2026-10-20 · 按发行版选择命令</p><div class="card-bottom"><span>SVG 图解 · 命令手册</span><a class="read-link" href="sshd-ssh-mutual-trust-guide.html" aria-label="阅读 sshd 部署与 SSH 互信指南">阅读手册 <span aria-hidden="true">↗</span></a></div>
+      <article class="article-card" data-category="ops" data-search="Linux SSHD 与 SSH 互信 Linux 运维 用流程图理解 sshd 部署、公钥认证、双向互信、配置生效与回滚，按发行版查阅命令并排查连接问题。 Linux SSH sshd 互信 authorized_keys known_hosts SELinux Ansible ProxyJump">
+        <div class="card-topline"><span class="category-tag ops">Linux 运维</span><span class="article-number">005</span></div>
+        <h3><a href="sshd-ssh-mutual-trust-guide.html">Linux SSHD 与 SSH 互信</a></h3>
+        <p>用流程图理解 sshd 部署、公钥认证、双向互信、配置生效与回滚，按发行版查阅命令并排查连接问题。</p>
+        <div class="tag-list"><span>Linux</span><span>SSH</span><span>sshd</span><span>互信</span><span>authorized_keys</span><span>known_hosts</span><span>SELinux</span><span>Ansible</span><span>ProxyJump</span></div>
+        <p class="verified">资料日期：2026-10-20</p>
+        <div class="card-bottom"><span>交互图解 · 学习手册</span><a class="read-link" href="sshd-ssh-mutual-trust-guide.html" aria-label="阅读 Linux SSHD 与 SSH 互信">阅读手册 <span aria-hidden="true">↗</span></a></div>
       </article>
+    <!-- PORTAL_ARTICLES_END -->
     </div>
     <div id="empty-state" class="empty-state" hidden><strong>没有找到对应手册</strong><p>试试 “FP8”“GEMM”“SSH”，或清除筛选后重新查找。</p><button id="reset-filters" type="button" class="button">显示全部手册</button></div>
   </section>
 
-  <section class="downloads-section" id="downloads" aria-labelledby="downloads-title"><div class="wrap"><div class="section-heading"><div><p class="eyebrow">KEEP IT HANDY</p><h2 id="downloads-title">配套资料与工具</h2></div><p>把环境记录下来，<br>让后续实验有据可查。</p></div><div class="download-grid"><a class="download-card" href="mi355x-operator-ecosystem-guide.md" download><span class="file-type">MD</span><div><h3>MI355X 生态指南</h3><p>便于搜索与复用的 Markdown 原稿</p></div><span aria-hidden="true">↓</span></a><a class="download-card" href="mi355x-env-check.py" download><span class="file-type">PY</span><div><h3>MI355X 环境采集</h3><p>记录软件版本、GPU 架构与仓库 SHA</p></div><span aria-hidden="true">↓</span></a><a class="download-card" href="nvidia-device-probe.cu" download><span class="file-type">CU</span><div><h3>NVIDIA 设备探针</h3><p>在目标 CUDA 环境查询设备属性</p></div><span aria-hidden="true">↓</span></a></div></div></section>
 
-  <section class="about wrap" id="about" aria-labelledby="about-title"><div><p class="eyebrow">ABOUT THESE FIELDNOTES</p><h2 id="about-title">让理解，可以积累。</h2></div><div class="about-copy"><p>这里归档的是学习与工程实践中的结构化笔记。每份手册围绕一个主题，将概念解释、图解与操作入口放在一起，适合第一次建立认知，也适合工作时回来查阅。</p><p>GPU 页面中的架构示意、资源估算与性能实测分别标注；本归档不宣称已完成目标 GPU 的编译或性能验收。仓库与版本信息以各页核查日期为准，实际部署请对照当前官方文档和你的设备环境。</p><a class="text-link" href="legacy-home.html">查看原首页</a> · <a class="text-link" href="#library">回到文章归档 <span aria-hidden="true">↑</span></a></div></section>
+  <section class="about wrap" id="about" aria-labelledby="about-title"><div><p class="eyebrow">ABOUT THESE FIELDNOTES</p><h2 id="about-title">让理解，可以积累。</h2></div><div class="about-copy"><p>这里归档的是学习与工程实践中的结构化笔记。每份手册围绕一个主题，将概念解释、图解与操作入口放在一起，适合第一次建立认知，也适合工作时回来查阅。</p><p>GPU 页面中的架构示意、资源估算与性能实测分别标注；本归档不宣称已完成目标 GPU 的编译或性能验收。仓库与版本信息以各页核查日期为准，实际部署请对照当前官方文档和你的设备环境。</p><a class="text-link" href="#library">回到文章归档 <span aria-hidden="true">↑</span></a></div></section>
 </main>
 <footer class="site-footer wrap"><a class="footer-brand" href="index.html">TECH FIELDNOTES</a><p>技术学习手册 · 2026</p><p>静态归档 · 无外部脚本依赖</p></footer>
-<noscript><p class="noscript-note">浏览器未启用 JavaScript：所有文章与下载仍可使用；搜索与分类筛选需要 JavaScript。</p></noscript>
+<noscript><p class="noscript-note">浏览器未启用 JavaScript：所有文章仍可阅读；搜索与分类筛选需要 JavaScript。</p></noscript>
 </body>
 </html>

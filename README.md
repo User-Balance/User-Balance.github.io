@@ -1,36 +1,47 @@
 # 技术学习手册
 
-一个无构建依赖的中文静态知识门户，归档 AI Infra、GPU 架构与算子优化、Linux 运维学习材料。
+[线上门户](https://user-balance.github.io/) · 仓库 `User-Balance/User-Balance.github.io`
 
-## 内容
+中文 HTML 教程门户，涵盖 AI Infra、GPU 架构、算子优化和 Linux 运维。站点只展示教程，不提供旧博客、旧首页或独立配套资料下载区。
 
-- `index.html`：门户、搜索与分类。
-- `ai-infra-mindmap.html`：AI Infra 全景脑图。
-- `mi355x-operator-ecosystem-guide.html`：MI355X 算子生态、版本匹配与安装。
-- `mi355x-gemm-sweep-lab.html`：FP8 A8W8 blockscale GEMM 的分块、调度与 sweep。
-- `nvidia-h20-b200-architecture-lab.html`：H20/B200 架构、数据流与 GEMM sweep。
-- `sshd-ssh-mutual-trust-guide.html`：sshd 部署、SSH 公钥认证、互信与排障。
-- `mi355x-operator-ecosystem-guide.md`、`mi355x-env-check.py`、`nvidia-device-probe.cu`：参考文档与只读设备查询代码。
+## 新增 HTML 自动收录
 
-## GitHub Pages
-
-仓库：`User-Balance/User-Balance.github.io`。个人网站地址：`https://user-balance.github.io/`。
-
-在仓库 **Settings → Pages → Build and deployment** 中选择 **Deploy from a branch**，分支 `main`，目录 `/(root)`。已有 `_config.yml`、`_layouts`、`_posts`、`blog` 和 `css` 继续使用 Jekyll 发布，保留原博客 URL。新门户和五篇教程是没有 front matter 的静态 HTML，原样复制到发布目录。
-
-原首页另存为 `legacy-home.html`，门户提供“原有博客”和“原首页”入口。**不要添加 `.nojekyll`**，否则既有博客模板与文章不会被渲染。仓库更新后 Pages 会重新发布，可以在 Actions / Pages 部署记录查看状态；应检查公开 URL 确认上线。
-
-## 本地预览与校验
+在本仓库的干净 main 工作区执行：
 
 ```bash
+python3 scripts/publish_html.py /path/to/new-guide.html --title '教程标题' --category '系统运维' --description '一句话介绍' --date 2026-10-20 --tags 'Linux,SSH'
+```
+
+流程：同步远端 → 导入完成的 HTML → 自动生成首页卡片、搜索信息、文章数量、archive.json 和 sitemap.xml → 检查链接 → 提交并推送。GitHub Pages 在 main 更新后自动发布。推送后仍需确认 Pages 构建成功及公开 URL 内容。
+
+输入必须是完整 HTML。建议制作自包含教程；本地资源需要一并放入站点对应目录并通过检查。脚本不会扫描整台电脑或后台抓取未完成草稿。
+
+也可通过 HTML 元数据提供信息；未提供时提取已有标题、简介和主题关键词：
+
+```html
+<meta name="portal-title" content="教程标题">
+<meta name="portal-category" content="AI Infra">
+<meta name="portal-description" content="一句话介绍">
+<meta name="portal-date" content="2026-10-20">
+<meta name="portal-tags" content="训练,推理,Runtime">
+```
+
+分类 ID 为 infra、gpu、ops、general。脚本保留已归档文章的资料日期；归档不表示重新核验了文中的版本或实测结果。
+
+## 只准备 / 重建目录 / 本地检查
+
+```bash
+python3 scripts/publish_html.py /path/to/new-guide.html --prepare-only
+python3 scripts/build_catalog.py
 python3 scripts/check_site.py
+python3 -m unittest discover -s tests
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-浏览器打开 `http://127.0.0.1:8000/`。也可以直接打开 `index.html`；新门户和教程没有 CDN、登录或分析追踪依赖。上述简单 HTTP 服务不会编译旧 Jekyll 博客，旧博客的最终效果以 GitHub Pages/Jekyll 构建为准。
+打开 http://127.0.0.1:8000/ 。页面无 CDN、登录或分析追踪依赖，离线也可阅读。
 
-## 更新
+## 发布配置
 
-编辑对应 HTML，再检查内部链接、交互、命令与资料日期。新增教程时同步首页卡片和 `archive.json`。发布内容只应包含可公开的学习材料，不要放入密钥、真实环境输出或内部服务器信息。
+GitHub Pages：Deploy from a branch → main → /(root)。`.nojekyll` 直接发布静态文件，无旧 Jekyll 博客依赖。没有后台定时任务；每次制作完成的 HTML 通过发布脚本收录，再由 Pages 自动部署。
 
-文中版本/产品规格均有适用日期或来源边界。未实机测试的安装或 GPU 命令保留明确说明；结构估算不等于性能测量。
+上传前检查内容是否可公开，不上传凭据、真实服务器环境报告或内部资料。失败时修复后重试；脚本不强制推送，不覆盖远端新提交，也不自动修改 GitHub 登录权限。

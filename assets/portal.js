@@ -8,6 +8,10 @@
   const reset = document.getElementById('reset-filters');
   let category = 'all';
   const normalize = value => value.normalize('NFKC').toLowerCase().trim();
+  const total = String(cards.length).padStart(2, '0');
+  document.getElementById('article-total').textContent = total;
+  document.getElementById('article-count-suffix').textContent = ` / ${total}`;
+  document.getElementById('all-filter-count').textContent = String(cards.length);
   const searchable = new Map(cards.map(card => [card, normalize(card.dataset.search + ' ' + card.textContent)]));
 
   function update() {

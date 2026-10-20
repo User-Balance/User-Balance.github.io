@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="assets/article-nav.css">
 </head>
 <body>
-<nav class="archive-nav" aria-label="学习手册导航"><a href="index.html">← 技术学习手册 · 返回门户</a><span>AMD 算子 · 资料日期 2026-10-16 · 归档 2026-10-20</span></nav>
+<nav class="archive-nav" aria-label="学习手册导航" id="portal-archive-nav"><a href="index.html">← 技术学习手册 · 返回门户</a><span>AMD 算子 · 资料日期 2026-10-16 · 归档 2026-10-20</span></nav>
 <div class="page">
 <header><div class="eyebrow">MI355X · FP8 A8W8 · B PRESHUFFLE · BLOCKSCALE 128</div><h1>分块，调度，再 Sweep。</h1><p class="intro">针对 FP8 A8W8 + B preshuffle + 128 粒度 blockscale：从一块输出 C 出发，看数据与 scale 如何参与 K 归约，M/N tile 如何变成 workgroup，再找到这条实现真正支持的 sweep 入口。</p><div class="header-links"><a href="#target-sweep">你的目标路径与真实命令</a><a href="#explorer">交互：MNK、tile 与 scale</a><a href="#cu-scheduling">查看 CU 调度</a><a href="#planner">生成候选 CSV</a><a href="mi355x-operator-ecosystem-guide.html">生态与安装指南</a></div></header>
 <div class="shell"><nav class="toc" aria-label="目录"><a href="#target-sweep">目标路径 / 命令</a><a href="#model">01 / 两层循环</a><a href="#explorer">02 / MNK 分块实验</a><a href="#kernel-flow">03 / kernel 内部流程</a><a href="#target-flow">FP8 / 数据与 scales</a><a href="#wave-layout">04 / wave 与 MFMA</a><a href="#cu-scheduling">05 / workgroup → CU</a><a href="#sweep-strategy">06 / sweep 策略</a><a href="#sweep-tools">07 / 工具与命令</a><a href="#fp8-sweep">FP8 / 专项搜索</a><a href="#planner">08 / 候选生成器</a><a href="#measurement">09 / 测量与验收</a><a href="#diagnosis">10 / 瓶颈判断</a><a href="#sources">官方来源与边界</a></nav>
@@ -533,7 +533,7 @@ T_GEMM_only、T_hot_path、T_B_prepare、packed_B_bytes、workspace_bytes。
 <li><a href="https://github.com/ROCm/aiter/blob/v0.1.25/aiter/ops/triton/utils/_triton/tuning/README.md">AITER v0.1.25 tuning 工具</a>：harness、sweep、配置复用。</li>
 <li><a href="https://github.com/ROCm/rocm-libraries/blob/rocm-7.2.4/projects/composablekernel/example/ck_tile/03_gemm/README.md">CK Tile 7.2.4 GEMM</a>：模板、运行参数与示例；具体 target 的支持选项还需查源码。</li>
 <li><a href="https://github.com/ROCm/FlyDSL/blob/v0.4.0/docs/autotune_guide.md">FlyDSL v0.4.0 autotune</a>、<a href="https://github.com/triton-lang/triton/blob/v3.8.0/python/tutorials/03-matrix-multiplication.py">Triton v3.8.0 GEMM 教程</a>：候选参数和调优接口。</li>
-</ul><p>真实调优前，先收集你的 <strong>M/N/K 列表、dtype、A/B stride/转置、是否有 scale/量化、调用频率、是否预排权重、现有 kernel 与耗时</strong>。优先保留最常见与最贵的几组 shape，在相同软件锁定环境下完成一次小范围 sweep。</p><div class="inline-controls"><a class="btn" href="mi355x-operator-ecosystem-guide.html">查看仓库版本与安装指南</a><a class="btn" href="mi355x-env-check.py" download>下载环境采集脚本</a></div></section>
+</ul><p>真实调优前，先收集你的 <strong>M/N/K 列表、dtype、A/B stride/转置、是否有 scale/量化、调用频率、是否预排权重、现有 kernel 与耗时</strong>。优先保留最常见与最贵的几组 shape，在相同软件锁定环境下完成一次小范围 sweep。</p><div class="inline-controls"><a class="btn" href="mi355x-operator-ecosystem-guide.html">查看仓库版本与安装指南</a></div></section>
 </main></div><div class="footer">MI355X GEMM / 分块与调度交互教程 / 2026-10-16 · 可离线使用，无外部脚本依赖</div></div>
 <script>
 const GemmModel = (() => {

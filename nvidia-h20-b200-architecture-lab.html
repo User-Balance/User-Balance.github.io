@@ -10,7 +10,7 @@
 </style><meta name="description" content="H20 / B200 架构与 GEMM Sweep：中文图解、术语与实践指南。资料基于 2026-10-19 的记录。">
 <link rel="stylesheet" href="assets/article-nav.css">
 </head><body>
-<nav class="archive-nav" aria-label="学习手册导航"><a href="index.html">← 技术学习手册 · 返回门户</a><span>NVIDIA 架构 · 资料日期 2026-10-19 · 归档 2026-10-20</span></nav>
+<nav class="archive-nav" aria-label="学习手册导航" id="portal-archive-nav"><a href="index.html">← 技术学习手册 · 返回门户</a><span>NVIDIA 架构 · 资料日期 2026-10-19 · 归档 2026-10-20</span></nav>
 <div class="page">
 <header><div class="eyebrow">NVIDIA GPU LAB · HOPPER / BLACKWELL</div><h1>H20 与 B200<br>从 SM 到 GEMM。</h1><p class="lede">芯片由哪些单元组成，数据怎样进入 Tensor Core，输出 tile 如何映射到线程与 SM，以及怎样为 FP8 GEMM 建立可复现的 sweep。</p><div class="links"><a href="#chip-lab">交互架构图</a><a href="#dataflow">逐步看数据流</a><a href="#tile-lab">MNK / CTA / cluster</a><a href="#sweep-tools">真实调优入口</a><a href="mi355x-gemm-sweep-lab.html">对照 MI355X 教程</a></div></header>
 <div class="shell"><nav class="toc" aria-label="目录"><a href="#definitions">01 / tile 是什么</a><a href="#specifications">02 / 型号与规格</a><a href="#chip-lab">03 / SM 内部</a><a href="#dataflow">04 / 数据流</a><a href="#h20-details">Hopper 路径</a><a href="#b200-details">Blackwell 路径</a><a href="#tile-lab">05 / MNK 与调度</a><a href="#fp8-contract">06 / FP8 与 scales</a><a href="#sweep-strategy">07 / 搜索策略</a><a href="#sweep-tools">08 / 工具与命令</a><a href="#measurement">09 / 验收与排障</a><a href="#device-probe">实机参数采集</a><a href="#sources">来源与边界</a></nav><main>
@@ -297,9 +297,22 @@ ncu --list-sections</code></pre>
 
 <section class="section" id="measurement"><div class="secno">09 / 每个数字都要知道测了什么</div><h2>从“看起来快”到可复现的性能结果</h2><div class="table-wrap"><table><thead><tr><th>检查点</th><th>实践</th><th>容易混淆的口径</th></tr></thead><tbody><tr><td>正确性</td><td>固定 FP8/scales 数据，与按同合同反量化后的参考比较。覆盖不同 K/N 分组 scale 差异、尾部、零块与饱和。</td><td>FP8 量化误差、packing 错误、kernel 累加误差要分开。</td></tr><tr><td>计时</td><td>GPU event，同一 stream，warmup 后多轮、随机/交错候选顺序；JIT 和首次分配单独记录。</td><td>CPU launch 时间、kernel 时间、图捕获 replay 和完整算子时间不能混为一列。</td></tr><tr><td>缓存</td><td>热权重复用、轮换输入、冷/热缓存分别记录；按真实部署选择。</td><td>反复访问同一 buffer 的高吞吐不一定等于 HBM 可持续带宽。</td></tr><tr><td>资源</td><td>编译器资源报告 + Nsight Compute：registers、spill、shared、TMEM相关限制、active warps/CTAs、issue stall。</td><td>结构公式是估算；active SM、occupancy、Tensor Core busy 是不同指标。</td></tr><tr><td>峰值</td><td>只对同 dtype、dense/sparse、GPU SKU、功耗/时钟、正确算术量比较。</td><td>宣传表上的 structured sparsity 峰值不能拿来算 dense GEMM 利用率。</td></tr><tr><td>集成</td><td>记录实际 dispatch、量化/scale转换、pack、workspace、reduction 与融合操作。</td><td>GEMM-only 变快不保证整个 FP8 调用路径变快。</td></tr></tbody></table></div><h3>症状 → 下一轮 sweep</h3><div class="table-wrap"><table><thead><tr><th>看到什么</th><th>优先尝试</th></tr></thead><tbody><tr><td>小 M，输出 tiles 少于可见 SM</td><td>合法的小 BM/BN、grouped 调度；后端支持时再比较 Split-K/Stream-K 的总成本。</td></tr><tr><td>TMA 等待多，Tensor Core 没吃饱</td><td>stages/prefetch、tile 形状、cluster multicast、访问连续性；确认瓶颈不在 scales 或 epilogue。</td></tr><tr><td>Hopper accumulator 导致 register spill</td><td>缩小输出 tile、调整 consumer warpgroup 分工和寄存器预算、降低同时存活值。</td></tr><tr><td>Blackwell tcgen05 很快，TMEM/scale 读回占比高</td><td>缩放/累加组织、TMEM 生命周期、输出 tile、epilogue 与同步；不要默认原生 MX 与当前合同等价。</td></tr><tr><td>cluster 尾部浪费 / cluster occupancy 低</td><td>cluster shape、raster order、tile 数与 persistent scheduler；用 cluster occupancy API/工具确认。</td></tr><tr><td>只有 microbenchmark 快</td><td>找量化、转换、CPU dispatch、图捕获差异和真实 shape 分布。</td></tr></tbody></table></div><p>归档字段至少包括：GPU 完整型号、可见 SM、driver/CUDA、库与源码 SHA、编译目标、M/N/K/stride、dtype/scales/packing、tile/cluster/stages、workspace、正确性指标、计时口径、原始样本与 median、缓存条件、功耗/时钟状态。</p></section>
 
-<section class="section" id="device-probe"><div class="secno">用实机消除 SKU 与分区歧义</div><h2>查询真实 SM 数和资源上限</h2><p>本页附带一个只读 CUDA 查询程序，获取设备报告的 SM、warp、L2、shared、寄存器和 cluster 支持等信息。它不运行 GEMM、不改时钟、不安装依赖；需要在目标 CUDA 开发环境编译。</p><pre><code>nvcc -O2 nvidia-device-probe.cu -o nvidia-device-probe
-./nvidia-device-probe
-nvidia-smi --query-gpu=name,driver_version,memory.total,power.limit --format=csv</code></pre><p class="small muted">程序打印的显存用 GiB，产品表常用 GB，先统一单位再比较。MIG 或其他分区可能减少可见资源；查询不能自动给出 Tensor Core 峰值，SM 数也不能替代芯片规格。</p><a href="nvidia-device-probe.cu" class="btn" download>下载 CUDA 设备查询源码</a></section>
+<section class="section" id="device-probe"><div class="secno">用实机消除 SKU 与分区歧义</div><h2>查询真实 SM 数和可见设备参数</h2><p>在目标服务器上先用 <code>nvidia-smi</code> 查询型号、驱动、显存与功耗上限；如果环境已经安装 CUDA 版 PyTorch，再运行下方内联命令读取当前进程可见的设备与 SM 数。</p><pre><code>nvidia-smi --query-gpu=name,driver_version,memory.total,power.limit --format=csv
+
+python3 - &lt;&lt;'PY'
+import torch
+
+print("PyTorch:", torch.__version__)
+print("PyTorch CUDA build:", torch.version.cuda)
+print("CUDA available:", torch.cuda.is_available())
+for i in range(torch.cuda.device_count()):
+    p = torch.cuda.get_device_properties(i)
+    print(f"Device {i}: {p.name}")
+    print(f"  Compute capability: {p.major}.{p.minor}")
+    print(f"  Visible SMs: {p.multi_processor_count}")
+    print(f"  Visible memory: {p.total_memory / 2**30:.2f} GiB")
+    print("  Device properties:", p)
+PY</code></pre><p class="small muted">这些查询不运行 GEMM。PyTorch 的 CUDA build 版本不是驱动版本；<code>nvidia-smi</code> 顶部 CUDA Version 表示驱动支持的 CUDA 版本上限。显存 GiB 与产品表 GB 需统一单位；MIG 或其他分区、<code>CUDA_VISIBLE_DEVICES</code> 会影响当前进程可见设备。L2、shared、寄存器和 cluster 上限应进一步用对应 CUDA 版本的设备属性 API 或 Nsight Compute 核验，不能仅由 SM 数推断。</p></section>
 
 <section class="section" id="sources"><div class="secno">来源与验证范围</div><h2>每个层级使用对应来源</h2><p>本页核查于2026-10-19。架构原理依据NVIDIA CUDA/PTX、调优指南与官方CUTLASS；H20产品数值和B200有效SM数补充了明确标注的公开实机/次级来源。未访问目标H20/B200，未编译或实测GPU性能。</p><ul class="source-list">
 <li><a href="https://docs.nvidia.com/cuda/hopper-tuning-guide/index.html">Hopper Tuning Guide</a>与<a href="https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/">Hopper架构详解</a>：单SM资源、TMA、cluster、Tensor Core代际。</li>

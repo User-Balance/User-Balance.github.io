@@ -6,35 +6,102 @@
       "title": "AI Infra 全景脑图",
       "category": "AI Infra",
       "source_date": "2026-10-16",
-      "archived_on": "2026-10-20"
+      "archived_on": "2026-10-20",
+      "description": "用工作负载与技术栈两条轴，串起训练、推理、强化学习与偏好对齐、测评和系统性能。",
+      "tags": [
+        "AI Infra",
+        "训练",
+        "推理",
+        "框架",
+        "Runtime",
+        "量化",
+        "PPO",
+        "GRPO",
+        "DPO"
+      ],
+      "category_id": "infra"
     },
     {
       "path": "mi355x-operator-ecosystem-guide.html",
       "title": "MI355X 算子生态与安装指南",
       "category": "AMD 算子",
       "source_date": "2026-10-16",
-      "archived_on": "2026-10-20"
+      "archived_on": "2026-10-20",
+      "description": "理解 AITER、CK / CK Tile、FlyDSL 与 Gluon 的职责、依赖和版本匹配，建立 MI355X 算子开发环境。",
+      "tags": [
+        "MI355X",
+        "gfx950",
+        "ROCm",
+        "AITER",
+        "CK Tile",
+        "FlyDSL",
+        "Gluon",
+        "安装"
+      ],
+      "category_id": "gpu"
     },
     {
       "path": "mi355x-gemm-sweep-lab.html",
       "title": "MI355X FP8 GEMM 分块与 Sweep",
       "category": "AMD 算子",
       "source_date": "2026-10-16",
-      "archived_on": "2026-10-20"
+      "archived_on": "2026-10-20",
+      "description": "聚焦 FP8 A8W8、B preshuffle 与 blockscale 128，交互探索 MNK 分块、scale、wave、CU 和 sweep 参数。",
+      "tags": [
+        "GEMM",
+        "FP8",
+        "A8W8",
+        "blockscale",
+        "preshuffle",
+        "MNK",
+        "MFMA",
+        "LDS",
+        "Split-K",
+        "Sweep"
+      ],
+      "category_id": "gpu"
     },
     {
       "path": "nvidia-h20-b200-architecture-lab.html",
       "title": "H20 / B200 架构与 GEMM Sweep",
       "category": "NVIDIA 架构",
       "source_date": "2026-10-19",
-      "archived_on": "2026-10-20"
+      "archived_on": "2026-10-20",
+      "description": "对照 Hopper 与 Blackwell，从 SM、Tensor Core 到 TMA、WGMMA、tcgen05 和 TMEM，再建立 GEMM 调优实验。",
+      "tags": [
+        "NVIDIA",
+        "H20",
+        "B200",
+        "FP8",
+        "CUDA",
+        "TMA",
+        "WGMMA",
+        "TMEM",
+        "CUTLASS",
+        "CuTe",
+        "Sweep"
+      ],
+      "category_id": "gpu"
     },
     {
       "path": "sshd-ssh-mutual-trust-guide.html",
       "title": "Linux SSHD 与 SSH 互信",
       "category": "Linux 运维",
       "source_date": "2026-10-20",
-      "archived_on": "2026-10-20"
+      "archived_on": "2026-10-20",
+      "description": "用流程图理解 sshd 部署、公钥认证、双向互信、配置生效与回滚，按发行版查阅命令并排查连接问题。",
+      "tags": [
+        "Linux",
+        "SSH",
+        "sshd",
+        "互信",
+        "authorized_keys",
+        "known_hosts",
+        "SELinux",
+        "Ansible",
+        "ProxyJump"
+      ],
+      "category_id": "ops"
     }
   ]
 }
