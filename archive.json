@@ -119,6 +119,24 @@
         "风景"
       ],
       "source_date": "2026-10-20"
+    },
+    {
+      "path": "glm5-kimi-k3-architecture.html",
+      "title": "GLM-5 与 Kimi K3 结构地图",
+      "category": "AI Infra",
+      "category_id": "infra",
+      "description": "对照 GLM-5 与 Kimi K3 的层内数据流和逐层结构，切换 Prefill 与 Decode，理解注意力、MoE 和 KV Cache 的关系。",
+      "tags": [
+        "GLM-5",
+        "Kimi K3",
+        "模型结构",
+        "MoE",
+        "Attention",
+        "Prefill",
+        "Decode",
+        "KV Cache"
+      ],
+      "source_date": "2026-10-16"
     }
   ]
 }
