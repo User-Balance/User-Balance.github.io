@@ -137,6 +137,30 @@
         "KV Cache"
       ],
       "source_date": "2026-10-16"
+    },
+    {
+      "path": "distributed-communication-map.html",
+      "title": "分布式训练与推理通信地图",
+      "category": "AI Infra",
+      "category_id": "infra",
+      "description": "从 DP、TP、PP、EP 等并行方式出发，交互理解通信触发、Collective 数据移动、握手完成与通信瓶颈优化。",
+      "tags": [
+        "分布式",
+        "训练",
+        "推理",
+        "DP",
+        "TP",
+        "PP",
+        "EP",
+        "Collective",
+        "AllReduce",
+        "AllGather",
+        "ReduceScatter",
+        "AllToAll",
+        "NCCL",
+        "RCCL"
+      ],
+      "source_date": "2026-10-19"
     }
   ]
 }

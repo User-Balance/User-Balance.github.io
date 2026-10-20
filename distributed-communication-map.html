@@ -1,0 +1,3537 @@
+<!doctype html>
+<html lang="zh-CN" data-visualize-standalone>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src 'self' 'unsafe-inline' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>分布式训练与推理通信地图</title>
+<style>:root{color-scheme:light dark;background:light-dark(rgb(255 255 255), rgb(24 24 24))}html,body{margin:0}body{box-sizing:border-box;padding:1rem;background:inherit}iframe{display:block;width:100%;height:calc(100vh - 2rem);margin:0 auto;border:0}</style>
+
+<meta name="portal-title" content="分布式训练与推理通信地图">
+<meta name="portal-category" content="AI Infra">
+<meta name="portal-description" content="从 DP、TP、PP、EP 等并行方式出发，交互理解通信触发、Collective 数据移动、握手完成与通信瓶颈优化。">
+<meta name="portal-date" content="2026-10-19">
+<meta name="portal-tags" content="分布式,训练,推理,DP,TP,PP,EP,Collective,AllReduce,AllGather,ReduceScatter,AllToAll,NCCL,RCCL">
+<link id="portal-article-nav-style" rel="stylesheet" href="assets/article-nav.css">
+</head>
+<body>
+<nav id="portal-archive-nav" class="archive-nav" aria-label="学习手册导航"><a href="index.html">← 技术学习手册 · 返回门户</a><span>AI Infra · 资料日期 2026-10-19</span></nav>
+
+<iframe id="codex-visualization" sandbox="allow-scripts" referrerpolicy="no-referrer" title="分布式训练与推理通信地图" data-srcdoc="&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot; data-visualize-standalone&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+&lt;meta name=&quot;referrer&quot; content=&quot;no-referrer&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;default-src &#x27;none&#x27;; script-src &#x27;unsafe-inline&#x27; &#x27;unsafe-eval&#x27; &#x27;wasm-unsafe-eval&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src &#x27;unsafe-inline&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src &#x27;none&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;none&#x27;&quot;&gt;
+&lt;title&gt;分布式训练与推理通信地图&lt;/title&gt;
+&lt;style&gt;:root {
+  color-scheme: light dark;
+  background-color: var(
+    --background,
+    var(--color-background-primary, light-dark(rgb(255 255 255), rgb(24 24 24)))
+  ) !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --color-background-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --card: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  --card-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --popover: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255), rgb(45 45 45))
+  );
+  --popover-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --primary: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --primary-foreground: var(
+    --color-text-inverse,
+    light-dark(rgb(255 255 255), rgb(13 13 13))
+  );
+  --secondary: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%))
+  );
+  --secondary-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: var(
+    --color-text-secondary,
+    light-dark(rgb(26 28 31 / 49.4%), rgb(255 255 255 / 49.8%))
+  );
+  --accent: var(
+    --color-background-info,
+    light-dark(rgb(229 242 255), rgb(13 39 63))
+  );
+  --accent-foreground: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --destructive: var(
+    --color-text-warning,
+    light-dark(rgb(226 85 7), rgb(255 133 73))
+  );
+  --border: var(
+    --color-border-secondary,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+  --input: var(
+    --color-border-primary,
+    light-dark(
+      rgb(26 28 31 / 11.8%),
+      color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+    )
+  );
+  --ring: var(
+    --color-ring-primary,
+    light-dark(rgb(51 156 255), rgb(131 195 255 / 76%))
+  );
+  --font-size-base: var(--font-text-md-size, 16px);
+  --blue: light-dark(rgb(51 156 255), rgb(51 156 255));
+  --orange: light-dark(rgb(226 85 7), rgb(251 106 34));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+  --red: light-dark(rgb(224 46 42), rgb(255 103 100));
+  --purple: light-dark(rgb(146 79 247), rgb(173 123 249));
+  --yellow: light-dark(rgb(255 195 0), rgb(255 210 64));
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(rgb(243 136 59), rgb(245 154 86));
+  --viz-series-3: light-dark(rgb(93 201 119), rgb(116 213 139));
+  --viz-series-4: light-dark(rgb(235 119 177), rgb(240 143 192));
+  --viz-series-5: light-dark(rgb(155 121 236), rgb(170 145 239));
+  --viz-series-6: light-dark(rgb(58 185 177), rgb(90 203 194));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans:
+    -apple-system-body, ui-sans-serif, -apple-system, system-ui, &quot;Segoe UI&quot;,
+    Helvetica, &quot;Apple Color Emoji&quot;, Arial, sans-serif, &quot;Segoe UI Emoji&quot;,
+    &quot;Segoe UI Symbol&quot;;
+  --font-mono:
+    ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;,
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --icon-size: 16px;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --corner-shape: round;
+  --radius: var(--border-radius-lg, 8px);
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 2);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url(&quot;data:image/svg+xml,%3Csvg xmlns=&#x27;http://www.w3.org/2000/svg&#x27; viewBox=&#x27;0 0 17 17&#x27;%3E%3Cpath d=&#x27;M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z&#x27;/%3E%3C/svg%3E&quot;);
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+}
+
+:root[data-theme=&quot;light&quot;] {
+  color-scheme: light;
+}
+
+:root[data-theme=&quot;dark&quot;] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html &gt; body {
+  /* Preserve MCP aliases for older inline renderers without creating :root cycles. */
+  --color-background-primary: var(
+    --background,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --color-text-primary: var(
+    --foreground,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --color-border-secondary: var(
+    --border,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+
+  margin: 0;
+  padding: var(--visualize-paint-gutter, 0px);
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans) !important;
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--font-size-base);
+  line-height: calc(var(--font-size-base) * 1.625);
+  font-weight: var(--font-weight-normal);
+}
+
+.cursor-interaction {
+  cursor: var(--cursor-interaction, pointer);
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: var(--cursor-interaction, pointer);
+  text-decoration: none;
+  text-underline-offset: 2px;
+  font-weight: inherit;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+li,
+.table {
+  font-family: var(--font-sans);
+}
+
+h1 {
+  font-size: calc(var(--font-size-base) * 1.5);
+  line-height: 1.3333333333;
+}
+
+h2 {
+  font-size: calc(var(--font-size-base) * 1.25);
+  line-height: 1.4;
+}
+h3 {
+  font-size: calc(var(--font-size-base) * 1.125);
+  line-height: 1.5555555556;
+}
+h4 {
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+}
+h5,
+h6 {
+  font-size: var(--font-size-base);
+  line-height: calc(var(--font-size-base) * 1.625);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+b,
+strong,
+th {
+  font-weight: 600;
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner-shape);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+pre,
+pre code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: calc(var(--font-size-base) * 0.875);
+  line-height: calc(var(--font-size-base) * 1.625);
+  font-family: var(--font-sans);
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+.table :is(th, td):not(:last-child) {
+  padding-inline-end: calc(var(--font-size-base) * 1.5);
+}
+
+.table-responsive &gt; .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead :is(th, td) {
+  border-bottom-color: var(--border-strong, var(--input));
+  padding-block: calc(var(--font-size-base) / 2);
+  line-height: var(--font-size-base);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+.table tbody :is(th, td) {
+  padding-block: calc(var(--font-size-base) * 0.625);
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 8px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align=&quot;right&quot;]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align=&quot;center&quot;]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  corner-shape: var(--corner-shape);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+.widget {
+  min-width: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  box-shadow: 0 0 0 0.5px var(--border-strong, var(--border));
+  color: var(--foreground);
+  background: var(--background);
+}
+
+#widget &gt; :not(.card, .widget, .progress) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  border: 1px solid var(--border);
+  corner-shape: var(--corner-shape);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+  font-family: var(--font-sans);
+  padding: 5px 12px;
+  border-color: color-mix(
+    in oklab,
+    light-dark(var(--primary-foreground), var(--foreground)) 5%,
+    transparent
+  );
+  border-radius: var(--radius-2xl);
+  color: light-dark(var(--primary-foreground), var(--foreground));
+  background: light-dark(var(--foreground), var(--popover));
+  box-shadow: 0 8px 18px rgb(15 23 42 / 20%);
+  letter-spacing: -0.15px;
+  font-size: calc(var(--font-size-base) * 14 / 16);
+  font-size: round(nearest, calc(var(--font-size-base) * 14 / 16), 1px);
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+hr {
+  width: 100%;
+  height: 1px;
+  margin-block: 6px;
+  border: 0;
+  background: var(--border);
+}
+
+.nav {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.progress {
+  display: flex;
+  height: 8px;
+  margin-block: calc((var(--line-height-normal, 1.5em) - 8px) / 2);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+}
+
+.progress-bar:only-child {
+  border-radius: var(--radius-full);
+}
+
+.progress-bar {
+  height: 100%;
+  flex-shrink: 0;
+  border: 0;
+  background: var(--viz-series-1);
+}
+
+.viz-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  color: color-mix(in srgb, var(--foreground) 40%, var(--muted-foreground));
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  font-family: var(--font-sans);
+  font-size: calc(var(--font-size-base) * 14 / 16);
+  font-size: round(nearest, calc(var(--font-size-base) * 14 / 16), 1px);
+  font-weight: var(--font-weight-normal);
+  line-height: 1;
+}
+
+small,
+.text-small {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls &gt; .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls &gt; .form-label &gt; :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.nav-link,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+/* Match inline alignment without overriding a containing flex or grid layout. */
+.btn,
+.nav-link,
+.form-control,
+.form-select,
+.form-range,
+.form-check {
+  vertical-align: middle;
+}
+
+.btn,
+.nav-link {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  corner-shape: var(--corner-shape);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: inherit;
+  font-family: var(--font-sans);
+  height: fit-content;
+  min-height: calc(12px + 2 * var(--control-spacing, 12px));
+  padding-inline: var(--control-spacing, 12px);
+  border-color: transparent;
+  border-radius: var(--radius-full);
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  font-size: calc(var(--font-size-base) * 14 / 16);
+  font-size: round(nearest, calc(var(--font-size-base) * 14 / 16), 1px);
+  font-weight: var(--font-weight-normal);
+  line-height: 18px;
+}
+
+.btn {
+  border-color: var(--border);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: var(--cursor-interaction, pointer);
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover {
+  background: light-dark(
+    color-mix(in srgb, var(--foreground) 5.5%, transparent),
+    color-mix(in srgb, var(--foreground) 8%, transparent)
+  );
+}
+
+.nav-link:not(:disabled):not([aria-disabled=&quot;true&quot;]):hover {
+  background: color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+
+.btn-primary {
+  border-color: var(--border);
+  color: var(--primary-foreground);
+  background: var(--foreground);
+  background-clip: border-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(in srgb, var(--primary-foreground) 50%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: border-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--muted-foreground);
+  background: light-dark(
+    color-mix(in srgb, var(--foreground) 5.5%, transparent),
+    color-mix(in srgb, var(--foreground) 8%, transparent)
+  );
+}
+
+.nav-pills .nav-link {
+  min-width: 0;
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.nav-justified .nav-link {
+  flex: 1 1 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.nav-pills .nav-link.active {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
+/* Shared preview chrome; product styles stay inside each variant. */
+.viz-dotted-background {
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--foreground) 14%, transparent) 0.8px,
+    transparent 0.8px
+  );
+  background-position: center;
+  background-size: 16px 16px;
+}
+
+.viz-carousel {
+  position: relative;
+  min-width: 0;
+}
+
+.viz-carousel:has(&gt; .viz-carousel-controls) {
+  min-height: calc(60px + var(--viz-carousel-picker-height, 0px));
+  padding-bottom: 60px;
+}
+
+.viz-carousel &gt; [data-variant][hidden] {
+  display: none !important;
+}
+
+.viz-carousel &gt; [data-variant] {
+  isolation: isolate;
+}
+
+.viz-carousel-controls {
+  --viz-carousel-hover: light-dark(
+    color-mix(in srgb, var(--foreground) 5.4%, transparent),
+    color-mix(in srgb, var(--foreground) 7.8%, transparent)
+  );
+  position: absolute;
+  z-index: 2;
+  bottom: 8px;
+  left: 50%;
+  display: flex;
+  width: max-content;
+  /* Leave room for the host&#x27;s design-controls launcher at the trailing edge. */
+  max-width: calc(100% - 96px);
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-sans);
+  /* Match the settings dropdown chrome independently of the content font size. */
+  font-size: 13px;
+  font-weight: var(--font-weight-normal);
+  line-height: 18px;
+  transform: translateX(-50%);
+  user-select: none;
+}
+
+/* Keep authored mockup button styles out of the shared carousel chrome. */
+.viz-carousel-controls button,
+.viz-carousel-picker &gt; summary {
+  display: flex !important;
+  height: auto !important;
+  min-height: 30px;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px;
+  padding: 0 6px !important;
+  -webkit-app-region: no-drag;
+  border: 0 !important;
+  border-radius: 14px !important;
+  color: inherit !important;
+  background: transparent !important;
+  font: inherit !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.viz-carousel-controls &gt; button,
+.viz-carousel-picker &gt; summary {
+  position: relative;
+  isolation: isolate;
+}
+
+.viz-carousel-controls &gt; button {
+  --icon-size: 16px;
+  width: 30px !important;
+  padding: 0 !important;
+}
+
+.viz-carousel-picker &gt; summary {
+  padding-inline: 12px !important;
+}
+
+.viz-carousel-controls .viz-carousel-caret {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  margin: 0;
+  color: inherit;
+  transform: rotate(180deg);
+}
+
+.viz-carousel-controls &gt; button &gt; svg,
+.viz-carousel-controls .viz-carousel-caret,
+.viz-carousel-count {
+  opacity: 0.5;
+}
+
+.viz-carousel-controls &gt; button::before,
+.viz-carousel-picker &gt; summary::before {
+  position: absolute;
+  z-index: -1;
+  inset: 3px;
+  border-radius: 12px;
+  content: &quot;&quot;;
+  pointer-events: none;
+}
+
+.viz-carousel-controls &gt; button:hover::before,
+.viz-carousel-picker &gt; summary:hover::before {
+  background: var(--viz-carousel-hover);
+}
+
+.viz-carousel-controls &gt; button,
+.viz-carousel-controls [data-lucide],
+.viz-carousel-controls .lucide {
+  flex-shrink: 0;
+}
+
+.viz-carousel-picker {
+  min-width: 0;
+}
+
+.viz-carousel-picker &gt; summary {
+  min-width: 0;
+  list-style: none;
+}
+
+.viz-carousel-picker &gt; summary::-webkit-details-marker {
+  display: none;
+}
+
+.viz-carousel-count {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.viz-carousel-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.viz-carousel-options {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 4px);
+  left: 0;
+  display: flex;
+  max-height: 240px;
+  flex-direction: column;
+  gap: 2px;
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--background);
+  box-shadow: 0 4px 12px light-dark(rgb(0 0 0 / 6%), rgb(0 0 0 / 25%));
+}
+
+.viz-carousel-options &gt; button {
+  border-radius: max(0px, calc(var(--radius-lg) - 5px)) !important;
+  width: 100% !important;
+  min-height: 28px;
+  justify-content: flex-start !important;
+  padding: 4px 8px !important;
+  font-size: var(--font-size-small) !important;
+  text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.viz-carousel-options &gt; [aria-current=&quot;true&quot;],
+.viz-carousel-options &gt; button:hover {
+  background: var(--viz-carousel-hover) !important;
+}
+
+.btn:disabled,
+.nav-link:disabled,
+.nav-link[aria-disabled=&quot;true&quot;] {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  height: calc(12px + 2 * var(--control-spacing, 12px));
+  min-height: calc(12px + 2 * var(--control-spacing, 12px));
+  padding-inline: calc(4px + var(--control-spacing, 12px) / 2);
+  border-color: var(--input);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--popover) 96%, transparent);
+  font-size: calc(var(--font-size-base) * 14 / 16);
+  font-size: round(nearest, calc(var(--font-size-base) * 14 / 16), 1px);
+  font-weight: var(--font-weight-normal);
+  line-height: 1.4285714286;
+}
+.form-control:is(
+  [type=&quot;file&quot;],
+  [type=&quot;date&quot;],
+  [type=&quot;datetime-local&quot;],
+  [type=&quot;month&quot;],
+  [type=&quot;week&quot;],
+  [type=&quot;color&quot;]
+) {
+  height: calc(12px + 2 * var(--control-spacing, 12px));
+  min-height: calc(12px + 2 * var(--control-spacing, 12px));
+  line-height: 18px;
+}
+.form-control:is(
+  [type=&quot;date&quot;],
+  [type=&quot;datetime-local&quot;],
+  [type=&quot;month&quot;],
+  [type=&quot;week&quot;]
+) {
+  padding-inline: var(--control-spacing, 12px);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type=&quot;file&quot;] {
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+  padding: 0;
+}
+
+.form-control[type=&quot;file&quot;]::file-selector-button {
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+  min-height: calc(10px + 2 * var(--control-spacing, 12px));
+  padding-inline: var(--control-spacing, 12px);
+  margin-inline-end: var(--control-spacing, 12px);
+}
+
+.form-control[type=&quot;file&quot;]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type=&quot;color&quot;] {
+  width: 40px;
+  height: calc(12px + 2 * var(--control-spacing, 12px));
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+  corner-shape: var(--corner-shape);
+}
+
+textarea.form-control {
+  height: auto;
+  resize: vertical;
+  min-height: 96px;
+  padding: 8px 10px;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: none;
+}
+.form-control:disabled {
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  opacity: 1;
+}
+.form-control[aria-invalid=&quot;true&quot;] {
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--red) 20%, transparent);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: fit-content;
+  min-height: calc(12px + 2 * var(--control-spacing, 12px));
+  margin: 0;
+  /* The secondary icon role is 14px at compact density and 16px at web density. */
+  --icon-size: calc(10px + var(--control-spacing, 12px) / 2);
+  /* Settings dropdowns retain a 12px inset and a 4px text-to-chevron gap. */
+  padding: 0 calc(16px + var(--icon-size)) 0 12px;
+  outline: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(
+      45deg,
+      transparent calc(50% - 0.6px),
+      var(--muted-foreground) calc(50% - 0.6px) calc(50% + 0.6px),
+      transparent calc(50% + 0.6px)
+    ),
+    linear-gradient(
+      135deg,
+      transparent calc(50% - 0.6px),
+      var(--muted-foreground) calc(50% - 0.6px) calc(50% + 0.6px),
+      transparent calc(50% + 0.6px)
+    );
+  background-position:
+    calc(100% - 12px - var(--icon-size) / 2) 50%,
+    calc(100% - 12px - var(--icon-size) * 0.18) 50%;
+  background-repeat: no-repeat;
+  background-size: calc(var(--icon-size) * 0.32) calc(var(--icon-size) * 0.32);
+  cursor: var(--cursor-interaction, default);
+  font-size: calc(var(--font-size-base) * 14 / 16);
+  font-size: round(nearest, calc(var(--font-size-base) * 14 / 16), 1px);
+  font-weight: var(--font-weight-normal);
+  line-height: 18px;
+}
+
+.form-select option {
+  color: var(--popover-foreground);
+  background-color: var(--popover);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: light-dark(
+    color-mix(in srgb, var(--foreground) 5.5%, transparent),
+    color-mix(in srgb, var(--foreground) 8%, transparent)
+  );
+}
+
+.form-select:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+.form-select:disabled {
+  opacity: 0.4;
+}
+
+.form-check {
+  display: flex;
+  min-height: calc(12px + 2 * var(--control-spacing, 12px));
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;] {
+  corner-shape: round;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  width: calc(10px + var(--control-spacing, 12px) / 2);
+  height: calc(10px + var(--control-spacing, 12px) / 2);
+  border-color: var(--border-strong, var(--input));
+  border-radius: calc(var(--radius-sm) / 2);
+  background-color: transparent;
+  color: var(--foreground);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:is(:checked, :indeterminate) {
+  border-color: var(--border-strong, var(--input));
+  background-color: color-mix(in srgb, var(--popover) 96%, transparent);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: &quot;&quot;;
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+  background-color: var(--foreground);
+}
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:indeterminate::before {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 65%;
+  height: 6.65%;
+  margin: auto;
+  border-radius: var(--radius-full);
+  background: var(--foreground);
+  mask: none;
+  content: &quot;&quot;;
+}
+
+.form-check-input[type=&quot;radio&quot;] {
+  border-radius: var(--radius-full);
+  width: 16px;
+  height: 16px;
+  border: 0;
+  box-shadow: inset 0 0 0 1px var(--input);
+}
+
+.form-check-input[type=&quot;radio&quot;]:checked {
+  border: 0;
+  background: radial-gradient(
+    circle,
+    var(--primary-foreground) 0 3px,
+    var(--foreground) 3px
+  );
+  box-shadow: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;]:focus-visible {
+  border-color: var(--ring);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+.form-check:not(.form-switch) .form-check-input[type=&quot;radio&quot;]:disabled,
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;radio&quot;]:disabled
+  + .form-check-label {
+  opacity: 0.5;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+  content: &quot;&quot;;
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+  border-color: #fff;
+  background: #fff;
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--blue);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+  outline: none;
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  accent-color: var(--primary);
+  height: calc(12px + 2 * var(--control-spacing, 12px));
+  min-height: calc(12px + 2 * var(--control-spacing, 12px));
+  outline: none;
+  border-radius: var(--radius-full);
+  color: var(--foreground);
+  background: transparent;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  background: var(--form-range-track, var(--border));
+  height: 2px;
+  border-radius: var(--radius-full);
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  margin-top: -9px;
+  border-color: transparent;
+  background: currentColor;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Outline the native track and thumb, preserving the larger input hit area. */
+.form-range:focus-visible::-webkit-slider-runnable-track {
+  outline: 2px auto Highlight;
+  outline-color: -webkit-focus-ring-color;
+}
+
+.form-range::-moz-range-track {
+  background: var(--form-range-track, var(--border));
+  height: 2px;
+  border-radius: var(--radius-full);
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  border-color: transparent;
+  background: currentColor;
+  box-shadow: var(--shadow-sm);
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  outline: 2px solid Highlight;
+  outline-offset: 2px;
+}
+
+.form-range:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+  [aria-pressed=&quot;true&quot;],
+  [aria-selected=&quot;true&quot;],
+  .is-selected
+) {
+  border-color: transparent;
+  color: var(--primary-foreground);
+  background: var(--blue);
+}
+
+.btn.viz-tile:is([aria-pressed=&quot;true&quot;], [aria-selected=&quot;true&quot;], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible,
+.nav-link:focus-visible {
+  outline-offset: 2px;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.viz-carousel-controls :is(button, summary):focus-visible {
+  outline: 2px solid var(--ring) !important;
+  outline-offset: 2px !important;
+}
+
+/* Web recipes are the default, including on renderers without inline style queries. */
+@supports (border-radius: if(style(--corner-shape: round): 1px; else: 2px)) {
+  /* Match the host&#x27;s proportional text-sm scale at every text preference. */
+  .tooltip,
+  .viz-badge,
+  .btn,
+  .nav-link,
+  .form-control,
+  .form-select {
+    font-size: if(
+      style(--corner-shape: round): round(
+          nearest,
+          calc(var(--font-size-base) * 14 / 16),
+          1px
+        );
+        else: round(nearest, calc(var(--font-size-base) * 13 / 14), 1px)
+    );
+  }
+
+  .btn,
+  .nav-link,
+  .form-select {
+    border-radius: if(
+      style(--corner-shape: round): var(--radius-full); else: var(--radius-lg)
+    );
+  }
+
+  .form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;] {
+    border-radius: if(
+      style(--corner-shape: round): calc(var(--radius-sm) / 2);
+        else: calc(var(--radius-lg) * 0.4)
+    );
+  }
+
+  .tooltip {
+    font-weight: if(
+      style(--corner-shape: round): 600; else: var(--font-weight-normal)
+    );
+  }
+}
+
+@media (pointer: coarse) {
+  .viz-carousel:has(&gt; .viz-carousel-controls) {
+    min-height: calc(76px + var(--viz-carousel-picker-height, 0px));
+    padding-bottom: 76px;
+  }
+
+  .btn,
+  .nav-link,
+  .viz-carousel-controls button,
+  .viz-carousel-picker &gt; summary,
+  .form-control,
+  .form-select {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Keep small-screen WebKit from zooming when a text field receives focus. */
+  .form-control,
+  .form-select {
+    font-size: max(16px, calc(var(--font-size-base) * 14 / 16));
+    font-size: max(
+      16px,
+      round(nearest, calc(var(--font-size-base) * 14 / 16), 1px)
+    );
+  }
+  .form-control:is(
+    [type=&quot;file&quot;],
+    [type=&quot;date&quot;],
+    [type=&quot;datetime-local&quot;],
+    [type=&quot;month&quot;],
+    [type=&quot;week&quot;],
+    [type=&quot;time&quot;],
+    [type=&quot;color&quot;]
+  ) {
+    height: 44px;
+    min-height: 44px;
+    font-size: max(16px, calc(var(--font-size-base) * 14 / 16));
+    font-size: max(
+      16px,
+      round(nearest, calc(var(--font-size-base) * 14 / 16), 1px)
+    );
+  }
+
+  .form-control[type=&quot;file&quot;]::file-selector-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .form-control-color[type=&quot;color&quot;] {
+    width: 44px;
+    height: 44px;
+  }
+
+  .form-control:is(
+    [type=&quot;date&quot;],
+    [type=&quot;datetime-local&quot;],
+    [type=&quot;month&quot;],
+    [type=&quot;time&quot;],
+    [type=&quot;week&quot;]
+  ) {
+    min-width: 0;
+    max-width: 100%;
+    padding-block: 8px;
+  }
+
+  .form-check {
+    min-height: 44px;
+    padding-inline: 15px;
+  }
+
+  .form-check-input {
+    position: relative;
+  }
+
+  .form-check-input::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    content: &quot;&quot;;
+    transform: translate(-50%, -50%);
+  }
+
+  .form-check-label {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .form-range {
+    height: 44px;
+    touch-action: pan-y;
+  }
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget &gt; svg {
+  width: 100%;
+}
+
+/* Model-authored chart rules can otherwise stretch icons after these styles load. */
+svg.lucide {
+  display: block;
+  width: var(--icon-size) !important;
+  height: var(--icon-size) !important;
+  flex: none;
+  margin: 0 !important;
+  stroke-width: 1.6;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+
+html&gt;body{padding:0}&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;script type=&quot;application/json&quot; id=&quot;codex-visualization-widget-state&quot;&gt;__CODEX_VISUALIZATION_WIDGET_STATE__&lt;/script&gt;
+&lt;script&gt;(() =&gt; {
+  const root = document.documentElement;
+  const mediaQuery = globalThis.matchMedia(&quot;(prefers-color-scheme: dark)&quot;);
+  const apply = Reflect.apply;
+  const isArray = Array.isArray;
+  const hasOwn = Object.hasOwn;
+  const parentWindow = globalThis.parent;
+  const stringify = JSON.stringify;
+  const parse = JSON.parse;
+  const encode = TextEncoder.prototype.encode.bind(new TextEncoder());
+  const initialStateElement = document.getElementById(
+    &quot;codex-visualization-widget-state&quot;,
+  );
+  const initialGlobals = parse(initialStateElement?.textContent ?? &quot;{}&quot;);
+  initialStateElement?.remove();
+  /** @type {Record&lt;string, unknown&gt; | null} */
+  let state = initialGlobals.widgetState ?? null;
+  const statePersistence = initialGlobals.statePersistence ?? &quot;none&quot;;
+  let nextStateRequestId = 0;
+  /** @type {Map&lt;number, { resolve: () =&gt; void; reject: (error: Error) =&gt; void; timeout: ReturnType&lt;typeof globalThis.setTimeout&gt;; serializedState: string }&gt;} */
+  const pendingStateWrites = new Map();
+  const persistenceError = () =&gt;
+    Object.assign(
+      new Error(&quot;The host could not persist the widget state update&quot;),
+      {
+        code: -32000,
+        data: { code: &quot;widget_state_persistence_failed&quot;, retryable: false },
+      },
+    );
+  /**
+   * @param {object} prototype
+   * @param {string} property
+   */
+  const getPrototypeGetter = (prototype, property) =&gt; {
+    // oxlint-disable-next-line typescript/unbound-method -- invoked through captured Reflect.apply
+    const getter = Object.getOwnPropertyDescriptor(prototype, property)?.get;
+    if (getter == null) {
+      throw new Error(`Missing ${property} getter`);
+    }
+    return getter;
+  };
+  const getMessageData = getPrototypeGetter(MessageEvent.prototype, &quot;data&quot;);
+  const getMessagePorts = getPrototypeGetter(MessageEvent.prototype, &quot;ports&quot;);
+  const getMessageSource = getPrototypeGetter(MessageEvent.prototype, &quot;source&quot;);
+  // oxlint-disable-next-line typescript/unbound-method -- captured before the untrusted fragment runs
+  const addHostMessageListener = MessagePort.prototype.addEventListener;
+  // oxlint-disable-next-line typescript/unbound-method -- captured before the untrusted fragment runs
+  const postHostMessage = MessagePort.prototype.postMessage;
+  // oxlint-disable-next-line typescript/unbound-method -- captured before the untrusted fragment runs
+  const startHostPort = MessagePort.prototype.start;
+  // oxlint-disable-next-line typescript/unbound-method -- captured before the untrusted fragment runs
+  const stopMessagePropagation = Event.prototype.stopImmediatePropagation;
+  /** @type {MessagePort | null} */
+  let hostPort = null;
+  const postToHost = (type, payload) =&gt; {
+    if (hostPort != null) {
+      apply(postHostMessage, hostPort, [{ type, ...payload }]);
+    }
+  };
+  const openExternal = ({ href }) =&gt; {
+    if (globalThis.navigator.userActivation?.isActive === true) {
+      postToHost(&quot;open-external&quot;, { href });
+    }
+  };
+  const sendFollowUpMessage = ({ context, prompt, title }) =&gt; {
+    if (globalThis.navigator.userActivation?.isActive === true) {
+      postToHost(&quot;follow-up&quot;, { context, prompt, title });
+    }
+    return Promise.resolve();
+  };
+  /**
+   * @param {Record&lt;string, unknown&gt; | ((previous: Record&lt;string, unknown&gt; | null) =&gt; Record&lt;string, unknown&gt;)} next
+   * @returns {Promise&lt;void&gt;}
+   */
+  const setWidgetState = async (next) =&gt; {
+    const nextState = typeof next === &quot;function&quot; ? next(state) : next;
+    if (
+      nextState == null ||
+      typeof nextState !== &quot;object&quot; ||
+      isArray(nextState)
+    ) {
+      throw new TypeError(&quot;Widget state must be a JSON object&quot;);
+    }
+    const inputState = stringify(
+      nextState,
+      (_key, /** @type {unknown} */ value) =&gt; {
+        if (
+          typeof value === &quot;undefined&quot; ||
+          typeof value === &quot;function&quot; ||
+          typeof value === &quot;symbol&quot; ||
+          (typeof value === &quot;number&quot; &amp;&amp; !Number.isFinite(value))
+        ) {
+          throw new TypeError(&quot;Widget state must be a JSON object&quot;);
+        }
+        return value;
+      },
+    );
+    const parsedState = parse(inputState);
+    if (
+      parsedState == null ||
+      typeof parsedState !== &quot;object&quot; ||
+      isArray(parsedState)
+    ) {
+      throw new TypeError(&quot;Widget state must be a JSON object&quot;);
+    }
+    const storedState = {
+      modelContent: null,
+      privateContent: null,
+      ...parsedState,
+    };
+    const serializedState = stringify(storedState);
+    if (encode(serializedState).length &gt; 16 * 1024) {
+      throw new TypeError(
+        &quot;Widget state must be a JSON object of at most 16 KiB&quot;,
+      );
+    }
+    if (
+      hasOwn(storedState, &quot;imageIds&quot;) &amp;&amp;
+      (!isArray(storedState.imageIds) ||
+        storedState.imageIds.some(
+          (/** @type {unknown} */ id) =&gt; typeof id !== &quot;string&quot;,
+        ))
+    ) {
+      throw new TypeError(&quot;Widget state imageIds must be an array of strings&quot;);
+    }
+    if (storedState.imageIds?.length &gt; 0) {
+      throw Object.assign(
+        new TypeError(&quot;Visualization state does not support image attachments&quot;),
+        { code: -32602, data: { code: &quot;images_unsupported&quot; } },
+      );
+    }
+    state = storedState;
+    globalThis.openai.widgetState = state;
+    globalThis.dispatchEvent(
+      new CustomEvent(&quot;openai:set_globals&quot;, {
+        detail: { globals: { widgetState: state } },
+      }),
+    );
+    if (statePersistence === &quot;none&quot;) {
+      throw persistenceError();
+    }
+    const id = ++nextStateRequestId;
+    return new Promise((resolve, reject) =&gt; {
+      const timeout = globalThis.setTimeout(() =&gt; {
+        pendingStateWrites.delete(id);
+        reject(persistenceError());
+      }, 30_000);
+      pendingStateWrites.set(id, { resolve, reject, timeout, serializedState });
+      postToHost(&quot;widget-state-write&quot;, { id, state: serializedState });
+    });
+  };
+  const syncTheme = () =&gt; {
+    const theme = mediaQuery.matches ? &quot;dark&quot; : &quot;light&quot;;
+    root.dataset.theme = theme;
+    globalThis.openai = {
+      ...globalThis.openai,
+      openExternal,
+      sendFollowUpMessage,
+      setWidgetState,
+      theme,
+      visualizationStyleVariables: {},
+      visualizationTheme: theme,
+      widgetState: state,
+      statePersistence,
+      stateModelContext: &quot;none&quot;,
+    };
+    globalThis.dispatchEvent(
+      new CustomEvent(&quot;openai:set_globals&quot;, {
+        detail: { globals: globalThis.openai },
+      }),
+    );
+  };
+  const sendHeight = () =&gt; {
+    postToHost(&quot;height&quot;, {
+      height: Math.ceil(
+        Math.max(
+          document.body.scrollHeight,
+          document.body.getBoundingClientRect().height,
+        ),
+      ),
+    });
+  };
+
+  globalThis.addEventListener(
+    &quot;message&quot;,
+    (event) =&gt; {
+      const data = apply(getMessageData, event, []);
+      const ports = apply(getMessagePorts, event, []);
+      const source = apply(getMessageSource, event, []);
+      if (
+        hostPort != null ||
+        source !== parentWindow ||
+        typeof data !== &quot;object&quot; ||
+        data?.type !== &quot;codex-visualization-initialize&quot; ||
+        !isArray(ports) ||
+        ports.length !== 1
+      ) {
+        return;
+      }
+      apply(stopMessagePropagation, event, []);
+      const nextHostPort = ports[0];
+      try {
+        apply(addHostMessageListener, nextHostPort, [
+          &quot;message&quot;,
+          (event) =&gt; {
+            const data = apply(getMessageData, event, []);
+            if (typeof data === &quot;object&quot; &amp;&amp; data?.type === &quot;measure&quot;) {
+              sendHeight();
+            } else if (
+              typeof data === &quot;object&quot; &amp;&amp;
+              data?.type === &quot;widget-state-result&quot;
+            ) {
+              /** @type {unknown} */
+              const id = data.id;
+              if (typeof id !== &quot;number&quot;) {
+                return;
+              }
+              const pending = pendingStateWrites.get(id);
+              if (pending != null) {
+                pendingStateWrites.delete(id);
+                globalThis.clearTimeout(pending.timeout);
+                if (data.ok === true) {
+                  pending.resolve();
+                } else {
+                  pending.reject(persistenceError());
+                }
+              }
+            }
+          },
+        ]);
+        apply(startHostPort, nextHostPort, []);
+      } catch {
+        return;
+      }
+      hostPort = nextHostPort;
+      for (const [id, { serializedState }] of pendingStateWrites) {
+        postToHost(&quot;widget-state-write&quot;, { id, state: serializedState });
+      }
+      sendHeight();
+    },
+    { capture: true },
+  );
+  document.currentScript?.remove();
+  mediaQuery.addEventListener(&quot;change&quot;, syncTheme);
+  globalThis.addEventListener(&quot;click&quot;, (event) =&gt; {
+    if (event.defaultPrevented) {
+      return;
+    }
+    let element = null;
+    if (event.target instanceof globalThis.Element) {
+      element = event.target;
+    } else if (event.target instanceof globalThis.Node) {
+      element = event.target.parentElement;
+    }
+    const link = element?.closest(&quot;a[href]&quot;);
+    const href = link?.getAttribute(&quot;href&quot;);
+    if (href == null) {
+      return;
+    }
+    if (href.startsWith(&quot;#&quot;)) {
+      let id;
+      try {
+        id = decodeURIComponent(href.slice(1));
+      } catch {
+        return;
+      }
+      const target = id.length === 0 ? root : document.getElementById(id);
+      if (
+        target == null ||
+        globalThis.navigator.userActivation?.isActive !== true
+      ) {
+        return;
+      }
+      event.preventDefault();
+      postToHost(&quot;scroll-to&quot;, {
+        top: target.getBoundingClientRect().top + globalThis.scrollY,
+      });
+      return;
+    }
+    event.preventDefault();
+    openExternal({ href });
+  });
+  new ResizeObserver(sendHeight).observe(document.body);
+  syncTheme();
+})();
+&lt;/script&gt;
+&lt;div id=&quot;distributed-comm-map&quot;&gt;
+  &lt;style&gt;
+    #distributed-comm-map {
+      width: 100%;
+      color: var(--foreground);
+    }
+
+    #distributed-comm-map * {
+      box-sizing: border-box;
+      letter-spacing: 0;
+    }
+
+    #distributed-comm-map h1,
+    #distributed-comm-map h2,
+    #distributed-comm-map h3,
+    #distributed-comm-map p {
+      margin-top: 0;
+    }
+
+    #distributed-comm-map .topline,
+    #distributed-comm-map .view-nav,
+    #distributed-comm-map .control-row,
+    #distributed-comm-map .legend-row,
+    #distributed-comm-map .stage-nav,
+    #distributed-comm-map .source-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #distributed-comm-map .topline {
+      justify-content: space-between;
+      padding-right: 96px;
+    }
+
+    #distributed-comm-map .formula {
+      padding: 8px 10px;
+      border-left: 3px solid var(--viz-series-1);
+      background: var(--muted);
+      color: var(--muted-foreground);
+    }
+
+    #distributed-comm-map .view-nav {
+      margin: 14px 0 18px;
+    }
+
+    #distributed-comm-map .view {
+      min-width: 0;
+    }
+
+    #distributed-comm-map .view[hidden] {
+      display: none;
+    }
+
+    #distributed-comm-map .control-row {
+      margin-bottom: 14px;
+    }
+
+    #distributed-comm-map .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 12px 0 16px;
+    }
+
+    #distributed-comm-map .summary-item {
+      min-width: 0;
+      padding: 10px 0;
+      border-top: 2px solid var(--border);
+    }
+
+    #distributed-comm-map .summary-item strong,
+    #distributed-comm-map .summary-item code {
+      display: block;
+      margin-top: 4px;
+    }
+
+    #distributed-comm-map .owner-rule {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 12px;
+      align-items: center;
+      margin: 12px 0 18px;
+    }
+
+    #distributed-comm-map .rule-side {
+      padding: 12px;
+      border-left: 4px solid var(--viz-series-1);
+      background: var(--muted);
+    }
+
+    #distributed-comm-map .rule-side.framework {
+      border-left-color: var(--viz-series-4);
+    }
+
+    #distributed-comm-map .rule-or {
+      color: var(--muted-foreground);
+    }
+
+    #distributed-comm-map .lane-stack {
+      display: grid;
+      gap: 7px;
+    }
+
+    #distributed-comm-map .lane {
+      display: grid;
+      grid-template-columns: 128px minmax(0, 1fr);
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    #distributed-comm-map .lane-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-weight: 500;
+    }
+
+    #distributed-comm-map .lane-dot,
+    #distributed-comm-map .swatch {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      flex: 0 0 auto;
+      background: var(--viz-series-1);
+    }
+
+    #distributed-comm-map .lane.framework .lane-dot { background: var(--viz-series-4); }
+    #distributed-comm-map .lane.library .lane-dot { background: var(--viz-series-2); }
+    #distributed-comm-map .lane.fabric .lane-dot { background: var(--viz-series-5); }
+
+    #distributed-comm-map .lane-events {
+      display: flex;
+      align-items: stretch;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    #distributed-comm-map .event {
+      flex: 1 1 150px;
+      min-width: 130px;
+      padding: 9px;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--viz-series-1);
+      border-radius: 3px;
+      background: var(--background);
+    }
+
+    #distributed-comm-map .framework .event { border-left-color: var(--viz-series-4); }
+    #distributed-comm-map .library .event { border-left-color: var(--viz-series-2); }
+    #distributed-comm-map .fabric .event { border-left-color: var(--viz-series-5); }
+
+    #distributed-comm-map .event strong,
+    #distributed-comm-map .event code,
+    #distributed-comm-map .event small {
+      display: block;
+    }
+
+    #distributed-comm-map .event code {
+      margin: 5px 0;
+      overflow-wrap: anywhere;
+    }
+
+    #distributed-comm-map .event small,
+    #distributed-comm-map .muted {
+      color: var(--muted-foreground);
+    }
+
+    #distributed-comm-map .ownership-verdict {
+      margin-top: 14px;
+      padding: 10px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    #distributed-comm-map .collective-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    #distributed-comm-map .rank-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    #distributed-comm-map .rank-box {
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-top: 4px solid var(--viz-series-1);
+      border-radius: 4px;
+      background: var(--muted);
+    }
+
+    #distributed-comm-map .rank-box:nth-child(2) { border-top-color: var(--viz-series-2); }
+    #distributed-comm-map .rank-box:nth-child(3) { border-top-color: var(--viz-series-3); }
+    #distributed-comm-map .rank-box:nth-child(4) { border-top-color: var(--viz-series-4); }
+
+    #distributed-comm-map .rank-title {
+      font-weight: 500;
+      margin-bottom: 7px;
+    }
+
+    #distributed-comm-map .chunks {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+      min-height: 26px;
+    }
+
+    #distributed-comm-map .chunk {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 25px;
+      min-height: 24px;
+      padding: 3px 5px;
+      border-radius: 3px;
+      background: var(--accent);
+      color: var(--accent-foreground);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    #distributed-comm-map .transfer-band {
+      min-height: 58px;
+      padding: 10px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--muted);
+    }
+
+    #distributed-comm-map .transfer-band strong,
+    #distributed-comm-map .transfer-band span {
+      display: block;
+    }
+
+    #distributed-comm-map .transfer-band span {
+      margin-top: 4px;
+      color: var(--muted-foreground);
+    }
+
+    #distributed-comm-map .stage-nav {
+      margin-top: 10px;
+    }
+
+    #distributed-comm-map .detail-list {
+      display: grid;
+      gap: 0;
+    }
+
+    #distributed-comm-map .detail-row {
+      display: grid;
+      grid-template-columns: 108px minmax(0, 1fr);
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    #distributed-comm-map .detail-row:last-child {
+      border-bottom: 0;
+    }
+
+    #distributed-comm-map .phase-map {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    #distributed-comm-map .phase-column {
+      min-width: 0;
+    }
+
+    #distributed-comm-map .phase-title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    #distributed-comm-map .phase-title .swatch.bootstrap { background: var(--viz-series-1); }
+    #distributed-comm-map .phase-title .swatch.transfer { background: var(--viz-series-2); }
+    #distributed-comm-map .phase-title .swatch.verify { background: var(--viz-series-3); }
+
+    #distributed-comm-map .step-list {
+      display: grid;
+      gap: 7px;
+    }
+
+    #distributed-comm-map .protocol-step {
+      padding: 9px;
+      border-left: 3px solid var(--viz-series-1);
+      background: var(--muted);
+    }
+
+    #distributed-comm-map .phase-column.transfer .protocol-step { border-left-color: var(--viz-series-2); }
+    #distributed-comm-map .phase-column.verify .protocol-step { border-left-color: var(--viz-series-3); }
+
+    #distributed-comm-map .protocol-step strong,
+    #distributed-comm-map .protocol-step span {
+      display: block;
+    }
+
+    #distributed-comm-map .protocol-step span {
+      margin-top: 4px;
+      color: var(--muted-foreground);
+    }
+
+    #distributed-comm-map .path-row {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 16px;
+      align-items: stretch;
+    }
+
+    #distributed-comm-map .path-group + .path-group {
+      margin-top: 12px;
+    }
+
+    #distributed-comm-map .path-label {
+      font-weight: 500;
+      margin-top: 14px;
+    }
+
+    #distributed-comm-map .path-hop {
+      position: relative;
+      min-width: 0;
+      padding: 9px 6px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      text-align: center;
+      overflow-wrap: anywhere;
+    }
+
+    #distributed-comm-map .path-hop:not(:last-child)::after {
+      content: &#x27;→&#x27;;
+      position: absolute;
+      right: -8px;
+      top: 50%;
+      z-index: 1;
+      transform: translateY(-50%);
+      color: var(--muted-foreground);
+    }
+
+    #distributed-comm-map .validation-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    #distributed-comm-map .validation-item {
+      padding: 10px;
+      border-top: 3px solid var(--viz-series-1);
+      background: var(--muted);
+    }
+
+    #distributed-comm-map .validation-item:nth-child(2) { border-top-color: var(--viz-series-2); }
+    #distributed-comm-map .validation-item:nth-child(3) { border-top-color: var(--viz-series-3); }
+
+    #distributed-comm-map .optimization-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    #distributed-comm-map .funnel {
+      display: grid;
+      gap: 6px;
+    }
+
+    #distributed-comm-map .funnel-step {
+      padding: 9px 12px;
+      border-left: 4px solid var(--viz-series-1);
+      background: var(--muted);
+    }
+
+    #distributed-comm-map .funnel-step:nth-child(2) { margin-left: 4%; border-left-color: var(--viz-series-2); }
+    #distributed-comm-map .funnel-step:nth-child(3) { margin-left: 8%; border-left-color: var(--viz-series-3); }
+    #distributed-comm-map .funnel-step:nth-child(4) { margin-left: 12%; border-left-color: var(--viz-series-4); }
+    #distributed-comm-map .funnel-step:nth-child(5) { margin-left: 16%; border-left-color: var(--viz-series-5); }
+    #distributed-comm-map .funnel-step:nth-child(6) { margin-left: 20%; border-left-color: var(--viz-series-6); }
+
+    #distributed-comm-map .action-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    #distributed-comm-map .action-item {
+      display: grid;
+      grid-template-columns: 26px minmax(0, 1fr);
+      gap: 9px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    #distributed-comm-map .action-index {
+      font-variant-numeric: tabular-nums;
+      color: var(--muted-foreground);
+    }
+
+    #distributed-comm-map .overlap-timeline {
+      margin-top: 18px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    #distributed-comm-map .timeline-row {
+      display: grid;
+      grid-template-columns: 90px repeat(8, minmax(0, 1fr));
+      gap: 3px;
+      margin-top: 5px;
+    }
+
+    #distributed-comm-map .timeline-label {
+      color: var(--muted-foreground);
+    }
+
+    #distributed-comm-map .timeline-block {
+      min-height: 24px;
+      border-radius: 2px;
+      background: var(--muted);
+    }
+
+    #distributed-comm-map .timeline-block.compute { background: var(--viz-series-1); }
+    #distributed-comm-map .timeline-block.comm { background: var(--viz-series-4); }
+    #distributed-comm-map .timeline-block.exposed { background: var(--viz-series-3); }
+
+    #distributed-comm-map .swatch.compute { background: var(--viz-series-1); }
+    #distributed-comm-map .swatch.comm { background: var(--viz-series-4); }
+    #distributed-comm-map .swatch.exposed { background: var(--viz-series-3); }
+
+    #distributed-comm-map .caveats {
+      margin-top: 18px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    #distributed-comm-map .source-row {
+      margin-top: 18px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    #distributed-comm-map .source-row a {
+      margin-right: 8px;
+    }
+
+    @media (max-width: 840px) {
+      #distributed-comm-map .collective-layout,
+      #distributed-comm-map .optimization-layout {
+        grid-template-columns: 1fr;
+      }
+
+      #distributed-comm-map .phase-map,
+      #distributed-comm-map .validation-grid {
+        grid-template-columns: 1fr;
+      }
+
+      #distributed-comm-map .path-row { grid-template-columns: 1fr; }
+
+      #distributed-comm-map .path-hop:not(:last-child)::after {
+        content: &#x27;↓&#x27;;
+        right: auto;
+        top: auto;
+        bottom: -13px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      #distributed-comm-map .rank-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      #distributed-comm-map .topline {
+        padding-right: 0;
+      }
+
+      #distributed-comm-map .summary-strip,
+      #distributed-comm-map .owner-rule {
+        grid-template-columns: 1fr;
+      }
+
+      #distributed-comm-map .rule-or {
+        text-align: center;
+      }
+
+      #distributed-comm-map .lane {
+        grid-template-columns: 1fr;
+      }
+
+      #distributed-comm-map .rank-grid {
+        grid-template-columns: 1fr;
+      }
+
+      #distributed-comm-map .detail-row {
+        grid-template-columns: 1fr;
+        gap: 3px;
+      }
+
+      #distributed-comm-map .timeline-row {
+        grid-template-columns: 70px repeat(8, minmax(0, 1fr));
+      }
+    }
+  &lt;/style&gt;
+
+  &lt;div class=&quot;topline&quot;&gt;
+    &lt;div&gt;
+      &lt;h1&gt;分布式训练与推理通信地图&lt;/h1&gt;
+      &lt;div class=&quot;text-muted&quot;&gt;从触发者到 collective、transport、完成确认与优化&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;formula&quot;&gt;&lt;code&gt;T ≈ steps·α + bytes / BW&lt;sub&gt;effective&lt;/sub&gt; + queue + sync − overlap&lt;/code&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;view-nav&quot; role=&quot;group&quot; aria-label=&quot;选择通信视图&quot;&gt;
+    &lt;button class=&quot;btn btn-primary&quot; type=&quot;button&quot; data-view=&quot;ownership&quot; aria-pressed=&quot;true&quot;&gt;谁触发通信&lt;/button&gt;
+    &lt;button class=&quot;btn&quot; type=&quot;button&quot; data-view=&quot;collectives&quot; aria-pressed=&quot;false&quot;&gt;Collective 怎么传&lt;/button&gt;
+    &lt;button class=&quot;btn&quot; type=&quot;button&quot; data-view=&quot;protocol&quot; aria-pressed=&quot;false&quot;&gt;握手、完成与验证&lt;/button&gt;
+    &lt;button class=&quot;btn&quot; type=&quot;button&quot; data-view=&quot;optimize&quot; aria-pressed=&quot;false&quot;&gt;如何缩短时间&lt;/button&gt;
+  &lt;/div&gt;
+
+  &lt;section class=&quot;view&quot; id=&quot;view-ownership&quot; aria-labelledby=&quot;ownership-heading&quot;&gt;
+    &lt;h2 id=&quot;ownership-heading&quot;&gt;通信归属边界&lt;/h2&gt;
+    &lt;div class=&quot;owner-rule&quot;&gt;
+      &lt;div class=&quot;rule-side&quot;&gt;
+        &lt;strong&gt;算子 / 计算图拥有&lt;/strong&gt;
+        &lt;div class=&quot;muted text-small&quot;&gt;去掉通信就无法得到该层的数学输出，例如 TP、MoE、Context Parallel。&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;rule-or&quot;&gt;判断依据&lt;/div&gt;
+      &lt;div class=&quot;rule-side framework&quot;&gt;
+        &lt;strong&gt;框架 / Runtime 拥有&lt;/strong&gt;
+        &lt;div class=&quot;muted text-small&quot;&gt;层代码可以不变，通信用于参数、梯度、stage 或 KV 生命周期，例如 DDP、FSDP、Pipeline。&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;control-row&quot; id=&quot;scenario-controls&quot; aria-label=&quot;选择触发场景&quot;&gt;&lt;/div&gt;
+    &lt;div class=&quot;summary-strip&quot;&gt;
+      &lt;div class=&quot;summary-item&quot;&gt;&lt;span class=&quot;text-muted&quot;&gt;归属结论&lt;/span&gt;&lt;strong id=&quot;owner-verdict&quot;&gt;&lt;/strong&gt;&lt;/div&gt;
+      &lt;div class=&quot;summary-item&quot;&gt;&lt;span class=&quot;text-muted&quot;&gt;触发时刻&lt;/span&gt;&lt;strong id=&quot;owner-trigger&quot;&gt;&lt;/strong&gt;&lt;/div&gt;
+      &lt;div class=&quot;summary-item&quot;&gt;&lt;span class=&quot;text-muted&quot;&gt;必须等待的位置&lt;/span&gt;&lt;strong id=&quot;owner-wait&quot;&gt;&lt;/strong&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;lane-stack&quot; id=&quot;owner-lanes&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
+    &lt;div class=&quot;ownership-verdict text-small&quot; id=&quot;owner-note&quot;&gt;&lt;/div&gt;
+  &lt;/section&gt;
+
+  &lt;section class=&quot;view&quot; id=&quot;view-collectives&quot; aria-labelledby=&quot;collective-heading&quot; hidden&gt;
+    &lt;h2 id=&quot;collective-heading&quot;&gt;Collective 的数据移动&lt;/h2&gt;
+    &lt;div class=&quot;control-row&quot; id=&quot;collective-controls&quot; aria-label=&quot;选择通信算子&quot;&gt;&lt;/div&gt;
+    &lt;div class=&quot;collective-layout&quot;&gt;
+      &lt;div&gt;
+        &lt;div class=&quot;rank-grid&quot; id=&quot;rank-grid&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;transfer-band&quot;&gt;&lt;strong id=&quot;transfer-title&quot;&gt;&lt;/strong&gt;&lt;span id=&quot;transfer-note&quot;&gt;&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;stage-nav&quot; id=&quot;stage-controls&quot; aria-label=&quot;选择传输阶段&quot;&gt;&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;h3 id=&quot;collective-title&quot;&gt;&lt;/h3&gt;
+        &lt;div class=&quot;detail-list&quot; id=&quot;collective-details&quot;&gt;&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+
+  &lt;section class=&quot;view&quot; id=&quot;view-protocol&quot; aria-labelledby=&quot;protocol-heading&quot; hidden&gt;
+    &lt;h2 id=&quot;protocol-heading&quot;&gt;从初始化握手到数据可消费&lt;/h2&gt;
+    &lt;div class=&quot;control-row&quot; id=&quot;protocol-controls&quot; aria-label=&quot;选择通信协议栈&quot;&gt;&lt;/div&gt;
+    &lt;div class=&quot;summary-strip&quot;&gt;
+      &lt;div class=&quot;summary-item&quot;&gt;&lt;span class=&quot;text-muted&quot;&gt;低频 / 一次性&lt;/span&gt;&lt;strong&gt;rendezvous + communicator / endpoint 建立&lt;/strong&gt;&lt;/div&gt;
+      &lt;div class=&quot;summary-item&quot;&gt;&lt;span class=&quot;text-muted&quot;&gt;每次 operation&lt;/span&gt;&lt;strong&gt;enqueue + stream dependency + chunk 协议&lt;/strong&gt;&lt;/div&gt;
+      &lt;div class=&quot;summary-item&quot;&gt;&lt;span class=&quot;text-muted&quot;&gt;完成不是一件事&lt;/span&gt;&lt;strong&gt;API return ≠ CQE ≠ remote consume ≠ 数值正确&lt;/strong&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;phase-map&quot; id=&quot;protocol-map&quot;&gt;&lt;/div&gt;
+    &lt;h3&gt;Payload 路径&lt;/h3&gt;
+    &lt;div id=&quot;payload-path&quot;&gt;&lt;/div&gt;
+    &lt;div class=&quot;validation-grid&quot; id=&quot;validation-grid&quot;&gt;&lt;/div&gt;
+  &lt;/section&gt;
+
+  &lt;section class=&quot;view&quot; id=&quot;view-optimize&quot; aria-labelledby=&quot;optimize-heading&quot; hidden&gt;
+    &lt;h2 id=&quot;optimize-heading&quot;&gt;按瓶颈缩短通信时间&lt;/h2&gt;
+    &lt;div class=&quot;control-row&quot; id=&quot;bottleneck-controls&quot; aria-label=&quot;选择通信瓶颈&quot;&gt;&lt;/div&gt;
+    &lt;div class=&quot;optimization-layout&quot;&gt;
+      &lt;div&gt;
+        &lt;h3&gt;通用优化优先级&lt;/h3&gt;
+        &lt;div class=&quot;funnel&quot;&gt;
+          &lt;div class=&quot;funnel-step&quot;&gt;&lt;strong&gt;1 · 减少通信范围与字节&lt;/strong&gt;&lt;div class=&quot;text-small muted&quot;&gt;布局、分片、减少 materialize / gather&lt;/div&gt;&lt;/div&gt;
+          &lt;div class=&quot;funnel-step&quot;&gt;&lt;strong&gt;2 · 提前发起并与计算重叠&lt;/strong&gt;&lt;div class=&quot;text-small muted&quot;&gt;async stream、prefetch、bucket ready、分块 pipeline&lt;/div&gt;&lt;/div&gt;
+          &lt;div class=&quot;funnel-step&quot;&gt;&lt;strong&gt;3 · 保证 direct path 与拓扑亲和&lt;/strong&gt;&lt;div class=&quot;text-small muted&quot;&gt;NVLink/NVSwitch/xGMI、GDR/PeerDirect、NUMA/NIC affinity&lt;/div&gt;&lt;/div&gt;
+          &lt;div class=&quot;funnel-step&quot;&gt;&lt;strong&gt;4 · 融合、分桶与复用&lt;/strong&gt;&lt;div class=&quot;text-small muted&quot;&gt;coalesce、持久 communicator、MR 注册复用、CUDA Graph&lt;/div&gt;&lt;/div&gt;
+          &lt;div class=&quot;funnel-step&quot;&gt;&lt;strong&gt;5 · 算法、协议与 channel&lt;/strong&gt;&lt;div class=&quot;text-small muted&quot;&gt;Ring/Tree/hierarchical、LL/Simple；必须以 profile 为准&lt;/div&gt;&lt;/div&gt;
+          &lt;div class=&quot;funnel-step&quot;&gt;&lt;strong&gt;6 · 压缩或近似&lt;/strong&gt;&lt;div class=&quot;text-small muted&quot;&gt;FP8、量化、PowerSGD；验证精度与误差反馈&lt;/div&gt;&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;h3 id=&quot;bottleneck-title&quot;&gt;&lt;/h3&gt;
+        &lt;div class=&quot;muted&quot; id=&quot;bottleneck-symptom&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;action-list&quot; id=&quot;action-list&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;ownership-verdict text-small&quot; id=&quot;bottleneck-risk&quot;&gt;&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;overlap-timeline&quot;&gt;
+      &lt;strong&gt;只优化暴露在关键路径上的通信尾巴&lt;/strong&gt;
+      &lt;div class=&quot;legend-row text-small&quot;&gt;&lt;span&gt;&lt;span class=&quot;swatch compute&quot;&gt;&lt;/span&gt; Compute&lt;/span&gt;&lt;span&gt;&lt;span class=&quot;swatch comm&quot;&gt;&lt;/span&gt; 与 Compute 重叠的 Comm&lt;/span&gt;&lt;span&gt;&lt;span class=&quot;swatch exposed&quot;&gt;&lt;/span&gt; Exposed 通信尾段&lt;/span&gt;&lt;/div&gt;
+      &lt;div class=&quot;timeline-row&quot;&gt;&lt;div class=&quot;timeline-label&quot;&gt;Compute&lt;/div&gt;&lt;div class=&quot;timeline-block compute&quot;&gt;&lt;/div&gt;&lt;div class=&quot;timeline-block compute&quot;&gt;&lt;/div&gt;&lt;div class=&quot;timeline-block compute&quot;&gt;&lt;/div&gt;&lt;div class=&quot;timeline-block compute&quot;&gt;&lt;/div&gt;&lt;div class=&quot;timeline-block compute&quot;&gt;&lt;/div&gt;&lt;div class=&quot;timeline-block&quot;&gt;&lt;/div&gt;&lt;div class=&quot;timeline-block&quot;&gt;&lt;/div&gt;&lt;div class=&quot;timeline-block&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+      &lt;div class=&quot;timeline-row&quot;&gt;&lt;div class=&quot;timeline-label&quot;&gt;Comm&lt;/div&gt;&lt;div class=&quot;timeline-block&quot;&gt;&lt;/div&gt;&lt;div class=&quot;timeline-block comm&quot;&gt;&lt;/div&gt;&lt;div class=&quot;timeline-block comm&quot;&gt;&lt;/div&gt;&lt;div class=&quot;timeline-block comm&quot;&gt;&lt;/div&gt;&lt;div class=&quot;timeline-block comm&quot;&gt;&lt;/div&gt;&lt;div class=&quot;timeline-block exposed&quot;&gt;&lt;/div&gt;&lt;div class=&quot;timeline-block&quot;&gt;&lt;/div&gt;&lt;div class=&quot;timeline-block&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+      &lt;div class=&quot;text-small muted&quot;&gt;与 Compute 重叠的 Comm 通常不增加 step time；Exposed 通信尾段才直接位于关键路径。Barrier 前后的计时还会把其他 rank 的迟到算进“通信时间”。&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+
+  &lt;div class=&quot;caveats text-small&quot;&gt;
+    &lt;strong&gt;关键边界：&lt;/strong&gt;
+    &lt;span id=&quot;caveat-text&quot;&gt;Profiler 中出现独立 NCCL kernel，不代表它一定是框架通信；归属由数学语义和触发者决定。Collective API 也不是固定物理算法，库会按拓扑、消息大小和版本选择 Ring、Tree、NVLS/CollNet、协议与 channel。&lt;/span&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;source-row text-small&quot;&gt;
+    &lt;strong&gt;官方资料：&lt;/strong&gt;
+    &lt;a href=&quot;https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/collectives.html&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;NCCL Collectives&lt;/a&gt;
+    &lt;a href=&quot;https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/communicators.html&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;Communicators&lt;/a&gt;
+    &lt;a href=&quot;https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/streams.html&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;Stream semantics&lt;/a&gt;
+    &lt;a href=&quot;https://docs.pytorch.org/docs/stable/distributed.html&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;PyTorch Distributed&lt;/a&gt;
+    &lt;a href=&quot;https://docs.nvidia.com/cuda/gpudirect-rdma/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;GPUDirect RDMA&lt;/a&gt;
+    &lt;a href=&quot;https://openucx.readthedocs.io/en/master/faq.html&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;UCX&lt;/a&gt;
+  &lt;/div&gt;
+
+  &lt;script&gt;
+    (() =&gt; {
+      const root = document.getElementById(&#x27;distributed-comm-map&#x27;);
+      const stored = window.openai &amp;&amp; window.openai.widgetState &amp;&amp; window.openai.widgetState.privateContent;
+      const state = {
+        view: stored &amp;&amp; stored.view || &#x27;ownership&#x27;,
+        scenario: stored &amp;&amp; stored.scenario || &#x27;tp&#x27;,
+        collective: stored &amp;&amp; stored.collective || &#x27;allreduce&#x27;,
+        stage: stored &amp;&amp; Number.isInteger(stored.stage) ? stored.stage : 0,
+        protocol: stored &amp;&amp; stored.protocol || &#x27;nccl&#x27;,
+        bottleneck: stored &amp;&amp; stored.bottleneck || &#x27;exposed&#x27;
+      };
+
+      const scenarios = {
+        tp: {
+          label: &#x27;TP / SP Linear&#x27;, verdict: &#x27;算子 / 计算图拥有&#x27;, trigger: &#x27;distributed linear forward / backward&#x27;, wait: &#x27;下游消费 activation 前&#x27;,
+          note: &#x27;即使 profiler 中 GEMM 和 NCCL 是两个 kernel，它仍是算子语义的一部分。RowParallelLinear 的 local partial 必须求和才能定义该层输出。&#x27;,
+          lanes: {
+            model: [[&#x27;LN / local GEMM&#x27;, &#x27;[S,B,H] × W_shard&#x27;, &#x27;计算局部分片&#x27;], [&#x27;RowParallel 输出&#x27;, &#x27;[S,B,H] partial&#x27;, &#x27;需要跨 TP 求和&#x27;], [&#x27;Residual&#x27;, &#x27;[S,B,H]&#x27;, &#x27;消费通信结果&#x27;]],
+            framework: [[&#x27;Process group&#x27;, &#x27;TP group 已建立&#x27;, &#x27;初始化阶段完成&#x27;], [&#x27;Autograd mapping&#x27;, &#x27;forward / backward 对偶&#x27;, &#x27;反向 collective 自动触发&#x27;]],
+            library: [[&#x27;enqueue AllReduce&#x27;, &#x27;SUM [S,B,H]&#x27;, &#x27;host 快速返回&#x27;], [&#x27;Work on comm stream&#x27;, &#x27;chunked collective&#x27;, &#x27;consumer 前 event/wait&#x27;]],
+            fabric: [[&#x27;GPU peer path&#x27;, &#x27;NVLink / NVSwitch / PCIe&#x27;, &#x27;按 topology 选 ring/tree/channel&#x27;]]
+          }
+        },
+        moe: {
+          label: &#x27;MoE Expert Parallel&#x27;, verdict: &#x27;算子 / MoE dispatcher 拥有&#x27;, trigger: &#x27;router 产生 Top-k 后&#x27;, wait: &#x27;expert GEMM 读取 dispatched token 前&#x27;,
+          note: &#x27;可变 split 的 AllToAllv 常先交换每个目的 rank 的 token count；这是每次路由的 metadata 协调，不是重新建立 communicator。&#x27;,
+          lanes: {
+            model: [[&#x27;Router + Top-k&#x27;, &#x27;[T,E] → ids/weights [T,k]&#x27;, &#x27;复制并 permute route&#x27;], [&#x27;Dispatch A2A&#x27;, &#x27;[T·k,H] → ragged [M_recv,H]&#x27;, &#x27;发送到 expert owner&#x27;], [&#x27;Grouped GEMM&#x27;, &#x27;[nₑ,H] → [nₑ,H]&#x27;, &#x27;本地专家计算&#x27;], [&#x27;Combine A2A&#x27;, &#x27;ragged → token owner&#x27;, &#x27;反向 permute + weighted sum&#x27;]],
+            framework: [[&#x27;EP group / placement&#x27;, &#x27;rank ↔ expert mapping&#x27;, &#x27;训练启动时创建&#x27;], [&#x27;Capacity / balance&#x27;, &#x27;split sizes&#x27;, &#x27;dispatcher 管理&#x27;]],
+            library: [[&#x27;AllToAll(v)&#x27;, &#x27;counts + payload&#x27;, &#x27;分块可与 expert GEMM overlap&#x27;]],
+            fabric: [[&#x27;Bisection traffic&#x27;, &#x27;all peers exchange&#x27;, &#x27;最慢 / 最大 recv rank 决定尾延迟&#x27;]]
+          }
+        },
+        ddp: {
+          label: &#x27;DDP 梯度同步&#x27;, verdict: &#x27;框架 reducer hook 触发&#x27;, trigger: &#x27;autograd 标记一个 grad bucket ready&#x27;, wait: &#x27;backward 尾部 finalize，返回前&#x27;,
+          note: &#x27;AllReduce 与更早层 backward 可以重叠。optimizer.step 通常拿到的是 backward 已完成同步的梯度；no_sync 会把同步推迟到最后一个 accumulation microbatch。&#x27;,
+          lanes: {
+            model: [[&#x27;Layer N backward&#x27;, &#x27;dW ready&#x27;, &#x27;模型层只计算梯度&#x27;], [&#x27;Layer N−1 backward&#x27;, &#x27;继续计算&#x27;, &#x27;与 bucket 0 通信重叠&#x27;]],
+            framework: [[&#x27;AccumulateGrad hook&#x27;, &#x27;param ready&#x27;, &#x27;bucket 全 ready 后 launch&#x27;], [&#x27;Reducer finalize&#x27;, &#x27;wait bucket futures&#x27;, &#x27;写回 grad views&#x27;], [&#x27;backward returns&#x27;, &#x27;grads ready&#x27;, &#x27;optimizer 可执行&#x27;]],
+            library: [[&#x27;Bucket AllReduce&#x27;, &#x27;flat grad bucket [N₀]&#x27;, &#x27;异步 SUM / AVG&#x27;]],
+            fabric: [[&#x27;Ring / Tree&#x27;, &#x27;按 size/topology 自动选&#x27;, &#x27;多个 bucket 可排队&#x27;]]
+          }
+        },
+        fsdp: {
+          label: &#x27;FSDP / ZeRO-3&#x27;, verdict: &#x27;框架 execution-order hooks 触发&#x27;, trigger: &#x27;wrapped unit pre-forward / pre-backward&#x27;, wait: &#x27;module 使用 full param 前&#x27;,
+          note: &#x27;同一个 AllGather 在这里属于框架，因为 module.forward 本身无需知道参数是分片的。Prefetch 只是提前触发，归属没有改变。&#x27;,
+          lanes: {
+            model: [[&#x27;Module forward&#x27;, &#x27;needs full flat param [P]&#x27;, &#x27;层代码保持普通写法&#x27;], [&#x27;Module backward&#x27;, &#x27;full grad [P]&#x27;, &#x27;本地计算&#x27;]],
+            framework: [[&#x27;Pre-hook AllGather&#x27;, &#x27;[P/world] → [P]&#x27;, &#x27;JIT materialize&#x27;], [&#x27;Post-forward reshard&#x27;, &#x27;free / retain full param&#x27;, &#x27;策略可配置&#x27;], [&#x27;Post-backward ReduceScatter&#x27;, &#x27;[P] → [P/world]&#x27;, &#x27;optimizer 更新 local shard&#x27;]],
+            library: [[&#x27;AG / RS enqueue&#x27;, &#x27;prefetch + async Work&#x27;, &#x27;依 execution order 排程&#x27;]],
+            fabric: [[&#x27;Hierarchical path&#x27;, &#x27;intra-node + inter-node&#x27;, &#x27;wrap granularity影响消息大小&#x27;]]
+          }
+        },
+        pipeline: {
+          label: &#x27;Pipeline P2P&#x27;, verdict: &#x27;Pipeline scheduler / Runtime 拥有&#x27;, trigger: &#x27;microbatch schedule 到达 stage 边界&#x27;, wait: &#x27;stage 读取 activation / gradient 前&#x27;,
+          note: &#x27;有些实现把 send/recv 包装成 autograd node，但语义仍由 1F1B、interleaving 等 stage scheduler 决定。&#x27;,
+          lanes: {
+            model: [[&#x27;Stage compute&#x27;, &#x27;[S,Bμ,H]&#x27;, &#x27;Transformer layers&#x27;]],
+            framework: [[&#x27;recv_forward&#x27;, &#x27;activation buffer&#x27;, &#x27;Work handle&#x27;], [&#x27;send_forward / recv_backward&#x27;, &#x27;P2P pair&#x27;, &#x27;与相邻 microbatch 交错&#x27;], [&#x27;send_backward&#x27;, &#x27;dActivation&#x27;, &#x27;1F1B steady state&#x27;]],
+            library: [[&#x27;batch isend/irecv&#x27;, &#x27;peer + order match&#x27;, &#x27;GroupStart/End 避免环式互等&#x27;]],
+            fabric: [[&#x27;Neighbor transfer&#x27;, &#x27;NVLink / RDMA&#x27;, &#x27;microbatch 数决定 bubble&#x27;]]
+          }
+        },
+        kv: {
+          label: &#x27;Prefill→Decode KV 搬运&#x27;, verdict: &#x27;Serving runtime / KV connector 拥有&#x27;, trigger: &#x27;prefill request 完成并分配 decode slots&#x27;, wait: &#x27;request 标记 decode-ready 前&#x27;,
+          note: &#x27;Attention 层内写本地 KV cache 属于算子；把 KV page/MLA latent cache 跨 worker 搬到 decode 节点属于 serving runtime。&#x27;,
+          lanes: {
+            model: [[&#x27;Prefill attention&#x27;, &#x27;KV pages / latent cache&#x27;, &#x27;生成缓存&#x27;], [&#x27;Decode attention&#x27;, &#x27;Q=[B,1,…]&#x27;, &#x27;读取缓存&#x27;]],
+            framework: [[&#x27;Slot / page-table 协商&#x27;, &#x27;dst address + metadata&#x27;, &#x27;控制面&#x27;], [&#x27;KV transfer&#x27;, &#x27;pages → decode worker&#x27;, &#x27;批量、异步&#x27;], [&#x27;decode-ready&#x27;, &#x27;completion observed&#x27;, &#x27;加入 continuous batch&#x27;]],
+            library: [[&#x27;P2P / RDMA / connector&#x27;, &#x27;registered buffers&#x27;, &#x27;传 payload + metadata&#x27;]],
+            fabric: [[&#x27;GPU↔NIC path&#x27;, &#x27;direct or host staged&#x27;, &#x27;locality-aware placement 很关键&#x27;]]
+          }
+        }
+      };
+
+      const collectives = {
+        allreduce: {
+          label: &#x27;AllReduce&#x27;, title: &#x27;Ring AllReduce = ReduceScatter + AllGather&#x27;, input: &#x27;每 rank：xᵣ[N]&#x27;, output: &#x27;每 rank：Σᵣxᵣ[N]&#x27;, rounds: &#x27;2(P−1)，P=4 时 6 轮&#x27;, bytes: &#x27;每 rank 2(P−1)N/P&#x27;, use: &#x27;DDP 梯度、TP partial output&#x27;, cost: &#x27;≈ 2(P−1)α + 2(P−1)Nβ/P + (P−1)Nγ/P&#x27;,
+          stages: [
+            {name:&#x27;初始分块&#x27;, note:&#x27;每个 rank 把自己的完整 buffer 切成 P 块。&#x27;, ranks:[[&#x27;A0&#x27;,&#x27;B0&#x27;,&#x27;C0&#x27;,&#x27;D0&#x27;],[&#x27;A1&#x27;,&#x27;B1&#x27;,&#x27;C1&#x27;,&#x27;D1&#x27;],[&#x27;A2&#x27;,&#x27;B2&#x27;,&#x27;C2&#x27;,&#x27;D2&#x27;],[&#x27;A3&#x27;,&#x27;B3&#x27;,&#x27;C3&#x27;,&#x27;D3&#x27;]]},
+            {name:&#x27;ReduceScatter 后&#x27;, note:&#x27;P−1 轮同时 send/recv/reduce；每个 rank 留一个 fully-reduced shard。&#x27;, ranks:[[&#x27;AΣ&#x27;],[&#x27;BΣ&#x27;],[&#x27;CΣ&#x27;],[&#x27;DΣ&#x27;]]},
+            {name:&#x27;AllGather 后&#x27;, note:&#x27;再用 P−1 轮传播 reduced shard；所有 rank 得到完整结果。&#x27;, ranks:[[&#x27;AΣ&#x27;,&#x27;BΣ&#x27;,&#x27;CΣ&#x27;,&#x27;DΣ&#x27;],[&#x27;AΣ&#x27;,&#x27;BΣ&#x27;,&#x27;CΣ&#x27;,&#x27;DΣ&#x27;],[&#x27;AΣ&#x27;,&#x27;BΣ&#x27;,&#x27;CΣ&#x27;,&#x27;DΣ&#x27;],[&#x27;AΣ&#x27;,&#x27;BΣ&#x27;,&#x27;CΣ&#x27;,&#x27;DΣ&#x27;]]}
+          ]
+        },
+        allgather: {
+          label:&#x27;AllGather&#x27;, title:&#x27;AllGather：把每个 rank 的 shard 拼到所有 rank&#x27;, input:&#x27;每 rank：xᵣ[m]&#x27;, output:&#x27;每 rank：[x₀|…|xₚ₋₁]，N=P·m&#x27;, rounds:&#x27;Ring P−1；recursive doubling log₂P&#x27;, bytes:&#x27;每 rank (P−1)N/P&#x27;, use:&#x27;FSDP 参数还原、Sequence Parallel&#x27;, cost:&#x27;Ring ≈ (P−1)α + (P−1)Nβ/P&#x27;,
+          stages:[
+            {name:&#x27;初始 shard&#x27;,note:&#x27;每个 rank 只拥有自己的块。&#x27;,ranks:[[&#x27;A&#x27;],[&#x27;B&#x27;],[&#x27;C&#x27;],[&#x27;D&#x27;]]},
+            {name:&#x27;中间传播&#x27;,note:&#x27;Ring 中每轮把刚收到的块继续传给 next；recursive doubling 每轮交换的数据量翻倍。&#x27;,ranks:[[&#x27;A&#x27;,&#x27;D&#x27;],[&#x27;B&#x27;,&#x27;A&#x27;],[&#x27;C&#x27;,&#x27;B&#x27;],[&#x27;D&#x27;,&#x27;C&#x27;]]},
+            {name:&#x27;完成&#x27;,note:&#x27;输出按 rank 顺序拼接。&#x27;,ranks:[[&#x27;A&#x27;,&#x27;B&#x27;,&#x27;C&#x27;,&#x27;D&#x27;],[&#x27;A&#x27;,&#x27;B&#x27;,&#x27;C&#x27;,&#x27;D&#x27;],[&#x27;A&#x27;,&#x27;B&#x27;,&#x27;C&#x27;,&#x27;D&#x27;],[&#x27;A&#x27;,&#x27;B&#x27;,&#x27;C&#x27;,&#x27;D&#x27;]]}
+          ]
+        },
+        reducescatter: {
+          label:&#x27;ReduceScatter&#x27;, title:&#x27;ReduceScatter：边归约边留下目标 shard&#x27;, input:&#x27;每 rank：[Aᵣ|Bᵣ|Cᵣ|Dᵣ]&#x27;, output:&#x27;Rank j：Σᵣ chunkⱼ，大小 N/P&#x27;, rounds:&#x27;Ring P−1&#x27;, bytes:&#x27;每 rank (P−1)N/P&#x27;, use:&#x27;FSDP/ZeRO 梯度、Sequence Parallel&#x27;, cost:&#x27;≈ (P−1)α + (P−1)N(β+γ)/P&#x27;,
+          stages:[
+            {name:&#x27;初始完整贡献&#x27;,note:&#x27;每 rank 持有所有目标 shard 的本地贡献。&#x27;,ranks:[[&#x27;A0&#x27;,&#x27;B0&#x27;,&#x27;C0&#x27;,&#x27;D0&#x27;],[&#x27;A1&#x27;,&#x27;B1&#x27;,&#x27;C1&#x27;,&#x27;D1&#x27;],[&#x27;A2&#x27;,&#x27;B2&#x27;,&#x27;C2&#x27;,&#x27;D2&#x27;],[&#x27;A3&#x27;,&#x27;B3&#x27;,&#x27;C3&#x27;,&#x27;D3&#x27;]]},
+            {name:&#x27;P−1 轮旋转归约&#x27;,note:&#x27;收到一个 chunk 就立即与累计值 reduce；不是先 AllReduce 再丢弃。&#x27;,ranks:[[&#x27;A0+A…&#x27;],[&#x27;B1+B…&#x27;],[&#x27;C2+C…&#x27;],[&#x27;D3+D…&#x27;]]},
+            {name:&#x27;完成&#x27;,note:&#x27;每个 rank 只保留不同的 fully-reduced shard。&#x27;,ranks:[[&#x27;AΣ&#x27;],[&#x27;BΣ&#x27;],[&#x27;CΣ&#x27;],[&#x27;DΣ&#x27;]]}
+          ]
+        },
+        alltoall: {
+          label:&#x27;AllToAll(v)&#x27;, title:&#x27;AllToAll：按目的 rank 做分布式转置&#x27;, input:&#x27;Rank r：[r→0 | r→1 | r→2 | r→3]&#x27;, output:&#x27;Rank j：[0→j | 1→j | 2→j | 3→j]&#x27;, rounds:&#x27;pairwise P−1&#x27;, bytes:&#x27;等长版每 rank (P−1)N/P&#x27;, use:&#x27;MoE dispatch/combine、distributed transpose&#x27;, cost:&#x27;≈ (P−1)α + (P−1)Nβ_eff/P&#x27;,
+          stages:[
+            {name:&#x27;按目的地分块&#x27;,note:&#x27;AllToAllv 的块大小可变；MoE 常先交换 split counts。&#x27;,ranks:[[&#x27;00&#x27;,&#x27;01&#x27;,&#x27;02&#x27;,&#x27;03&#x27;],[&#x27;10&#x27;,&#x27;11&#x27;,&#x27;12&#x27;,&#x27;13&#x27;],[&#x27;20&#x27;,&#x27;21&#x27;,&#x27;22&#x27;,&#x27;23&#x27;],[&#x27;30&#x27;,&#x27;31&#x27;,&#x27;32&#x27;,&#x27;33&#x27;]]},
+            {name:&#x27;Pairwise exchange：s=1&#x27;,note:&#x27;rank r 发送 r→(r+1)，同时从 (r−1) 接收 (r−1)→r。&#x27;,ranks:[[&#x27;00&#x27;,&#x27;30&#x27;],[&#x27;11&#x27;,&#x27;01&#x27;],[&#x27;22&#x27;,&#x27;12&#x27;],[&#x27;33&#x27;,&#x27;23&#x27;]]},
+            {name:&#x27;按来源拼接&#x27;,note:&#x27;每个 rank 收到所有 source 发给自己的块。&#x27;,ranks:[[&#x27;00&#x27;,&#x27;10&#x27;,&#x27;20&#x27;,&#x27;30&#x27;],[&#x27;01&#x27;,&#x27;11&#x27;,&#x27;21&#x27;,&#x27;31&#x27;],[&#x27;02&#x27;,&#x27;12&#x27;,&#x27;22&#x27;,&#x27;32&#x27;],[&#x27;03&#x27;,&#x27;13&#x27;,&#x27;23&#x27;,&#x27;33&#x27;]]}
+          ]
+        },
+        broadcast: {
+          label:&#x27;Broadcast&#x27;, title:&#x27;Broadcast：root 的数据沿树扩散&#x27;, input:&#x27;Root：x[N]；其他为空&#x27;, output:&#x27;所有 rank：x[N]&#x27;, rounds:&#x27;二叉树 ceil(log₂P)&#x27;, bytes:&#x27;全网必要流量 N(P−1)&#x27;, use:&#x27;参数/metadata 初始化&#x27;, cost:&#x27;分段树约 (L+q−1)(α+Nβ/q)&#x27;,
+          stages:[
+            {name:&#x27;Root 持有数据&#x27;,note:&#x27;以 R0 为 root。&#x27;,ranks:[[&#x27;X&#x27;],[],[],[]]},
+            {name:&#x27;Tree 第 1 轮&#x27;,note:&#x27;R0→R1；接收者随后也可转发。&#x27;,ranks:[[&#x27;X&#x27;],[&#x27;X&#x27;],[],[]]},
+            {name:&#x27;Tree 第 2 轮&#x27;,note:&#x27;R0→R2 与 R1→R3 并行。&#x27;,ranks:[[&#x27;X&#x27;],[&#x27;X&#x27;],[&#x27;X&#x27;],[&#x27;X&#x27;]]}
+          ]
+        },
+        p2p: {
+          label:&#x27;Send / Recv&#x27;, title:&#x27;Point-to-point：peer、count、dtype 与顺序匹配&#x27;, input:&#x27;Sender：x[N]&#x27;, output:&#x27;Receiver：x[N]&#x27;, rounds:&#x27;1 条逻辑消息，可 chunk pipeline&#x27;, bytes:&#x27;N&#x27;, use:&#x27;Pipeline activation、ring attention&#x27;, cost:&#x27;≈ α + Nβ&#x27;,
+          stages:[
+            {name:&#x27;匹配 buffer&#x27;,note:&#x27;R0 enqueue send，R1 enqueue recv；同 peer/方向按调用顺序配对。&#x27;,ranks:[[&#x27;X&#x27;],[],[],[]]},
+            {name:&#x27;传输&#x27;,note:&#x27;大消息拆 chunk 流水；环式 P2P 应成组 enqueue 避免互等。&#x27;,ranks:[[&#x27;X→&#x27;],[&#x27;…&#x27;],[],[]]},
+            {name:&#x27;完成可见&#x27;,note:&#x27;R1 的 stream/event 完成后才能消费目标 buffer。&#x27;,ranks:[[],[&#x27;X&#x27;],[],[]]}
+          ]
+        },
+        barrier: {
+          label:&#x27;Barrier&#x27;, title:&#x27;Barrier：所有 rank 到达后才释放&#x27;, input:&#x27;arrival token&#x27;, output:&#x27;release token&#x27;, rounds:&#x27;tree 约 2log₂P；dissemination log₂P&#x27;, bytes:&#x27;无业务 payload&#x27;, use:&#x27;调试、阶段边界；热路径应谨慎&#x27;, cost:&#x27;arrival skew + protocol latency&#x27;,
+          stages:[
+            {name:&#x27;到达不齐&#x27;,note:&#x27;早到 rank 的等待主要是最慢 rank 的 arrival skew。&#x27;,ranks:[[&#x27;✓&#x27;],[&#x27;✓&#x27;],[],[&#x27;✓&#x27;]]},
+            {name:&#x27;Arrival 聚合&#x27;,note:&#x27;token 向 root 汇聚，或 dissemination 按 2ᵏ 距离交换。&#x27;,ranks:[[&#x27;✓&#x27;],[&#x27;✓&#x27;],[&#x27;✓&#x27;],[&#x27;✓&#x27;]]},
+            {name:&#x27;Release&#x27;,note:&#x27;确认所有 rank 到达后再向外释放。&#x27;,ranks:[[&#x27;GO&#x27;],[&#x27;GO&#x27;],[&#x27;GO&#x27;],[&#x27;GO&#x27;]]}
+          ]
+        }
+      };
+
+      const protocols = {
+        nccl: {
+          label:&#x27;NCCL / RCCL collective&#x27;,
+          bootstrap:[
+            [&#x27;Rendezvous&#x27;,&#x27;框架交换 rank/world 与 unique ID；不是每个 op 重做。&#x27;],
+            [&#x27;PeerInfo + topology&#x27;,&#x27;收集 host/GPU/NIC 能力，计算 NVLink/PCIe/NET paths。&#x27;],
+            [&#x27;Graph agreement&#x27;,&#x27;协商共同可用的 Ring/Tree/channel/transport。&#x27;],
+            [&#x27;Endpoint setup&#x27;,&#x27;建立 P2P/SHM/NET connection，注册/复用 GPU memory，启动 proxy。&#x27;]
+          ],
+          transfer:[
+            [&#x27;Collective enqueue&#x27;,&#x27;各 rank 在同 communicator 上按兼容顺序调用；API 通常只入 stream。&#x27;],
+            [&#x27;Stream dependency&#x27;,&#x27;生产者写完 chunk 后，collective kernel 才发布 ready/tail。&#x27;],
+            [&#x27;Chunk protocol&#x27;,&#x27;channel 切块；同机 peer load/store，跨机 proxy post NIC WQE。&#x27;],
+            [&#x27;Remote consume&#x27;,&#x27;远端看到 protocol flag 后 copy/reduce，并推进 head/credit。&#x27;],
+            [&#x27;Completion&#x27;,&#x27;CUDA/HIP event 或 Work future 说明结果可被下游消费；异步错误另行上报。&#x27;]
+          ],
+          verify:[
+            [&#x27;Link integrity&#x27;,&#x27;CRC/ECC/ACK/retry 检查 packet/transaction。&#x27;],
+            [&#x27;Protocol completion&#x27;,&#x27;CQE、head/tail、ready flag、timeout 证明 chunk 到达/可见。&#x27;],
+            [&#x27;Collective consistency&#x27;,&#x27;默认依赖同 group、同序、兼容 count/dtype/root；debug 模式可提前检查。&#x27;],
+            [&#x27;Numerical correctness&#x27;,&#x27;默认不做 tensor checksum/reference；测试需额外构造 expected 与容差比较。&#x27;]
+          ],
+          paths:[
+            {label:&#x27;同机 P2P 路径&#x27;,hops:[&#x27;GPU HBM&#x27;,&#x27;NCCL kernel&#x27;,&#x27;P2P mapping / FIFO&#x27;,&#x27;NVLink / NVSwitch / PCIe&#x27;,&#x27;Peer GPU HBM&#x27;]},
+            {label:&#x27;跨机 GDR 路径&#x27;,hops:[&#x27;GPU HBM&#x27;,&#x27;NCCL kernel&#x27;,&#x27;FIFO + CPU proxy control&#x27;,&#x27;RNIC&#x27;,&#x27;IB / RoCE fabric&#x27;,&#x27;Peer RNIC / proxy&#x27;,&#x27;Peer GPU HBM&#x27;]}
+          ]
+        },
+        ucx: {
+          label:&#x27;UCX eager / rendezvous&#x27;,
+          bootstrap:[
+            [&#x27;Worker 创建&#x27;,&#x27;ucp_init → worker；OOB 交换 worker address 或 CM listener。&#x27;],
+            [&#x27;Endpoint wireup&#x27;,&#x27;ucp_ep_create，协商 shm/cuda_ipc/rc/dc/tcp/cuda_copy lanes。&#x27;],
+            [&#x27;Memory registration&#x27;,&#x27;zero-copy / RMA 时注册 memory 并交换 rkey。&#x27;]
+          ],
+          transfer:[
+            [&#x27;小消息 eager&#x27;,&#x27;直接 short/bcopy/zcopy；未贴 recv 时进入 unexpected queue。&#x27;],
+            [&#x27;大消息 rendezvous&#x27;,&#x27;RTS(metadata) → RTR/rkey → RDMA READ/WRITE 或 pipeline → ACK/ATS。&#x27;],
+            [&#x27;Progress&#x27;,&#x27;ucp_worker_progress 或 progress thread 驱动 request。&#x27;],
+            [&#x27;Completion&#x27;,&#x27;send completion 常只表示本地 buffer 可复用；远端消费需协议语义。&#x27;]
+          ],
+          verify:[
+            [&#x27;Tag / request match&#x27;,&#x27;tag、length、endpoint、request status。&#x27;],
+            [&#x27;Transport status&#x27;,&#x27;CQ status、timeout、endpoint error handler。&#x27;],
+            [&#x27;Remote visibility&#x27;,&#x27;RMA 需 flush 或协议完成；local completion 不等于 remote app consumed。&#x27;],
+            [&#x27;Application check&#x27;,&#x27;payload pattern/hash/reference 由上层测试。&#x27;]
+          ],
+          paths:[{label:&#x27;UCX 选择的 lane&#x27;,hops:[&#x27;App buffer&#x27;,&#x27;UCX protocol&#x27;,&#x27;Selected lane&#x27;,&#x27;RNIC / SHM&#x27;,&#x27;Fabric&#x27;,&#x27;Peer lane&#x27;,&#x27;Recv buffer&#x27;]}]
+        },
+        rdma: {
+          label:&#x27;RDMA RC / RoCE / IB&#x27;,
+          bootstrap:[
+            [&#x27;MR 注册&#x27;,&#x27;pin/register local memory，得到 lkey；one-sided READ/WRITE/atomic 还需要远端 MR 的 rkey/address。&#x27;],
+            [&#x27;交换连接信息&#x27;,&#x27;所有 RC 交换 QPN/PSN、GID/LID、MTU；只有 one-sided 操作额外交换远端 rkey/address。&#x27;],
+            [&#x27;QP 状态机&#x27;,&#x27;RESET → INIT → RTR → RTS；完成后可 post WQE。&#x27;]
+          ],
+          transfer:[
+            [&#x27;Post WQE&#x27;,&#x27;CPU proxy/progress thread 或 GPU-initiated path 提交 send/write/read。&#x27;],
+            [&#x27;RNIC DMA&#x27;,&#x27;GDR/PeerDirect 可直接读写 GPU memory；否则经过 pinned host bounce buffer。&#x27;],
+            [&#x27;Packet protocol&#x27;,&#x27;PSN、ACK/NAK、retry、拥塞控制；RoCE 还依赖网络配置。&#x27;],
+            [&#x27;Poll CQ&#x27;,&#x27;CQE / RC ACK 是本端 request 状态；它不等于远端 GPU 或应用已消费。&#x27;]
+          ],
+          verify:[
+            [&#x27;Packet integrity&#x27;,&#x27;CRC/FCS、sequence、ACK/retry。&#x27;],
+            [&#x27;CQ status&#x27;,&#x27;local/remote access error、timeout、retry exceeded。&#x27;],
+            [&#x27;Memory visibility&#x27;,&#x27;按 verbs 与 GPU memory-ordering 模型选用 fence、flush 或上层 protocol flag；并非所有路径都需要同一机制。&#x27;],
+            [&#x27;Math result&#x27;,&#x27;RDMA 不理解 tensor 或 collective 数学；必须上层校验。&#x27;]
+          ],
+          paths:[{label:&#x27;RC 数据路径&#x27;,hops:[&#x27;GPU / Host MR&#x27;,&#x27;PCIe&#x27;,&#x27;RNIC&#x27;,&#x27;IB / RoCE fabric&#x27;,&#x27;Peer RNIC&#x27;,&#x27;PCIe&#x27;,&#x27;Peer memory&#x27;]}]
+        }
+      };
+
+      const bottlenecks = {
+        small:{label:&#x27;很多小消息&#x27;,title:&#x27;启动延迟 α / launch bound&#x27;,symptom:&#x27;消息很小但 collective 次数多，GPU/CPU launch 与每轮同步占主导。&#x27;,actions:[&#x27;融合/flatten 小 tensor，调 DDP/FSDP bucket，但不要大到推迟首包。&#x27;,&#x27;用 GroupStart/End 或 batch P2P，一次 enqueue 多个相关 operation。&#x27;,&#x27;复用 communicator、endpoint 和 memory registration；预热后再测。&#x27;,&#x27;考虑 Tree / recursive doubling / LL 类低延迟算法；先 profile 再强制。&#x27;],risk:&#x27;代价：融合需要额外 buffer，并增加等待凑桶的时间。&#x27;},
+        large:{label:&#x27;大消息带宽不足&#x27;,title:&#x27;有效带宽 β / fabric bound&#x27;,symptom:&#x27;大 tensor 的时间随字节线性增长，链路利用率低或跨 NUMA/NIC。&#x27;,actions:[&#x27;确认走 NVLink/NVSwitch/xGMI 或 GPUDirect/PeerDirect fast path，避免 host staging。&#x27;,&#x27;把 GPU、NIC、CPU proxy 做 NUMA/topology 亲和，使用 multi-NIC / multi-rail。&#x27;,&#x27;大消息优先 Ring/Simple 或分层 collective；用 nccl-tests/rccl-tests 建基线。&#x27;,&#x27;减少字节：能消费 shard 就用 ReduceScatter/AllGather，避免 materialize 完整 tensor。&#x27;],risk:&#x27;代价：更多 channel/rail 会占 SM、HBM、PCIe/NIC 队列；越多不一定越快。&#x27;},
+        exposed:{label:&#x27;通信尾巴暴露&#x27;,title:&#x27;Overlap 不足 / critical-path bound&#x27;,symptom:&#x27;通信本身可能已经很快，但下游在等待它，step 尾部出现明显空洞。&#x27;,actions:[&#x27;DDP 按 grad ready 顺序分桶，让早期 bucket 与后续 backward 重叠。&#x27;,&#x27;FSDP/ZeRO 提前 AllGather 下一个 unit，backward prefetch 当前之后的 unit。&#x27;,&#x27;TP/MoE 用独立 comm stream、CUDA event、分块 dispatch，与 dgrad/wgrad 或 expert GEMM overlap。&#x27;,&#x27;Pipeline 增 microbatch 或 interleaving，缩小 bubble；在真正 consumer 前再 wait。&#x27;],risk:&#x27;Overlap 只减少 exposed time，不减少 wire time；并发过多会争 HBM、SM、PCIe/NVLink。&#x27;},
+        cross:{label:&#x27;跨机慢&#x27;,title:&#x27;跨层级与网络拥塞&#x27;,symptom:&#x27;单机 NCCL 很快，跨机后延迟和 tail 急剧增大。&#x27;,actions:[&#x27;把 TP/EP 等高频通信 group 尽量放在 NVLink/NVSwitch 域内，DP/PP 再跨机。&#x27;,&#x27;用 hierarchical collective：节点内 reduce/RS → 节点间 shard collective → 节点内 broadcast/AG。&#x27;,&#x27;检查 GDR、NIC rail、交换机 bisection、oversubscription、MTU 与 NUMA。&#x27;,&#x27;RoCE 的 PFC/ECN/DCQCN/QoS/隔离流量需要网络侧共同配置。&#x27;],risk:&#x27;代价：层级算法和 rank mapping 与拓扑强绑定；换集群后需要重新测。&#x27;},
+        moe:{label:&#x27;MoE AllToAll&#x27;,title:&#x27;路由不均与 bisection bottleneck&#x27;,symptom:&#x27;平均流量不大，但最大 expert/rank recv 决定全局完成时间。&#x27;,actions:[&#x27;改善 router balance/capacity，监控每 expert 的 nₑ、drop 和最大 recv，不只看平均。&#x27;,&#x27;拓扑感知 expert placement，把高频专家/EP group 尽量放同节点。&#x27;,&#x27;分块 dispatch、fused permute、grouped GEMM、shared-expert overlap。&#x27;,&#x27;采用 hierarchical A2A 或专用低延迟 dispatch；decode 小包与 prefill 大包用不同模式。&#x27;],risk:&#x27;代价：限制 top-k/capacity 或 locality-aware routing 可能影响模型质量与负载分布。&#x27;},
+        barrier:{label:&#x27;Barrier 很慢&#x27;,title:&#x27;Straggler / 隐式同步&#x27;,symptom:&#x27;Barrier 占时高，但真正原因常是前序计算、数据加载或通信负载不均。&#x27;,actions:[&#x27;先画每 rank 到达时间，区分 arrival skew 与 barrier token 协议时间。&#x27;,&#x27;删除热路径中非必要 barrier、host sync、tensor.item() 与全局日志聚合。&#x27;,&#x27;用 monitored_barrier/timeout/debug 找未到达 rank；不要只调 collective 参数。&#x27;,&#x27;修复数据、专家、microbatch 或网络负载不均。&#x27;],risk:&#x27;Barrier 前后粗粒度计时会把其他 rank 的迟到错误归因给通信库。&#x27;},
+        decode:{label:&#x27;Decode 小 batch&#x27;,title:&#x27;小包延迟与并行度过高&#x27;,symptom:&#x27;每步 Q=1、token 很少，TP/EP collective payload 小，α 与同步主导。&#x27;,actions:[&#x27;降低跨机 TP/EP group，优先本机高速域；评估复制 KV/expert 换通信。&#x27;,&#x27;continuous batching 合并请求，提高每次 collective 的有效 payload。&#x27;,&#x27;避免每 token 的 host round-trip、全局 barrier 和小 tensor gather。&#x27;,&#x27;KV/request/expert locality-aware placement；prefill→decode cache 传输批量化。&#x27;],risk:&#x27;减少并行度会增加单卡显存；批量增大可能提高吞吐但恶化单请求排队延迟。&#x27;}
+      };
+
+      const laneNames = {model:&#x27;模型 / 算子&#x27;,framework:&#x27;框架 / Runtime&#x27;,library:&#x27;通信库&#x27;,fabric:&#x27;Transport / Fabric&#x27;};
+      const laneClasses = {model:&#x27;model&#x27;,framework:&#x27;framework&#x27;,library:&#x27;library&#x27;,fabric:&#x27;fabric&#x27;};
+
+      function normalizeState() {
+        if (![&#x27;ownership&#x27;,&#x27;collectives&#x27;,&#x27;protocol&#x27;,&#x27;optimize&#x27;].includes(state.view)) state.view = &#x27;ownership&#x27;;
+        if (!scenarios[state.scenario]) state.scenario = &#x27;tp&#x27;;
+        if (!collectives[state.collective]) state.collective = &#x27;allreduce&#x27;;
+        if (!protocols[state.protocol]) state.protocol = &#x27;nccl&#x27;;
+        if (!bottlenecks[state.bottleneck]) state.bottleneck = &#x27;exposed&#x27;;
+        if (!Number.isInteger(state.stage) || state.stage &lt; 0) state.stage = 0;
+      }
+
+      function persist() {
+        if (!window.openai || !window.openai.setWidgetState) return;
+        window.openai.setWidgetState({
+          modelContent:{view:state.view,scenario:state.scenario,collective:state.collective,protocol:state.protocol,bottleneck:state.bottleneck},
+          privateContent:{...state}
+        }).catch(() =&gt; {});
+      }
+
+      function makeButtons(target, data, selected, handler) {
+        target.innerHTML = Object.entries(data).map(([key,value]) =&gt; `&lt;button type=&quot;button&quot; class=&quot;btn ${key===selected?&#x27;btn-primary&#x27;:&#x27;&#x27;}&quot; aria-pressed=&quot;${key===selected}&quot; data-key=&quot;${key}&quot;&gt;${value.label}&lt;/button&gt;`).join(&#x27;&#x27;);
+        target.querySelectorAll(&#x27;button&#x27;).forEach(button =&gt; button.addEventListener(&#x27;click&#x27;, () =&gt; handler(button.dataset.key)));
+      }
+
+      function renderView() {
+        normalizeState();
+        root.querySelectorAll(&#x27;[data-view]&#x27;).forEach(button =&gt; {
+          const active = button.dataset.view === state.view;
+          button.className = active ? &#x27;btn btn-primary&#x27; : &#x27;btn&#x27;;
+          button.setAttribute(&#x27;aria-pressed&#x27;, String(active));
+        });
+        root.querySelectorAll(&#x27;.view&#x27;).forEach(view =&gt; view.hidden = view.id !== `view-${state.view}`);
+        if (state.view === &#x27;ownership&#x27;) renderOwnership();
+        if (state.view === &#x27;collectives&#x27;) renderCollective();
+        if (state.view === &#x27;protocol&#x27;) renderProtocol();
+        if (state.view === &#x27;optimize&#x27;) renderOptimize();
+      }
+
+      function renderOwnership() {
+        makeButtons(root.querySelector(&#x27;#scenario-controls&#x27;), scenarios, state.scenario, key =&gt; {state.scenario=key;renderOwnership();persist();});
+        const item = scenarios[state.scenario];
+        root.querySelector(&#x27;#owner-verdict&#x27;).textContent = item.verdict;
+        root.querySelector(&#x27;#owner-trigger&#x27;).textContent = item.trigger;
+        root.querySelector(&#x27;#owner-wait&#x27;).textContent = item.wait;
+        root.querySelector(&#x27;#owner-note&#x27;).textContent = item.note;
+        root.querySelector(&#x27;#owner-lanes&#x27;).innerHTML = Object.entries(item.lanes).map(([lane,events]) =&gt; `
+          &lt;div class=&quot;lane ${laneClasses[lane]}&quot;&gt;
+            &lt;div class=&quot;lane-label&quot;&gt;&lt;span class=&quot;lane-dot&quot;&gt;&lt;/span&gt;${laneNames[lane]}&lt;/div&gt;
+            &lt;div class=&quot;lane-events&quot;&gt;${events.map(([title,shape,note]) =&gt; `&lt;div class=&quot;event&quot;&gt;&lt;strong&gt;${title}&lt;/strong&gt;&lt;code&gt;${shape}&lt;/code&gt;&lt;small&gt;${note}&lt;/small&gt;&lt;/div&gt;`).join(&#x27;&#x27;)}&lt;/div&gt;
+          &lt;/div&gt;`).join(&#x27;&#x27;);
+      }
+
+      function renderCollective() {
+        makeButtons(root.querySelector(&#x27;#collective-controls&#x27;), collectives, state.collective, key =&gt; {state.collective=key;state.stage=0;renderCollective();persist();});
+        const item = collectives[state.collective];
+        if (state.stage &gt;= item.stages.length) state.stage = 0;
+        const stage = item.stages[state.stage];
+        root.querySelector(&#x27;#collective-title&#x27;).textContent = item.title;
+        root.querySelector(&#x27;#rank-grid&#x27;).innerHTML = stage.ranks.map((chunks,index) =&gt; `&lt;div class=&quot;rank-box&quot;&gt;&lt;div class=&quot;rank-title&quot;&gt;Rank ${index}&lt;/div&gt;&lt;div class=&quot;chunks&quot;&gt;${chunks.length?chunks.map(chunk=&gt;`&lt;span class=&quot;chunk&quot;&gt;${chunk}&lt;/span&gt;`).join(&#x27;&#x27;):&#x27;&lt;span class=&quot;muted&quot;&gt;empty&lt;/span&gt;&#x27;}&lt;/div&gt;&lt;/div&gt;`).join(&#x27;&#x27;);
+        root.querySelector(&#x27;#transfer-title&#x27;).textContent = stage.name;
+        root.querySelector(&#x27;#transfer-note&#x27;).textContent = stage.note;
+        root.querySelector(&#x27;#stage-controls&#x27;).innerHTML = item.stages.map((s,index)=&gt;`&lt;button type=&quot;button&quot; class=&quot;btn ${index===state.stage?&#x27;btn-primary&#x27;:&#x27;btn-ghost&#x27;}&quot; aria-pressed=&quot;${index===state.stage}&quot; data-stage=&quot;${index}&quot;&gt;${index+1} · ${s.name}&lt;/button&gt;`).join(&#x27;&#x27;);
+        root.querySelectorAll(&#x27;[data-stage]&#x27;).forEach(button=&gt;button.addEventListener(&#x27;click&#x27;,()=&gt;{state.stage=Number(button.dataset.stage);renderCollective();persist();}));
+        const details = [[&#x27;输入&#x27;,item.input],[&#x27;输出&#x27;,item.output],[&#x27;轮次&#x27;,item.rounds],[&#x27;网络量&#x27;,item.bytes],[&#x27;理想成本&#x27;,item.cost],[&#x27;典型用途&#x27;,item.use]];
+        root.querySelector(&#x27;#collective-details&#x27;).innerHTML = details.map(([label,value])=&gt;`&lt;div class=&quot;detail-row&quot;&gt;&lt;strong&gt;${label}&lt;/strong&gt;&lt;div&gt;${value}&lt;/div&gt;&lt;/div&gt;`).join(&#x27;&#x27;);
+      }
+
+      function renderProtocol() {
+        makeButtons(root.querySelector(&#x27;#protocol-controls&#x27;), protocols, state.protocol, key =&gt; {state.protocol=key;renderProtocol();persist();});
+        const item = protocols[state.protocol];
+        const phases = [[&#x27;bootstrap&#x27;,&#x27;初始化 / 握手&#x27;,item.bootstrap],[&#x27;transfer&#x27;,&#x27;每次传输&#x27;,item.transfer],[&#x27;verify&#x27;,&#x27;完成 / 验证&#x27;,item.verify]];
+        root.querySelector(&#x27;#protocol-map&#x27;).innerHTML = phases.map(([kind,title,steps])=&gt;`&lt;div class=&quot;phase-column ${kind}&quot;&gt;&lt;div class=&quot;phase-title&quot;&gt;&lt;span class=&quot;swatch ${kind}&quot;&gt;&lt;/span&gt;${title}&lt;/div&gt;&lt;div class=&quot;step-list&quot;&gt;${steps.map(([name,note])=&gt;`&lt;div class=&quot;protocol-step&quot;&gt;&lt;strong&gt;${name}&lt;/strong&gt;&lt;span&gt;${note}&lt;/span&gt;&lt;/div&gt;`).join(&#x27;&#x27;)}&lt;/div&gt;&lt;/div&gt;`).join(&#x27;&#x27;);
+        root.querySelector(&#x27;#payload-path&#x27;).innerHTML = item.paths.map(path=&gt;`&lt;div class=&quot;path-group&quot;&gt;&lt;div class=&quot;path-label&quot;&gt;${path.label}&lt;/div&gt;&lt;div class=&quot;path-row&quot;&gt;${path.hops.map(hop=&gt;`&lt;div class=&quot;path-hop&quot;&gt;${hop}&lt;/div&gt;`).join(&#x27;&#x27;)}&lt;/div&gt;&lt;/div&gt;`).join(&#x27;&#x27;);
+        const validation = [
+          [&#x27;传输完整性&#x27;,&#x27;CRC/ECC、sequence、ACK/retry、CQ status：证明 packet / transaction 状态。&#x27;],
+          [&#x27;协议一致性&#x27;,&#x27;group、peer/tag、顺序、count/dtype/root、buffer range：错配仍可能 hang/timeout。&#x27;],
+          [&#x27;数值正确性&#x27;,&#x27;默认不做端到端 tensor checksum。用可解析 pattern、reference、hash/norm 与 rtol/atol 验证。&#x27;]
+        ];
+        root.querySelector(&#x27;#validation-grid&#x27;).innerHTML = validation.map(([title,note])=&gt;`&lt;div class=&quot;validation-item&quot;&gt;&lt;strong&gt;${title}&lt;/strong&gt;&lt;div class=&quot;text-small muted&quot;&gt;${note}&lt;/div&gt;&lt;/div&gt;`).join(&#x27;&#x27;);
+      }
+
+      function renderOptimize() {
+        makeButtons(root.querySelector(&#x27;#bottleneck-controls&#x27;), bottlenecks, state.bottleneck, key =&gt; {state.bottleneck=key;renderOptimize();persist();});
+        const item = bottlenecks[state.bottleneck];
+        root.querySelector(&#x27;#bottleneck-title&#x27;).textContent = item.title;
+        root.querySelector(&#x27;#bottleneck-symptom&#x27;).textContent = item.symptom;
+        root.querySelector(&#x27;#action-list&#x27;).innerHTML = item.actions.map((action,index)=&gt;`&lt;div class=&quot;action-item&quot;&gt;&lt;div class=&quot;action-index&quot;&gt;${index+1}&lt;/div&gt;&lt;div&gt;${action}&lt;/div&gt;&lt;/div&gt;`).join(&#x27;&#x27;);
+        root.querySelector(&#x27;#bottleneck-risk&#x27;).textContent = item.risk;
+      }
+
+      root.querySelectorAll(&#x27;[data-view]&#x27;).forEach(button =&gt; button.addEventListener(&#x27;click&#x27;, () =&gt; {state.view=button.dataset.view;renderView();persist();}));
+      window.addEventListener(&#x27;openai:set_globals&#x27;, event =&gt; {
+        const next = event.detail &amp;&amp; event.detail.globals &amp;&amp; event.detail.globals.widgetState &amp;&amp; event.detail.globals.widgetState.privateContent;
+        if (!next) return;
+        Object.assign(state,next);
+        normalizeState();
+        renderView();
+      });
+      renderView();
+    })();
+  &lt;/script&gt;
+&lt;/div&gt;
+
+&lt;script src=&quot;https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set([&quot;top&quot;, &quot;right&quot;, &quot;bottom&quot;, &quot;left&quot;]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+  let lastPointerWasTouch = false;
+  let pinnedByTouch = false;
+
+  const getTrigger = (event) =&gt; {
+    for (const target of event.composedPath()) {
+      if (target?.nodeType === Node.ELEMENT_NODE) {
+        const trigger = target.closest(&quot;[data-tooltip]&quot;);
+        if (trigger) return trigger;
+      }
+    }
+    return null;
+  };
+  const containsTarget = (trigger, target) =&gt;
+    target?.nodeType != null &amp;&amp; trigger.contains(target);
+  const getContent = (trigger) =&gt;
+    trigger.getAttribute(&quot;data-tooltip&quot;)?.trim() ?? &quot;&quot;;
+  const getPlacement = (trigger) =&gt; {
+    const placement = trigger.getAttribute(&quot;data-tooltip-placement&quot;);
+    return tooltipPlacements.has(placement) ? placement : &quot;top&quot;;
+  };
+  const getTooltip = () =&gt; {
+    if (tooltip == null) {
+      tooltip = document.createElement(&quot;div&quot;);
+      tooltip.id = tooltipId;
+      tooltip.className = &quot;tooltip&quot;;
+      tooltip.setAttribute(&quot;role&quot;, &quot;tooltip&quot;);
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) =&gt; {
+    const ids = new Set(
+      (trigger.getAttribute(&quot;aria-describedby&quot;) ?? &quot;&quot;)
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute(&quot;aria-describedby&quot;);
+    } else {
+      trigger.setAttribute(&quot;aria-describedby&quot;, [...ids].join(&quot; &quot;));
+    }
+  };
+  const clearOpenTimeout = () =&gt; {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) =&gt; {
+    clearOpenTimeout();
+    pinnedByTouch = false;
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) =&gt; {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-width&quot;,
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-height&quot;,
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: &quot;fixed&quot;,
+    })
+      .then(({ x, y }) =&gt; {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = &quot;visible&quot;;
+      })
+      .catch(() =&gt; {
+        if (activeTrigger === trigger &amp;&amp; request === positionRequest) {
+          closeTooltip(false);
+        }
+      });
+  };
+  const openTooltip = (trigger) =&gt; {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
+    }
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
+    }
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = &quot;hidden&quot;;
+    floating.style.transform = &quot;translate(0, 0)&quot;;
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () =&gt; {
+      updatePosition(trigger, floating);
+    });
+  };
+  const requestOpen = (trigger, immediate = false) =&gt; {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
+    }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() &lt; skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() =&gt; {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) =&gt; {
+    if (event.pointerType === &quot;touch&quot;) {
+      return;
+    }
+    const trigger = getTrigger(event);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handlePointer = (event) =&gt; {
+    lastPointerWasTouch =
+      event.type === &quot;pointerdown&quot; &amp;&amp; event.pointerType === &quot;touch&quot;;
+  };
+  const handleTouchClick = (event) =&gt; {
+    const isTouch = event.pointerType === &quot;touch&quot; || lastPointerWasTouch;
+    lastPointerWasTouch = false;
+    if (!isTouch || event.detail === 0) {
+      return;
+    }
+    const trigger = getTrigger(event);
+    if (
+      trigger == null ||
+      !trigger.isConnected ||
+      getContent(trigger).length === 0 ||
+      (pinnedByTouch &amp;&amp; activeTrigger === trigger)
+    ) {
+      if (pinnedByTouch) {
+        closeTooltip();
+      }
+      return;
+    }
+    openTooltip(trigger);
+    pinnedByTouch = activeTrigger === trigger;
+    window.setTimeout(() =&gt; {
+      if (activeTrigger === trigger &amp;&amp; !trigger.isConnected) {
+        closeTooltip(false);
+      }
+    }, 0);
+  };
+  const handleLeave = (event) =&gt; {
+    if (pinnedByTouch) {
+      return;
+    }
+    const trigger = getTrigger(event);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) =&gt; {
+    const trigger = getTrigger(event);
+    if (trigger?.matches(&quot;:focus-visible&quot;)) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) =&gt; {
+    if (event.key === &quot;Escape&quot;) {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) =&gt; {
+    lastPointerWasTouch = false;
+    const trigger = getTrigger(event);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handlers = {
+    pointerover: handlePointerOpen,
+    pointerdown: handlePointer,
+    pointercancel: handlePointer,
+    click: handleTouchClick,
+    pointerout: handleLeave,
+    focusin: handleFocusIn,
+    focusout: handleLeave,
+    keydown: handleKeyDown,
+    contextmenu: handleContextMenu,
+  };
+  const roots = new Map();
+  const handledEvents = new WeakSet();
+  const handleEvent = (event) =&gt; {
+    if (handledEvents.has(event)) return;
+    handledEvents.add(event);
+    handlers[event.type](event);
+  };
+  const discoverRoots = (node) =&gt; {
+    if (node.shadowRoot) listen(node.shadowRoot);
+    for (const element of node.querySelectorAll(&quot;*&quot;)) {
+      if (element.shadowRoot) listen(element.shadowRoot);
+    }
+  };
+  const listen = (root) =&gt; {
+    if (roots.has(root)) return;
+    for (const type of Object.keys(handlers)) root.addEventListener(type, handleEvent);
+    const observer = new window.MutationObserver((records) =&gt; {
+      for (const { addedNodes } of records) {
+        for (const node of addedNodes) {
+          if (node.nodeType === Node.ELEMENT_NODE) discoverRoots(node);
+        }
+      }
+      for (const [root, cleanup] of roots) {
+        if (root.host &amp;&amp; !root.host.isConnected) {
+          cleanup();
+          roots.delete(root);
+        }
+      }
+      if (activeTrigger &amp;&amp; !activeTrigger.isConnected) closeTooltip(false);
+    });
+    observer.observe(root, { childList: true, subtree: true });
+    roots.set(root, () =&gt; {
+      observer.disconnect();
+      for (const type of Object.keys(handlers)) root.removeEventListener(type, handleEvent);
+    });
+    discoverRoots(root);
+  };
+  const destroy = () =&gt; {
+    closeTooltip(false);
+    lastPointerWasTouch = false;
+    for (const cleanup of roots.values()) cleanup();
+    roots.clear();
+    tooltip = null;
+  };
+
+  // Events between children of one shadow root never reach the document.
+  listen(document);
+  window.addEventListener(&quot;pagehide&quot;, destroy, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-tabs&quot;&gt;
+(() =&gt; {
+  const selector = &#x27;.nav[role=&quot;tablist&quot;] [role=&quot;tab&quot;]&#x27;;
+  const disabled = &#x27;:disabled,[aria-disabled=&quot;true&quot;]&#x27;;
+  const selectTab = (selected) =&gt; {
+    const panelId = selected.getAttribute(&quot;aria-controls&quot;);
+    for (const tab of selected.closest(&#x27;[role=&quot;tablist&quot;]&#x27;).querySelectorAll(&#x27;[role=&quot;tab&quot;]&#x27;)) {
+      const active = tab === selected;
+      tab.classList.toggle(&quot;active&quot;, active);
+      tab.setAttribute(&quot;aria-selected&quot;, String(active));
+      const id = tab.getAttribute(&quot;aria-controls&quot;);
+      const panel = id &amp;&amp; document.getElementById(id);
+      if (panel != null) {
+        panel.hidden = id !== panelId;
+        if (!panel.hidden &amp;&amp; selected.id) {
+          panel.setAttribute(&quot;aria-labelledby&quot;, selected.id);
+        }
+      }
+    }
+  };
+  const interact = (event) =&gt; {
+    const tab = event.target?.closest?.(selector);
+    if (event.defaultPrevented || tab == null || tab.matches(disabled)) {
+      return;
+    }
+    if (event.type === &quot;click&quot;) {
+      selectTab(tab);
+      return;
+    }
+    const tabs = Array.from(
+      tab.closest(&#x27;[role=&quot;tablist&quot;]&#x27;).querySelectorAll(&#x27;[role=&quot;tab&quot;]&#x27;),
+    ).filter((candidate) =&gt; !candidate.matches(disabled));
+    const current = tabs.indexOf(tab);
+    let next;
+    if (event.key === &quot;ArrowRight&quot; || event.key === &quot;ArrowDown&quot;) {
+      next = (current + 1) % tabs.length;
+    } else if (event.key === &quot;ArrowLeft&quot; || event.key === &quot;ArrowUp&quot;) {
+      next = (current + tabs.length - 1) % tabs.length;
+    } else if (event.key === &quot;Home&quot;) {
+      next = 0;
+    } else if (event.key === &quot;End&quot;) {
+      next = tabs.length - 1;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    tabs[next].focus();
+    selectTab(tabs[next]);
+  };
+
+  for (const list of document.querySelectorAll(&#x27;.nav[role=&quot;tablist&quot;]&#x27;)) {
+    const selected =
+      list.querySelector(&#x27;[role=&quot;tab&quot;][aria-selected=&quot;true&quot;]&#x27;) ??
+      list.querySelector(&#x27;[role=&quot;tab&quot;].active&#x27;) ??
+      list.querySelector(&#x27;[role=&quot;tab&quot;]&#x27;);
+    if (selected != null) {
+      selectTab(selected);
+    }
+  }
+  document.addEventListener(&quot;click&quot;, interact);
+  document.addEventListener(&quot;keydown&quot;, interact);
+  window.addEventListener(&quot;pagehide&quot;, () =&gt; {
+    document.removeEventListener(&quot;click&quot;, interact);
+    document.removeEventListener(&quot;keydown&quot;, interact);
+  }, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-carousel&quot;&gt;
+  (() =&gt; {
+    for (const root of document.querySelectorAll(&quot;.viz-carousel&quot;)) {
+      const panels = Array.from(
+        root.querySelectorAll(&quot;:scope &gt; [data-variant]&quot;),
+      );
+      if (panels.length === 0) {
+        continue;
+      }
+      root.setAttribute(&quot;role&quot;, &quot;group&quot;);
+      panels.forEach((panel, index) =&gt; {
+        panel.hidden = index !== 0;
+        panel.setAttribute(&quot;role&quot;, &quot;group&quot;);
+        if (!panel.hasAttribute(&quot;aria-label&quot;)) {
+          panel.setAttribute(&quot;aria-label&quot;, panel.dataset.variant);
+        }
+      });
+      root.dataset.activeVariant = panels[0].dataset.variant;
+      if (panels.length === 1) {
+        continue;
+      }
+
+      const controls = document.createElement(&quot;div&quot;);
+      controls.className = &quot;viz-carousel-controls&quot;;
+      // Portable copy of the settings dropdown&#x27;s legacy glyph; no 14px icon-package preset matches it.
+      // https://github.com/openai/openai/blob/master/codex/codex-apps/webview/src/icons/chevron.svg
+      controls.innerHTML = `
+      &lt;button type=&quot;button&quot; class=&quot;viz-carousel-previous cursor-interaction&quot;&gt;&lt;i data-lucide=&quot;chevron-left&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;
+      &lt;details class=&quot;viz-carousel-picker&quot;&gt;
+        &lt;summary class=&quot;cursor-interaction&quot;&gt;
+          &lt;span class=&quot;viz-carousel-count tabular-nums&quot;&gt;&lt;/span&gt;
+          &lt;span class=&quot;viz-carousel-name&quot;&gt;&lt;/span&gt;
+          &lt;svg class=&quot;viz-carousel-caret&quot; width=&quot;14&quot; height=&quot;14&quot; viewBox=&quot;0 0 20 21&quot; fill=&quot;none&quot; aria-hidden=&quot;true&quot; focusable=&quot;false&quot;&gt;
+            &lt;path d=&quot;M15.2793 7.71101C15.539 7.45131 15.961 7.45131 16.2207 7.71101C16.4804 7.97071 16.4804 8.39272 16.2207 8.65242L10.4707 14.4024C10.211 14.6621 9.78902 14.6621 9.52932 14.4024L3.77932 8.65242L3.69436 8.54792C3.52385 8.28979 3.55205 7.93828 3.77932 7.71101C4.00659 7.48374 4.3581 7.45554 4.61623 7.62605L4.72073 7.71101L10 12.9903L15.2793 7.71101Z&quot; fill=&quot;currentColor&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;0.6&quot; /&gt;
+          &lt;/svg&gt;
+        &lt;/summary&gt;
+        &lt;div class=&quot;viz-carousel-options&quot;&gt;&lt;/div&gt;
+      &lt;/details&gt;
+      &lt;button type=&quot;button&quot; class=&quot;viz-carousel-next cursor-interaction&quot;&gt;&lt;i data-lucide=&quot;chevron-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;`;
+      const previous = controls.querySelector(&quot;.viz-carousel-previous&quot;);
+      const next = controls.querySelector(&quot;.viz-carousel-next&quot;);
+      const picker = controls.querySelector(&quot;.viz-carousel-picker&quot;);
+      const summary = picker.querySelector(&quot;summary&quot;);
+      const count = controls.querySelector(&quot;.viz-carousel-count&quot;);
+      const name = controls.querySelector(&quot;.viz-carousel-name&quot;);
+      const options = controls.querySelector(&quot;.viz-carousel-options&quot;);
+      const status = document.createElement(&quot;span&quot;);
+      status.className = &quot;sr-only&quot;;
+      status.setAttribute(&quot;role&quot;, &quot;status&quot;);
+      status.setAttribute(&quot;aria-live&quot;, &quot;polite&quot;);
+      status.setAttribute(&quot;aria-atomic&quot;, &quot;true&quot;);
+      previous.setAttribute(
+        &quot;aria-label&quot;,
+        root.dataset.previousLabel ?? &quot;Previous variant&quot;,
+      );
+      next.setAttribute(&quot;aria-label&quot;, root.dataset.nextLabel ?? &quot;Next variant&quot;);
+
+      let active = 0;
+      let mousePointerId = null;
+      let summaryPointerHandled = false;
+      summary.addEventListener(&quot;pointerdown&quot;, (event) =&gt; {
+        summaryPointerHandled =
+          event.pointerType === &quot;mouse&quot; &amp;&amp; event.button === 0 &amp;&amp; !event.ctrlKey;
+        if (!summaryPointerHandled) {
+          return;
+        }
+        event.preventDefault();
+        summary.focus({ preventScroll: true });
+        picker.open = !picker.open;
+        mousePointerId = picker.open ? event.pointerId : null;
+      });
+      summary.addEventListener(&quot;click&quot;, (event) =&gt; {
+        if (summaryPointerHandled &amp;&amp; event.detail &gt; 0) {
+          event.preventDefault();
+        }
+      });
+      const choices = panels.map((panel, index) =&gt; {
+        const choice = document.createElement(&quot;button&quot;);
+        choice.type = &quot;button&quot;;
+        choice.className = &quot;cursor-interaction&quot;;
+        choice.textContent = panel.dataset.variant;
+        choice.addEventListener(&quot;click&quot;, () =&gt; {
+          select(index);
+          summary.focus();
+        });
+        choice.addEventListener(&quot;pointerup&quot;, (event) =&gt; {
+          if (
+            picker.open &amp;&amp;
+            event.pointerType === &quot;mouse&quot; &amp;&amp;
+            event.button === 0 &amp;&amp;
+            event.pointerId === mousePointerId
+          ) {
+            choice.click();
+          }
+        });
+        options.appendChild(choice);
+        return choice;
+      });
+      const select = (index) =&gt; {
+        const changed = active !== index;
+        active = index;
+        panels.forEach((panel, position) =&gt; {
+          panel.hidden = position !== active;
+          choices[position].setAttribute(
+            &quot;aria-current&quot;,
+            String(position === active),
+          );
+        });
+        root.dataset.activeVariant = panels[active].dataset.variant;
+        count.textContent = `${active + 1} / ${panels.length}`;
+        name.textContent = panels[active].dataset.variant;
+        picker.open = false;
+        mousePointerId = null;
+        if (changed) {
+          status.textContent = `${count.textContent}: ${name.textContent}`;
+        }
+      };
+      previous.addEventListener(&quot;click&quot;, () =&gt;
+        select((active + panels.length - 1) % panels.length),
+      );
+      next.addEventListener(&quot;click&quot;, () =&gt;
+        select((active + 1) % panels.length),
+      );
+      picker.addEventListener(&quot;keydown&quot;, (event) =&gt; {
+        if (event.key === &quot;Escape&quot; &amp;&amp; picker.open) {
+          event.preventDefault();
+          picker.open = false;
+          mousePointerId = null;
+          summary.focus();
+          return;
+        }
+        if (event.altKey || event.ctrlKey || event.metaKey) {
+          return;
+        }
+        const index = choices.indexOf(document.activeElement);
+        let nextIndex;
+        if (event.key === &quot;ArrowDown&quot;) {
+          nextIndex = index &lt; 0 ? active : (index + 1) % choices.length;
+        } else if (event.key === &quot;ArrowUp&quot;) {
+          nextIndex = index &lt; 0 ? active : (index + choices.length - 1) % choices.length;
+        } else if (picker.open &amp;&amp; event.key === &quot;Home&quot;) {
+          nextIndex = 0;
+        } else if (picker.open &amp;&amp; event.key === &quot;End&quot;) {
+          nextIndex = choices.length - 1;
+        } else {
+          return;
+        }
+        event.preventDefault();
+        picker.open = true;
+        choices[nextIndex].focus();
+      });
+      picker.addEventListener(&quot;focusout&quot;, (event) =&gt; {
+        if (!picker.contains(event.relatedTarget)) {
+          picker.open = false;
+          mousePointerId = null;
+        }
+      });
+      const dismiss = (event) =&gt; {
+        if (!summary.contains(event.target)) {
+          mousePointerId = null;
+        }
+        if (!picker.contains(event.target)) {
+          picker.open = false;
+        }
+      };
+      const endPointerSelection = () =&gt; {
+        mousePointerId = null;
+      };
+      const sizePicker = () =&gt; {
+        root.style.setProperty(
+          &quot;--viz-carousel-picker-height&quot;,
+          `${picker.open ? options.offsetHeight : 0}px`,
+        );
+      };
+      picker.addEventListener(&quot;toggle&quot;, sizePicker);
+      window.addEventListener(&quot;resize&quot;, sizePicker);
+      document.addEventListener(&quot;pointerdown&quot;, dismiss);
+      document.addEventListener(&quot;pointerup&quot;, endPointerSelection);
+      document.addEventListener(&quot;pointercancel&quot;, endPointerSelection);
+      window.addEventListener(&quot;blur&quot;, endPointerSelection);
+      window.addEventListener(
+        &quot;pagehide&quot;,
+        () =&gt; {
+          document.removeEventListener(&quot;pointerdown&quot;, dismiss);
+          document.removeEventListener(&quot;pointerup&quot;, endPointerSelection);
+          document.removeEventListener(&quot;pointercancel&quot;, endPointerSelection);
+          window.removeEventListener(&quot;blur&quot;, endPointerSelection);
+          window.removeEventListener(&quot;resize&quot;, sizePicker);
+        },
+        { once: true },
+      );
+      root.append(controls, status);
+      select(0);
+    }
+  })();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-lucide&quot; async src=&quot;https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  const initialize = () =&gt; {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById(&quot;codex-visualization-lucide&quot;)
+    ?.addEventListener(&quot;load&quot;, initialize, { once: true });
+})();
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+"></iframe>
+
+<script>(() => {
+  const frame = document.getElementById("codex-visualization");
+  if (!(frame instanceof HTMLIFrameElement)) {
+    return;
+  }
+  let viewportHeight = globalThis.innerHeight;
+  const storageKey = `codex:visualization-widget-state-v2:${JSON.stringify([
+    globalThis.location.pathname,
+    globalThis.location.search,
+  ])}`;
+  const parseState = (serializedState) => {
+    if (
+      typeof serializedState !== "string" ||
+      new TextEncoder().encode(serializedState).length > 16 * 1024
+    ) {
+      throw new TypeError(
+        "Widget state must be a JSON object of at most 16 KiB",
+      );
+    }
+    /** @type {unknown} */
+    const state = JSON.parse(serializedState);
+    if (
+      state == null ||
+      typeof state !== "object" ||
+      Array.isArray(state) ||
+      ("imageIds" in state &&
+        (!Array.isArray(state.imageIds) || state.imageIds.length > 0))
+    ) {
+      throw new TypeError("Widget state must be a JSON object");
+    }
+    const storedState = { modelContent: null, privateContent: null, ...state };
+    const canonicalState = JSON.stringify(
+      storedState,
+      (_key, /** @type {unknown} */ value) => {
+        if (typeof value === "number" && !Number.isFinite(value)) {
+          throw new TypeError("Widget state must contain finite numbers");
+        }
+        return value;
+      },
+    );
+    if (new TextEncoder().encode(canonicalState).length > 16 * 1024) {
+      throw new TypeError(
+        "Widget state must be a JSON object of at most 16 KiB",
+      );
+    }
+    return storedState;
+  };
+  let storage = null;
+  let state = null;
+  try {
+    const localStorage = globalThis.localStorage;
+    const probeKey = `${storageKey}:probe`;
+    localStorage.setItem(probeKey, "1");
+    localStorage.removeItem(probeKey);
+    storage = localStorage;
+    const savedState = storage.getItem(storageKey);
+    if (savedState != null) {
+      try {
+        state = parseState(savedState);
+      } catch {
+        // Invalid saved state does not disable future writes.
+      }
+    }
+  } catch {
+    storage = null;
+  }
+  const initialGlobals = {
+    widgetState: state,
+    statePersistence: storage == null ? "none" : "local",
+  };
+
+  const channel = new MessageChannel();
+  channel.port1.addEventListener("message", (event) => {
+    const data = event.data;
+    if (typeof data !== "object" || data == null) {
+      return;
+    }
+    if (data.type === "widget-state-write") {
+      if (!Number.isSafeInteger(data.id) || data.id <= 0) {
+        return;
+      }
+      let ok = false;
+      try {
+        if (storage != null) {
+          const state = parseState(data.state);
+          storage.setItem(storageKey, JSON.stringify(state));
+          ok = true;
+        }
+      } catch {
+        // Storage denial, quota limits, and invalid state return a failed receipt.
+      }
+      channel.port1.postMessage({
+        type: "widget-state-result",
+        id: data.id,
+        ok,
+      });
+      return;
+    }
+    if (data.type === "height") {
+      const height = data.height;
+      if (
+        typeof height === "number" &&
+        Number.isFinite(height) &&
+        height >= 0 &&
+        height <= 10_000
+      ) {
+        frame.style.height = Math.ceil(height) + "px";
+      }
+      return;
+    }
+    if (data.type === "scroll-to") {
+      const top = data.top;
+      if (
+        typeof top === "number" &&
+        Number.isFinite(top) &&
+        top >= 0 &&
+        globalThis.navigator.userActivation?.isActive === true
+      ) {
+        globalThis.scrollTo({
+          top: Math.ceil(
+            globalThis.scrollY + frame.getBoundingClientRect().top + top,
+          ),
+        });
+      }
+      return;
+    }
+    if (data.type === "open-external") {
+      const rawHref = data.href;
+      if (typeof rawHref !== "string") {
+        return;
+      }
+      let href;
+      try {
+        const url = new URL(rawHref, document.baseURI);
+        if (url.protocol !== "https:") {
+          return;
+        }
+        href = url.href;
+      } catch {
+        return;
+      }
+      if (globalThis.navigator.userActivation?.isActive === true) {
+        const anchor = document.createElement("a");
+        anchor.href = href;
+        anchor.rel = "noopener noreferrer";
+        anchor.target = "_blank";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+      }
+      return;
+    }
+    if (data.type === "follow-up") {
+      const prompt = data.prompt;
+      if (
+        typeof prompt !== "string" ||
+        globalThis.navigator.userActivation?.isActive !== true
+      ) {
+        return;
+      }
+      const title = data.title;
+      globalThis.prompt(typeof title === "string" ? title : prompt, prompt);
+    }
+  });
+  channel.port1.start();
+  const srcdoc = frame.dataset.srcdoc;
+  if (srcdoc == null) {
+    return;
+  }
+  globalThis.addEventListener("resize", () => {
+    const height = Number.parseFloat(frame.style.height);
+    if (!Number.isFinite(height) || height <= viewportHeight) {
+      frame.style.removeProperty("height");
+    }
+    viewportHeight = globalThis.innerHeight;
+    channel.port1.postMessage({ type: "measure" });
+  });
+  frame.addEventListener(
+    "load",
+    () => {
+      frame.contentWindow?.postMessage(
+        { type: "codex-visualization-initialize" },
+        "*",
+        [channel.port2],
+      );
+    },
+    { once: true },
+  );
+  // Match the trusted bootstrap element, not the same text in an authored title.
+  frame.srcdoc = srcdoc.replace(
+    '<script type="application/json" id="codex-visualization-widget-state">__CODEX_VISUALIZATION_WIDGET_STATE__<\/script>',
+    () =>
+      '<script type="application/json" id="codex-visualization-widget-state">' +
+      JSON.stringify(initialGlobals).replaceAll("<", "\\u003c") +
+      "<\/script>",
+  );
+  delete frame.dataset.srcdoc;
+})();
+</script>
+</body>
+</html>
