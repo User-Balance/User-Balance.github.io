@@ -102,6 +102,23 @@
         "ProxyJump"
       ],
       "category_id": "ops"
+    },
+    {
+      "path": "mountain-memory.html",
+      "title": "把心留在雪山 · 旅行回忆",
+      "category": "旅行回忆",
+      "category_id": "general",
+      "description": "一张雪山旅行照片的互动影集：晴空与星夜、照片漫游、梦境飘雪、山风音景，以及可以亲手制作和导出的明信片。",
+      "tags": [
+        "旅行",
+        "回忆",
+        "雪山",
+        "照片",
+        "动画",
+        "明信片",
+        "风景"
+      ],
+      "source_date": "2026-10-20"
     }
   ]
 }
