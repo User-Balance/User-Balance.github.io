@@ -116,7 +116,7 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 # 本地权重可通过 DEEPINFER_HF_MODEL_DIR 指定
 python examples/my_client.py</code></pre></details>
 <p>该模板复用仓库内部 helper，适用于这个固定提交下的 examples 目录；它不宣称是跨版本稳定 SDK。<code>create_llm</code> 会先解析 HF/本地模型路径，再为各 rank 设置可见设备，最后导入推理模块。</p>
-<p class="source">依据：<a href="https://github.com/deepseek-ai/DeepInfer/blob/774ce244b87cc0eb8d4b94ab9f5de2ab22049f01/examples/_config.py#L105-L147" target="_blank" rel="noopener">create_llm 与初始化顺序</a> · <a href="https://github.com/deepseek-ai/DeepInfer/blob/774ce244b87cc0eb8d4b94ab9f5de2ab22049f01/examples/_launch.py#L15-L56" target="_blank" rel="noopener">进程启动器</a> · <a href="https://github.com/deepseek-ai/DeepInfer/blob/774ce244b87cc0eb8d4b94ab9f5de2ab22049f01/examples/offline_inference.py" target="_blank" rel="noopener">官方完整 offline 示例</a></p>
+<p class="source">依据：<a href="https://github.com/deepseek-ai/DeepInfer/blob/774ce244b87cc0eb8d4b94ab9f5de2ab22049f01/examples/_config.py#L85-L125" target="_blank" rel="noopener">create_llm 与初始化顺序</a> · <a href="https://github.com/deepseek-ai/DeepInfer/blob/774ce244b87cc0eb8d4b94ab9f5de2ab22049f01/examples/_launch.py#L15-L50" target="_blank" rel="noopener">进程启动器</a> · <a href="https://github.com/deepseek-ai/DeepInfer/blob/774ce244b87cc0eb8d4b94ab9f5de2ab22049f01/examples/offline_inference.py" target="_blank" rel="noopener">官方完整 offline 示例</a></p>
 <details><summary>generate 的真实签名与返回值</summary><pre><code class="language-signature">LLM.generate(
     self,
     prompts: str | list[str] | None = None,
