@@ -161,6 +161,28 @@
         "RCCL"
       ],
       "source_date": "2026-10-19"
+    },
+    {
+      "path": "deepinfer-repository-guide.html",
+      "title": "DeepInfer 源码解读与 PD 分离部署边界",
+      "category": "AI Infra",
+      "category_id": "infra",
+      "description": "依据官方固定源码，解读 DeepInfer 的模型与硬件支持、Python接口、离线启动命令，以及完整PD服务尚需补齐的KV传输与路由组件。",
+      "tags": [
+        "DeepInfer",
+        "DeepSeek",
+        "V4.1",
+        "PD分离",
+        "Prefill",
+        "Decode",
+        "KV cache",
+        "EP",
+        "DP",
+        "SM100",
+        "Ascend",
+        "推理"
+      ],
+      "source_date": "2026-10-21"
     }
   ]
 }
