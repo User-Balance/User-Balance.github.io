@@ -183,6 +183,24 @@
         "推理"
       ],
       "source_date": "2026-10-21"
+    },
+    {
+      "path": "kimi-k3-architecture.html",
+      "title": "Kimi K3 模型结构精解",
+      "category": "AI 全景",
+      "category_id": "infra",
+      "description": "用 6 张结构图、逐算子张量表和交互层号图，拆解 KDA、Gated MLA、LatentMoE、AttnRes 与缓存。",
+      "tags": [
+        "Kimi K3",
+        "KDA",
+        "MLA",
+        "MoE",
+        "AttnRes",
+        "张量形状",
+        "KV Cache",
+        "模型结构"
+      ],
+      "source_date": "2026-10-26"
     }
   ]
 }
