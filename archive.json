@@ -201,6 +201,25 @@
         "模型结构"
       ],
       "source_date": "2026-10-26"
+    },
+    {
+      "path": "attention-evolution-atlas.html",
+      "title": "Attention 演进图谱：MLA、NSA、DSA 与 CSA / HCA",
+      "category": "AI 全景",
+      "category_id": "infra",
+      "description": "6 张中文原理图 + 交互工作预算：分清 KV 宽度、历史条目、读取子集，以及三分支、索引器和序列压缩。",
+      "tags": [
+        "Attention",
+        "MLA",
+        "NSA",
+        "DSA",
+        "CSA",
+        "HCA",
+        "KV Cache",
+        "DeepSeek",
+        "稀疏注意力"
+      ],
+      "source_date": "2026-10-27"
     }
   ]
 }
