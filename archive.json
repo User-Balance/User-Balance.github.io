@@ -220,6 +220,45 @@
         "稀疏注意力"
       ],
       "source_date": "2026-10-27"
+    },
+    {
+      "path": "attention-lse.html",
+      "title": "Attention LSE：从 Softmax 到并行归并",
+      "category": "AI Infra",
+      "category_id": "infra",
+      "description": "用交互实验理解 LSE、稳定 Softmax、KV 分片归并和训练反向，分清 Attention 内部归并与 PP 层间通信。",
+      "tags": [
+        "Attention",
+        "LSE",
+        "Softmax",
+        "FlashAttention",
+        "DCP",
+        "Context Parallel",
+        "KV Cache",
+        "训练",
+        "推理"
+      ],
+      "source_date": "2026-11-16"
+    },
+    {
+      "path": "pp-vpp-training-inference.html",
+      "title": "PP / VPP：训练与推理场景指南",
+      "category": "AI Infra",
+      "category_id": "infra",
+      "description": "分别判断训练、Prefill 与 Decode 的 PP/VPP 适用场景，用流水线时间图比较气泡、通信和内存预算。",
+      "tags": [
+        "PP",
+        "VPP",
+        "流水线并行",
+        "Microbatch",
+        "1F1B",
+        "Megatron",
+        "Prefill",
+        "Decode",
+        "显存",
+        "通信"
+      ],
+      "source_date": "2026-11-18"
     }
   ]
 }

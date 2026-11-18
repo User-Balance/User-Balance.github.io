@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Attention LSE 的公式、稳定计算、KV 分片归并、DCP 通信、MLA 数据流与交互实验。">
+<title>Attention LSE · 从 Softmax 到并行归并</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6f8;--paper:#fff;--ink:#17283c;--muted:#516477;--line:#dce4ec;--blue:#245eaa;--blue-soft:#eaf1fb;--teal:#157b70;--teal-soft:#e8f5f1;--amber:#97530c;--amber-soft:#fff3df;--red:#a83b39;--red-soft:#fff0ee;--nav:#14283c;--r0:#2567ac;--r1:#148575;--r2:#a37624;--r3:#805bad;--r4:#bc5d56;--r5:#597285;--r6:#457538;--r7:#af477b;--radius:14px;--shadow:0 10px 35px #17283c08}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:30px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.8 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}a{color:var(--blue);text-underline-offset:3px}button,input,select{font:inherit}button,select{cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #79aad9;outline-offset:3px}button{border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);padding:7px 12px;line-height:1.4}button:hover{background:var(--blue-soft)}button.primary{background:var(--blue);border-color:var(--blue);color:white}button:disabled{opacity:.45;cursor:default}input[type=number],select{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:7px;padding:5px 8px;min-width:0}input[type=range]{width:100%;accent-color:var(--blue)}input[type=checkbox]{accent-color:var(--blue);width:17px;height:17px}h1,h2,h3,p{margin-top:0}h1{font-size:44px;line-height:1.25;letter-spacing:-1.5px;max-width:760px;margin-bottom:20px}h2{font-size:27px;line-height:1.35;margin-bottom:18px;letter-spacing:-.5px}h3{font-size:19px;line-height:1.45;margin-bottom:12px}p{margin-bottom:14px}strong{font-weight:650}code,.mono,pre{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-variant-numeric:tabular-nums}code{font-size:.91em;color:#214f72;background:#edf3f7;padding:2px 5px;border-radius:4px}pre{font-size:14px;line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere;background:#172c42;color:#e9f2fb;border-radius:11px;padding:20px;margin:15px 0}small,.small{font-size:13px;line-height:1.7;color:var(--muted)}.muted{color:var(--muted)}.wrap{display:grid;grid-template-columns:225px minmax(0,1fr);min-height:100vh}.sidebar{background:var(--nav);color:#d1dfec;padding:34px 19px;position:sticky;top:0;height:100vh;overflow-y:auto}.brand{color:#eff6fc;font-weight:650;font-size:18px;line-height:1.6;padding:0 10px 22px;border-bottom:1px solid #375064;margin-bottom:18px}.brand span{display:block;color:#93aec5;font-size:12px;font-weight:400;letter-spacing:1px}.sidebar a{display:block;color:#b6cbde;text-decoration:none;font-size:14px;line-height:1.5;padding:10px;border-radius:7px;margin:2px 0}.sidebar a.active,.sidebar a:hover{background:#28425a;color:white}.sidebar .meta{font-size:12px;line-height:1.8;color:#a2b9cd;margin:27px 10px}.page{min-width:0;max-width:1290px;padding:48px 54px 70px}.hero{padding:17px 0 33px}.eyebrow{color:var(--teal);font-size:12px;font-weight:650;letter-spacing:1.7px;margin-bottom:17px}.hero p{font-size:18px;max-width:860px;color:var(--muted)}.hero .hero-formula{display:inline-block;font-size:23px;color:var(--blue);background:var(--blue-soft);padding:15px 21px;border-radius:11px;line-height:1.5;margin:5px 0 14px}.pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:100px;background:var(--teal-soft);color:var(--teal);margin:0 5px 4px 0}.section{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:30px;margin:20px 0;box-shadow:var(--shadow);scroll-margin-top:24px}.section-head{display:flex;align-items:baseline;gap:15px}.num{font:500 14px/1.4 monospace;color:var(--teal);white-space:nowrap}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}.panel{background:#f7f9fb;border-radius:10px;padding:19px;min-width:0}.panel p:last-child{margin-bottom:0}.callout{padding:16px 19px;background:var(--blue-soft);border-radius:10px;margin:16px 0}.callout.green{background:var(--teal-soft)}.callout.amber{background:var(--amber-soft)}.callout.red{background:var(--red-soft)}.formula{background:#f0f5fa;color:#1c496e;padding:18px 21px;border-radius:10px;font-size:17px;line-height:2.1;overflow-wrap:anywhere}.table-wrap{overflow:auto;max-width:100%;border-radius:8px}table{border-collapse:collapse;width:100%;font-size:14px;text-align:left}th{color:#344f67;background:#eef3f7;font-weight:600}th,td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}td .small{display:block}tbody tr:last-child td{border-bottom:0}.nowrap{white-space:nowrap}.flow{display:flex;gap:8px;align-items:stretch;margin:17px 0}.flow .node{flex:1;background:var(--blue-soft);padding:15px 12px;border-radius:8px;text-align:center;font-size:14px;min-width:0}.flow .arrow{align-self:center;color:var(--muted);font-size:19px}.controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:16px 0 20px}.control label{display:block;font-size:14px;color:var(--muted);margin-bottom:7px}.control select,.control input[type=number]{width:100%}.control .range-head{display:flex;justify-content:space-between;gap:10px}.checkline{display:flex;gap:8px;align-items:center;font-size:14px}.preset-row{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.preset-row button.active{background:var(--blue);border-color:var(--blue);color:white}.lab-table{min-width:670px}.lab-table td,.lab-table th{padding:8px 10px}.lab-table input[type=number]{width:85px;font-size:14px}.lab-table select{width:85px;font-size:14px}.lab-table tr.off{opacity:.42}.token-name{font-weight:550;white-space:nowrap}.token-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;background:var(--r0)}.p-track{height:9px;background:#e8edf3;border-radius:20px;overflow:hidden;width:115px;margin-top:6px}.p-fill{height:100%;border-radius:20px;background:var(--r0)}.rank-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:20px 0}.rank-card{padding:16px;border-radius:10px;background:#f4f7fa;min-width:0}.rank-title{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:14px;margin-bottom:12px}.rank-title .rank-color{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px}.rank-stats{display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:13px}.rank-stats span{color:var(--muted)}.rank-stats b{display:block;color:var(--ink);font:500 15px/1.6 monospace}.mass-bar{margin-top:13px;height:9px;border-radius:20px;background:#e5ebf0;overflow:hidden}.mass-bar i{display:block;height:100%;border-radius:20px}.results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0}.result{padding:18px;border-radius:10px;background:var(--teal-soft)}.result.bad{background:var(--amber-soft)}.result.mismatch{background:var(--red-soft)}.result .label{font-size:13px;color:var(--muted)}.result .value{font:500 27px/1.6 monospace;overflow-wrap:anywhere}.result .detail{font-size:12px;color:var(--muted)}.result .rail{height:7px;border-radius:10px;background:#d2dedc;position:relative;margin:15px 5px 7px}.result .dot{position:absolute;top:-3px;width:13px;height:13px;border-radius:50%;background:var(--teal);transform:translateX(-50%)}.result.bad .dot{background:var(--amber)}.result.mismatch .dot{background:var(--red)}.rail-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}.status{font-size:14px;border-radius:9px;padding:13px 16px;background:var(--teal-soft);margin-top:16px}.status.warn{background:var(--amber-soft)}.status.err{background:var(--red-soft)}.step-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.step-controls span{font-size:14px;color:var(--muted);margin-left:auto}.state-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:18px 0}.state{background:var(--blue-soft);border-radius:9px;padding:13px 15px}.state span{display:block;font-size:13px;color:var(--muted)}.state b{font:500 20px/1.7 monospace;overflow-wrap:anywhere}.blocks{display:flex;gap:7px;flex-wrap:wrap;margin:17px 0}.block{padding:9px 13px;border-radius:7px;background:#e9eef4;font-size:13px;color:var(--muted)}.block.done{background:var(--teal-soft);color:var(--teal)}.block.current{background:var(--blue);color:white}.diagram{padding:19px;background:#f5f8fb;border-radius:10px;margin:18px 0}.diagram .row{display:grid;gap:8px;grid-template-columns:repeat(4,minmax(0,1fr))}.diagram .rank-lane{padding:12px;background:var(--paper);border-radius:8px;font-size:13px;text-align:center;border:1px solid var(--line)}.diagram .vertical{text-align:center;padding:10px;color:var(--muted);font-size:14px}.diagram .wide-node{padding:14px;background:var(--blue-soft);border-radius:8px;text-align:center;font-size:14px}.diagram .wide-node.green{background:var(--teal-soft)}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.tabs button[aria-pressed=true]{background:var(--blue);border-color:var(--blue);color:white}.timeline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:20px 0}.timeline>div{padding:16px;border-radius:9px;background:#f1f5f9;font-size:14px}.timeline .stepno{display:block;color:var(--teal);font:500 12px/1.5 monospace;margin-bottom:8px}.source-list{margin:0;padding-left:22px;font-size:14px}.source-list li{margin:12px 0}.source-list small{display:block}.faq details{border-top:1px solid var(--line);padding:14px 0}.faq details:last-child{padding-bottom:0}.faq summary{cursor:pointer;font-weight:550}.faq details p{margin:12px 0 0;color:var(--muted);font-size:14px}.footer{font-size:13px;color:var(--muted);padding:20px 3px}.mobile-top{display:none}.print-button{font-size:13px;margin-top:15px;background:#28425a;color:#dbe8f3;border-color:#40596e;width:100%}.source-note{font-size:13px;color:var(--muted);margin-top:15px}.accent{color:var(--teal)}.chip{background:#eaf0f7;padding:2px 7px;border-radius:5px;font-size:13px;display:inline-block}.expr{font-family:"SFMono-Regular",Consolas,monospace;font-size:14px;overflow-wrap:anywhere}.quiz-answer{display:none;margin-top:12px;padding:14px;background:var(--teal-soft);border-radius:8px}.quiz-answer.open{display:block}
+@media(min-width:1450px){.page{padding-left:65px;padding-right:65px}}@media(max-width:1100px){.wrap{grid-template-columns:190px minmax(0,1fr)}.page{padding:35px 27px}.section{padding:24px}.sidebar{padding:27px 11px}.timeline{grid-template-columns:1fr 1fr}h1{font-size:36px}.controls{grid-template-columns:1fr 1fr}.diagram .row{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:760px){.wrap{display:block}.sidebar{display:none}.mobile-top{display:flex;gap:16px;overflow:auto;background:var(--nav);padding:12px 18px;white-space:nowrap}.mobile-top a{font-size:13px;color:#c9dced;text-decoration:none}.page{padding:26px 14px}.hero{padding:9px 6px 20px}h1{font-size:31px;letter-spacing:-.7px}.hero p{font-size:16px}.hero .hero-formula{font-size:18px}.section{padding:21px 17px}.grid2{grid-template-columns:1fr}.controls{grid-template-columns:1fr 1fr;gap:13px}.results{grid-template-columns:1fr}.state-grid{grid-template-columns:1fr 1fr}.rank-grid{grid-template-columns:1fr 1fr}.flow{flex-direction:column}.flow .arrow{transform:rotate(90deg)}.flow .node{padding:12px}.timeline{grid-template-columns:1fr 1fr}h2{font-size:23px}pre{font-size:12px;padding:15px}.formula{font-size:14px;padding:15px}.rank-stats{grid-template-columns:1fr}.diagram{padding:13px}.step-controls span{margin-left:0}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}@media print{.sidebar,.mobile-top,.print-button,.preset-row,.step-controls,.tabs{display:none}.wrap{display:block}.page{max-width:none;padding:0}.section{box-shadow:none;break-inside:avoid;margin:12px 0}.hero{padding:0}body{background:white;font-size:12px}h1{font-size:30px}h2{font-size:22px}pre{background:#eef3f8;color:#182c42}a{color:inherit}.footer{font-size:11px}.results{grid-template-columns:repeat(3,1fr)}}
+code{overflow-wrap:anywhere;word-break:break-word}.expr{white-space:pre-line}
+</style>
+<link rel="canonical" href="https://user-balance.github.io/attention-lse.html">
+<meta name="portal-title" content="Attention LSE：从 Softmax 到并行归并">
+<meta name="portal-category" content="AI Infra">
+<meta name="portal-description" content="用交互实验理解 LSE、稳定 Softmax、KV 分片归并和训练反向，分清 Attention 内部归并与 PP 层间通信。">
+<meta name="portal-date" content="2026-11-16">
+<meta name="portal-tags" content="Attention,LSE,Softmax,FlashAttention,DCP,Context Parallel,KV Cache,训练,推理">
+<link id="portal-article-nav-style" rel="stylesheet" href="assets/article-nav.css">
+</head>
+<body>
+<nav id="portal-archive-nav" class="archive-nav" aria-label="学习手册导航"><a href="index.html">← 技术学习手册 · 返回门户</a><span>AI Infra · 资料日期 2026-11-16</span></nav>
+
+<div class="mobile-top"><a href="index.html">← 主页</a><a href="#basics">LSE 是什么</a><a href="#lab">动手计算</a><a href="#merge">归并公式</a><a href="#dcp">DCP 数据流</a><a href="#mla">MLA 示例</a></div>
+<div class="wrap">
+<aside class="sidebar"><div class="brand">Attention LSE<span>SOFTMAX · PARALLEL MERGE</span></div>
+<nav aria-label="页面章节"><a href="index.html">← 回到主页</a><a href="pp-vpp-training-inference.html">PP / VPP 指南 ↗</a><a href="#basics">01　LSE 与 Attention</a><a href="#stable">02　稳定计算</a><a href="#lab">03　交互计算实验</a><a href="#merge">04　分片归并推导</a><a href="#online">05　Online Softmax</a><a href="#dcp">06　DCP 通信与 DAG</a><a href="#parallel">07　哪些并行用 LSE</a><a href="#mla">08　MLA 与稀疏 Attention</a><a href="#memory">09　显存与反向传播</a><a href="#pitfalls">10　边界与易错点</a><a href="#sources">11　公开资料与验证</a></nav>
+<div class="meta">2026-11-16<br>数学推导＋固定源码快照<br>示例可离线交互<br><button type="button" class="print-button" id="print-page">打印 / 保存为 PDF</button></div></aside>
+<main class="page">
+<header class="hero"><div class="eyebrow">从一个标量，理解 Attention 如何跨块与跨卡归并</div><h1>LSE 保存归一化信息，<br>让局部 Attention 合成全局结果。</h1>
+<div class="hero-formula mono">LSE(q,h) = ln Σ<sub>j</sub> exp(score<sub>q,h,j</sub>)</div>
+<p>KV 拆开以后，每个分片的输出都已经被自己的 Softmax 分母归一化。LSE 记录这个分母的对数，让归并阶段知道每个局部输出该占多大权重。</p>
+<span class="pill">每个 query / head 一个标量</span><span class="pill">KV 分片需要加权归并</span><span class="pill">ln 与 log2 必须配套</span>
+</header>
+
+<section class="section" id="basics"><div class="section-head"><span class="num">01</span><h2>LSE 是什么，位于 Attention 的哪一步？</h2></div>
+<p><strong>LSE = Log-Sum-Exp</strong>，即“先取指数、求和，再取对数”。对固定的一个 query 和一个 head，把所有有效 key 的分数记为 s<sub>j</sub>：</p>
+<div class="formula mono">s<sub>j</sub> = (q · k<sub>j</sub>) / √d<sub>k</sub> + bias<sub>j</sub> + mask<sub>j</sub><br>Z = Σ<sub>j∈有效 KV</sub> e<sup>s<sub>j</sub></sup>　　L = ln Z<br>p<sub>j</sub> = e<sup>s<sub>j</sub> − L</sup>　　O = Σ<sub>j</sub> p<sub>j</sub> v<sub>j</sub></div>
+<div class="flow"><div class="node"><strong>QKᵀ / √d</strong><br>得到分数 S</div><span class="arrow">→</span><div class="node"><strong>加 bias / mask</strong><br>限定有效 key</div><span class="arrow">→</span><div class="node"><strong>Softmax</strong><br>归一化；产生 LSE</div><span class="arrow">→</span><div class="node"><strong>P × V</strong><br>Attention 输出 O</div></div>
+<div class="grid2"><div class="panel"><h3>输出 O 和 LSE 的职责不同</h3><p><strong>O</strong> 是对 V 的加权向量，送给后续投影。<strong>LSE</strong> 是每行的归一化统计；可以供分块归并和反向重算使用，通常不作为模型隐藏状态继续传播。</p></div><div class="panel"><h3>LSE 不是 loss，也不是注意力权重</h3><p>它不是训练 loss，不是某个 key 的 p<sub>j</sub>，不是 entropy，也不是 max score。它只由 <strong>Q、K、scale、bias、mask</strong> 决定，不由 V 决定。</p></div></div>
+<p class="source-note">数学范围：标准 Softmax Attention，未加入 dropout 或额外 attention sink。稀疏 Attention 的“有效 KV”是选中的 key 集合。</p>
+</section>
+
+<section class="section" id="stable"><div class="section-head"><span class="num">02</span><h2>为什么用 log，为什么还要减最大值？</h2></div>
+<p>直接计算 e<sup>s</sup> 容易溢出。例如分数为 [1000, 999]，普通双精度直接取指数也会溢出；但 Softmax 仍有合法的结果。</p>
+<div class="formula mono">m = max<sub>j</sub> s<sub>j</sub><br>L = m + ln Σ<sub>j</sub> e<sup>s<sub>j</sub> − m</sup><br>p<sub>j</sub> = e<sup>s<sub>j</sub> − m</sup> / Σ<sub>k</sub> e<sup>s<sub>k</sub> − m</sup></div>
+<div class="grid2"><div class="panel"><h3>稳定例子：s = [1000, 999]</h3><p class="mono">m = 1000<br>Σ exp(s−m) = 1 + e⁻¹ ≈ 1.367879<br>L ≈ 1000.313262<br>p ≈ [0.731059, 0.268941]</p></div><div class="panel"><h3>所有分数共同平移 c</h3><p class="mono">LSE(s+c) = LSE(s)+c<br>Softmax(s+c) = Softmax(s)</p><p>共同平移改变 LSE，却不改变输出 O。所以不能仅凭不同 query 的 LSE 大小判断“置信度”或“注意力更集中”。</p></div></div>
+<div class="callout amber"><strong>使用 exp2，不等于接口返回 log2 LSE。</strong>有的 kernel 用 exp2 加速内部指数运算，最后把统计乘 ln2，仍返回自然对数。必须核对 backend 的输出约定。后面的源码示例同时展示这两种情况。</div>
+</section>
+
+<section class="section" id="lab"><div class="section-head"><span class="num">03</span><h2>交互实验：改变分数，看分片权重如何变化</h2></div>
+<p>固定<strong>一个 query、一个 head、一个 V 输出分量</strong>。表中的分数已经代表 QK / √d 加 bias 的结果；实验温度 τ 只作额外演示缩放。改变 rank 归属、分数和 mask，比较直接 Attention、LSE 归并与简单平均。</p>
+<div class="preset-row" id="presets"><button type="button" data-preset="dominant" class="active">9∶1 概率质量</button><button type="button" data-preset="unequal">相同分数，分片数目不同</button><button type="button" data-preset="many">8 个 token，2 个 rank</button><button type="button" data-preset="large">极大分数：1000 / 999</button><button type="button" data-preset="empty">一个空 KV 分片</button><button type="button" data-preset="all-empty">全部 masked</button></div>
+<div class="controls"><div class="control"><label for="rank-count">KV rank 数</label><select id="rank-count"><option value="2">2 ranks</option><option value="4">4 ranks</option><option value="8">8 ranks</option></select></div><div class="control"><label for="lse-base">LSE 的显示与接口底数</label><select id="lse-base"><option value="e">ln / exp</option><option value="2">log2 / exp2</option></select></div><div class="control"><label for="query-index">Causal mask：query 位置</label><select id="query-index"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option selected>7</option></select></div>
+<div class="control"><label class="range-head" for="temperature"><span>温度 τ</span><b id="temperature-value" class="mono">1.00</b></label><input id="temperature" type="range" min="0.25" max="3" step="0.05" value="1"></div><div class="control"><label class="range-head" for="common-shift"><span>全部分数共同平移 c</span><b id="common-shift-value" class="mono">0</b></label><input id="common-shift" type="range" min="-1000" max="1000" step="10" value="0"></div><div class="control"><label class="checkline"><input type="checkbox" id="causal">启用 causal：只看 j ≤ query 位置</label><span class="small">最终 score = 表中分数 / τ + c</span></div></div>
+<div class="table-wrap"><table class="lab-table"><thead><tr><th>Key</th><th>有效</th><th>KV owner</th><th>分数 s</th><th>V 分量</th><th>全局 p<sub>j</sub></th></tr></thead><tbody id="token-body"></tbody></table></div>
+<div class="rank-grid" id="rank-grid" aria-live="polite"></div>
+<div class="results" aria-live="polite"><div class="result"><div class="label">正确：按 LSE 质量加权</div><div class="value" id="correct-output">9.000000</div><div class="detail" id="direct-output">直接 Attention = 9.000000</div><div class="rail"><i class="dot" id="correct-dot"></i></div><div class="rail-label"><span class="minv"></span><span class="maxv"></span></div></div><div class="result bad"><div class="label">错误：非空分片输出简单平均</div><div class="value" id="mean-output">5.000000</div><div class="detail" id="mean-error">与直接 Attention 比较</div><div class="rail"><i class="dot" id="mean-dot"></i></div><div class="rail-label"><span class="minv"></span><span class="maxv"></span></div></div><div class="result mismatch"><div class="label">错误：LSE 底数与指数函数不匹配</div><div class="value" id="wrong-base-output"></div><div class="detail" id="wrong-base-detail"></div><div class="rail"><i class="dot" id="wrong-dot"></i></div><div class="rail-label"><span class="minv"></span><span class="maxv"></span></div></div></div>
+<div class="status" id="lab-status" role="status"></div>
+<p class="small" style="margin-top:13px">每个 rank 卡片里的 w<sub>r</sub> 是该分片在<strong>全局 Softmax 中的概率质量</strong>，不是按 token 数平均。“全部 masked”的 Softmax 没有正常分母；页面显示 O=0 作为演示约定，并明确标记这个边界。</p>
+</section>
+
+<section class="section" id="merge"><div class="section-head"><span class="num">04</span><h2>为什么 LSE 能让局部结果精确归并？</h2></div>
+<p>把<strong>同一个 query/head 的 key 集合</strong>切成互不重叠的块 S<sub>r</sub>。每块独立计算自己的 Softmax：</p>
+<div class="formula mono">Z<sub>r</sub> = Σ<sub>j∈S<sub>r</sub></sub> e<sup>s<sub>j</sub></sup><br>L<sub>r</sub> = ln Z<sub>r</sub>　　O<sub>r</sub> = Σ<sub>j∈S<sub>r</sub></sub> (e<sup>s<sub>j</sub></sup>/Z<sub>r</sub>) v<sub>j</sub><br>全局 Z = Σ<sub>r</sub> Z<sub>r</sub><br>全局 O = Σ<sub>r</sub> (Z<sub>r</sub>/Z) O<sub>r</sub></div>
+<p>局部 O<sub>r</sub> 已经除过 Z<sub>r</sub>，所以求和时要先恢复它对应的质量。通过 LSE，质量可以稳定地在 log 域恢复：</p>
+<div class="formula mono">M = max<sub>r</sub> L<sub>r</sub><br>a<sub>r</sub> = exp(L<sub>r</sub> − M)<br>w<sub>r</sub> = a<sub>r</sub> / Σ<sub>k</sub> a<sub>k</sub><br>O = Σ<sub>r</sub> w<sub>r</sub> O<sub>r</sub><br>L = M + ln Σ<sub>r</sub> a<sub>r</sub></div>
+<div class="callout green"><strong>9∶1 例子：</strong>rank 0 的 Z₀=9、O₀=10；rank 1 的 Z₁=1、O₁=0。全局 O=(9×10+1×0)/10=<strong>9</strong>；简单平均得到 5，直接相加得到 10，二者都不正确。</div>
+<div class="grid2"><div class="panel"><h3>两块合并也能继续合并</h3><p>定义状态 (O,L)，先 merge(A,B)，再 merge(AB,C)。因为 key 集合的分母和未归一化分子都可相加，实数算术下结果与合并顺序无关。</p><p>因此支持逐块处理、树形归约、跨 CTA split-K 和跨 rank KV 分片。浮点加法顺序不同，结果允许有数值误差。</p></div><div class="panel"><h3>单个 LSE 不携带 V 的信息</h3><p>只发送 LSE 无法恢复 Attention 输出。一般需要同时保留/交换<strong>局部 O 与 LSE</strong>，或先交换 LSE 再让每个 rank 校正自己的 O。</p><p>O 是向量；同一个 w<sub>r</sub> 用于该 query/head 的全部 V 分量。</p></div></div>
+<pre>def merge(partial_o, partial_lse):
+    # 全部 partial 属于相同 query/head，KV 块互不重叠
+    valid = [r for r in ranks if partial_lse[r] != -inf]
+    if not valid:
+        return zeros_like(partial_o[0]), -inf  # 显式边界约定
+    m = max(partial_lse[r] for r in valid)
+    a = [exp(partial_lse[r] - m) for r in valid]  # ln LSE
+    denominator = sum(a)
+    o = sum(a[r] * partial_o[valid[r]] for r in range(len(a))) / denominator
+    lse = m + log(denominator)
+    return o, lse</pre>
+<p class="small">若接口给的是 L₂=log₂Z，把 exp/log 替换为 exp2/log2。转换关系：L<sub>e</sub> = L₂×ln2。不能对 log₂Z 直接套 exp。</p>
+</section>
+
+<section class="section" id="online"><div class="section-head"><span class="num">05</span><h2>FlashAttention 的 Online Softmax：同一数学，逐块更新</h2></div>
+<p>FlashAttention 不必把完整 N<sub>q</sub>×N<sub>k</sub> 分数/概率矩阵写回 HBM。处理一个 KV tile 后，维护每行的最大值 m、稳定分母 ℓ、稳定的未归一化输出 u：</p>
+<div class="formula mono">m = max s　　ℓ = Σ e<sup>s−m</sup>　　u = Σ e<sup>s−m</sup>v<br>输出 O = u/ℓ　　LSE = m + ln ℓ</div>
+<p>旧状态 (m,ℓ,u) 与新块 (m<sub>b</sub>,ℓ<sub>b</sub>,u<sub>b</sub>) 的尺度可能不同，先统一到新最大值：</p>
+<div class="formula mono">m′ = max(m,m<sub>b</sub>)<br>α = e<sup>m−m′</sup>　　β = e<sup>m<sub>b</sub>−m′</sup><br>ℓ′ = αℓ + βℓ<sub>b</sub>　　u′ = αu + βu<sub>b</sub></div>
+<div class="callout"><strong>m、ℓ 与 LSE 不能互换。</strong>m 是行最大值，ℓ 是相对 m 缩放后的分母，LSE=m+lnℓ 才是完整归一化信息。只拿 m 做跨 rank 合并会丢掉“有多少指数质量”。</div>
+<h3>逐块看状态：使用上方实验的同一组分数与 mask</h3><p class="small">每块按 key 顺序包含两个 token；这是单 query 的教学 tile 示例，与上方 rank 归属独立。修改上方参数后，状态重新从空开始。</p>
+<div class="step-controls"><button type="button" class="primary" id="next-block">处理下一块</button><button type="button" id="reset-blocks">从空状态开始</button><span id="online-step">已处理 0 / 4 块</span></div>
+<div class="blocks" id="online-blocks"></div><div class="state-grid"><div class="state"><span>当前 m</span><b id="state-m">−∞</b></div><div class="state"><span>稳定分母 ℓ</span><b id="state-ell">0</b></div><div class="state"><span>稳定分子 u</span><b id="state-u">0</b></div><div class="state"><span>O = u / ℓ</span><b id="state-o">—</b></div></div>
+<div class="status" id="online-detail" role="status">空状态：m=−∞，ℓ=0，u=0。</div>
+<p class="source-note">进一步阅读：<a href="#sources">FlashAttention 公开论文与官方实现</a>。底数转换要以所使用后端的明确契约为准。</p>
+</section>
+
+<section class="section" id="dcp"><div class="section-head"><span class="num">06</span><h2>跨卡 DCP：每卡拥有一部分 KV，如何拿到全局 O？</h2></div>
+<p>下面展示逻辑阶段。对待归并的 query/head，各 KV owner 必须能得到所需的 Q；Q 可以通过复制、AllGather 或其他布局提供。每个 owner 只对自己持有的有效 KV 计算局部 O/LSE。</p>
+<div class="controls"><div class="control"><label for="dcp-n">DCP ranks N</label><select id="dcp-n"><option>2</option><option>4</option><option selected>8</option></select></div><div class="control"><label for="dcp-t">本次 query 行数 T</label><input type="number" id="dcp-t" value="384" min="1" max="65536" step="1"></div><div class="control"><label for="dcp-h">需要归并的 heads H</label><select id="dcp-h"><option value="96">96：教学示例</option><option value="128">128：另一模型对照</option></select></div></div>
+<div class="tabs" id="comm-tabs" role="group" aria-label="并行归并方式"><button type="button" data-comm="a2a" aria-pressed="true">O/LSE AllToAll</button><button type="button" data-comm="agrs" aria-pressed="false">LSE AllGather → O ReduceScatter</button><button type="button" data-comm="ring" aria-pressed="false">Ring CP：逐轮更新</button></div>
+<div class="diagram"><div class="wide-node" id="q-node">同一组 Q 可供所有 KV owners 使用</div><div class="vertical">↓　局部计算彼此独立；每个 head 的 score 使用相同 scale / mask</div><div class="row" id="rank-lanes"></div><div class="vertical">↓　输出 O<sub>r</sub> 与归一化统计 L<sub>r</sub></div><div class="wide-node" id="comm-node"></div><div class="vertical" id="comm-arrow">↓　按 query/head 对齐来自不同 KV owners 的 partial</div><div class="wide-node green" id="combine-node"></div></div>
+<div class="grid2"><div class="panel"><h3 id="comm-title"></h3><p id="comm-explanation"></p></div><div class="panel"><h3>张量布局与统计开销</h3><p class="expr" id="comm-shapes"></p><p class="small" id="comm-bytes"></p></div></div>
+<pre id="comm-code"></pre>
+<div class="callout amber"><strong>KV 切分轴和输出 head owner 是两回事。</strong>A2A 接收端为自己负责的 H/N 个 heads 收集来自 N 个 KV owners 的 partial。归并的是<strong>同一 head 在不同 KV 块上的输出</strong>，不是把不同 head 的结果做一次 Softmax。</div>
+<p class="small">A2A、AG→RS 与 Ring 是三种通信组织示意。实际后端可能选择不同布局；先保证同一 query/head 的 KV 集合、底数和 mask 契约一致。</p>
+</section>
+
+<section class="section" id="parallel"><div class="section-head"><span class="num">07</span><h2>哪些并行需要 LSE？先看切分的到底是哪一维</h2></div>
+<div class="table-wrap"><table><thead><tr><th>并行 / 分块</th><th>拆开的对象</th><th>LSE 如何使用</th></tr></thead><tbody>
+<tr><td><strong>KV / Context Parallel</strong></td><td>同一 query/head 的 key 集合</td><td>局部 O/LSE 加权合并；Ring 可在 Q owner 上按 KV 轮次累积状态。</td></tr>
+<tr><td><strong>DCP</strong></td><td>KV cache 分布在不同 rank</td><td>Owner-local Attention 后，A2A 或 LSE AllGather＋O ReduceScatter。</td></tr>
+<tr><td><strong>Split-KV / Split-K</strong></td><td>同一 GPU 上不同 CTA 处理不同 key 区间</td><td>相同归并数学；可能是单独 reduction kernel，也可能融合在后端内部。无需跨机器。</td></tr>
+<tr><td><strong>FlashAttention tiles</strong></td><td>一个 kernel 逐 tile 读取 KV</td><td>在线 m/ℓ/u 更新，最后形成 LSE；不必每个 tile 都对外写出 LSE。</td></tr>
+<tr><td><strong>Prefix＋当前 chunk</strong></td><td>同一 query 的历史 KV 与当前段有效 KV</td><td>两个不重叠的有效集合可用 O/LSE 合并；当前 chunk 仍需正确 causal mask。</td></tr>
+<tr><td><strong>按 head 的 TP</strong></td><td>不同 heads，各自看完整的有效 KV</td><td>每个 head 自己计算 LSE；不同 heads 之间无需 LSE 合并。</td></tr>
+<tr><td><strong>Q/K feature 维 TP</strong></td><td>同一 score 的 dot-product 分量</td><td>先求和得到完整 score，再做 Softmax。不能先对各 feature 分片做 Attention，再套 KV 的 LSE 归并。</td></tr>
+<tr><td><strong>只切 query 行的 SP / CP</strong></td><td>不同 queries，各自得到所需 KV</td><td>各 query 的 LSE 独立，输出可按 query 行拼接；没有同一 query 跨 KV 的 partial 就无需此归并。</td></tr>
+<tr><td><strong>Attention DP / 普通 DP</strong></td><td>不同请求或不同模型副本</td><td>每组内部计算；不能合并不同请求的 O/LSE。</td></tr>
+<tr><td><strong>PP / MoE EP</strong></td><td>不同层 / 不同专家</td><td>LSE 可能仍由各层 Attention 产生，但不是 PP stage 或专家输出归并的权重。</td></tr>
+</tbody></table></div>
+<div class="callout green"><strong>判断规则：</strong>若拆开的计算是“<em>同一个 query/head，看不同的不重叠 KV 集合</em>”，就需要恢复统一的 Softmax 分母。若拆的是不同 query、不同 head、不同层或不同专家，不应直接套这个 LSE 归并。</div>
+</section>
+
+<section class="section" id="mla"><div class="section-head"><span class="num">08</span><h2>放回 MLA 与稀疏 Attention：LSE 归并位于哪里？</h2></div>
+<p>使用一组教学参数：96 个 Attention heads，latent value 维度 512，DCP8。每个目的 rank 负责 12 个 heads；下面说明先合并 latent 输出、再做线性投影的一种可行组织方式，不是特定模型配置或部署记录。</p>
+<div class="timeline"><div><span class="stepno">01 · INDEX</span><strong>DSA indexer 选 TopK</strong><br>决定本 query 看哪些 key。</div><div><span class="stepno">02 · OWNER</span><strong>定位本 rank 的 KV</strong><br>有效 selected keys 按 KV owner 分配。</div><div><span class="stepno">03 · PARTIAL ATTENTION</span><strong>局部 MLA → O / LSE</strong><br>仅计算本 owner 的有效 keys。</div><div><span class="stepno">04 · GLOBAL NORMALIZATION</span><strong>DCP 交换＋LSE 归并</strong><br>形成每个 query/head 的全局 latent 输出。</div></div>
+<div class="flow"><div class="node"><strong>合并后 O_latent</strong><br>[T,12,512]</div><span class="arrow">→</span><div class="node"><strong>V 投影 BMM</strong><br>512 → v_head_dim</div><span class="arrow">→</span><div class="node"><strong>Output gate</strong><br>按模型路径应用</div><span class="arrow">→</span><div class="node"><strong>O-proj / 输出通信</strong><br>线性求和，另一个阶段</div></div>
+<div class="table-wrap"><table><thead><tr><th>DCP8 示例阶段</th><th>逻辑张量</th><th>解释</th></tr></thead><tbody><tr><td>KV owner 的 partial</td><td class="mono">O_r [T,96,512] BF16<br>L_r [T,96] FP32</td><td>同一 rank 对多个待归并 heads 计算 owner-local 结果。</td></tr><tr><td>A2A send / receive</td><td class="mono">[8,T,12,514] BF16 carrier</td><td>每目的 rank 得到自己 12 heads 的 partial；最后 2 个 BF16 字宽保存 1 个 FP32 LSE 的原始位。</td></tr><tr><td>本 rank LSE combine</td><td class="mono">O [T,12,512]</td><td>对来自 8 个 KV owners 的同一 query/head 加权合并。</td></tr><tr><td>后续 V/O 投影</td><td>按本地 heads 继续执行</td><td>这里的线性 reduction 和前面的 LSE combine 不可混淆。</td></tr></tbody></table></div>
+<div class="callout"><strong>FP32 LSE 打包成两个 BF16 字宽，是 bitcast。</strong>本示例使用 dtype view 和 UINT8 transport 保留原始字节；并未把 LSE 数值 cast 成 BF16，也不是把两个 BF16 数相加。</div>
+<p>这个教学示例允许使用 ln LSE / exp，或 log2 LSE / exp2。必须明确后端输出的底数；内部用 exp2 计算，也可能在 finalize 时转换为自然对数。不能只根据函数名称猜测。</p>
+<div class="grid2"><div class="panel"><h3>稀疏 Indexer 与主 Attention 分开理解</h3><p>Indexer 计算检索分数并选 TopK；主 Sparse MLA 在这些 selected keys 上做 Softmax。这里 LSE 归并恢复的是<strong>selected-key 并集上的 Attention</strong>，不会补回被 TopK 排除的 key。</p></div><div class="panel"><h3>KDA 不是这套 Softmax 归并</h3><p>线性注意力的 recurrent state 使用其他更新规则。KDA 的 recurrent state 更新有自己的计算与并行机制；不能把 MLA 的 O/LSE 归并公式直接套到 KDA state 上。</p></div></div>
+<p>Prefix＋当前 chunk 也可以先得到各自的 O/LSE，再对同一 query 的不重叠有效 KV 集合归并。当前 chunk 的 causal mask、KV 写入与前缀依赖仍需满足；LSE 不能消除这些依赖。</p>
+<p class="source-note">Shape、通信打包与底数分支均是教学示例；T=384 仅用于复算，不代表任何服务的实时 batch。网页没有 GPU benchmark。</p>
+</section>
+
+<section class="section" id="memory"><div class="section-head"><span class="num">09</span><h2>LSE 占多少显存？训练反向又为什么保存它？</h2></div>
+<div class="grid2"><div class="panel"><h3>前向临时统计，通常是 FP32</h3><p class="mono">LSE：T × H × 4 bytes<br>O：T × H × d_v × bytes_per_element</p><p>当 d_v=512 且 O 为 BF16，LSE 与 O 的字节比为 <strong>4/(512×2)=0.390625%</strong>。LSE 很小，但 O 通信、发送/接收缓冲、layout staging 仍可能较大。</p></div><div class="panel"><h3>T=384、H=96 的 DCP8 示例</h3><p class="mono">partial LSE ≈ 144 KiB / rank<br>partial O ≈ 36 MiB / rank<br>packed payload ≈ 36.140625 MiB / rank</p><p>这是单个逻辑 payload 的尺寸。双缓冲、Graph 预分配或 staging 会另加，不能当作整个通信峰值。</p></div></div>
+<p><strong>LSE 与 KV cache 的容量轴不同：</strong>LSE 对应本次处理的 query 行和 heads；KV cache 对应持久保存的 key tokens 与层数。Decode 时 query 行通常接近本次请求数，不必等于历史上下文长度。LSE 也不是模型权重，不因保存一份 checkpoint 就永久驻留。</p>
+<div class="callout green">容量预算时：LSE 属于前向临时统计/归并缓冲，不能把它按“全部历史 token×全部 heads×全部层”无条件计入持久 KV。实际内存生命周期由后端、训练/推理模式、Graph 和缓冲复用决定。</div>
+<h3>反向传播：用 LSE 重构概率，避免保存完整 P</h3><p>训练反向需要 Softmax 的概率 P。保存每 query/head 的 LSE 后，可以重新计算 tile 的 score，再恢复 <code>P = exp(S−LSE)</code>，而无需把完整 Attention 概率矩阵长期存进 HBM。</p>
+<div class="formula mono">dP = dO Vᵀ<br>D<sub>i</sub> = Σ<sub>j</sub> P<sub>ij</sub>dP<sub>ij</sub> = dO<sub>i</sub> · O<sub>i</sub><br>dS<sub>ij</sub> = P<sub>ij</sub>(dP<sub>ij</sub> − D<sub>i</sub>)</div>
+<p class="small">上述反向公式为标准无 dropout、scale 已体现在 S 的例子。实际还需 Q/K/V、scale、mask/bias 以及必要的随机状态；只保存 LSE 无法独自完成反向。推理一般不需要保留反向所需统计，但分块或 DCP 归并仍会使用 LSE。</p>
+</section>
+
+<section class="section faq" id="pitfalls"><div class="section-head"><span class="num">10</span><h2>边界条件与容易混淆的地方</h2></div>
+<details open><summary>一个 rank 没有有效 KV，该返回什么？</summary><p>该分片 Z_r=0，按数学约定 L_r=−∞，局部 O_r 使用零向量占位。归并中它的质量为 0，不影响非空分片。避免出现 0×NaN，空分片输出应在进入 combine 前规范化。</p></details>
+<details open><summary>如果所有 rank 都没有有效 KV？</summary><p>全局分母为 0，普通 Softmax 输出没有定义。系统需要显式约定或避免此输入。页面显示 O=0、LSE=−∞并标记边界；归并一般包含 acc/weight_sum；所有分片全空时必须有显式保护，不能把页面约定当作已验证的后端行为。</p></details>
+<details><summary>合并 LSE 是直接相加、取最大值吗？</summary><p>都不是。全局 LSE = logsumexp(局部 LSE)。局部 LSE 直接相加对应分母相乘，取最大值会丢掉其他分片的质量；只有其他质量可忽略时才近似最大值。</p></details>
+<details><summary>相同分数能按 rank 平均吗？</summary><p>只有各 rank 的总指数质量 Z_r 相同时，简单平均才恰好正确。所有 key 分数相同但各 rank 有效 token 数不同，Z_r 与 token 数成正比，仍需按数量对应的质量加权。</p></details>
+<details><summary>有重叠 KV、attention sink、padding 或重复 TopK 怎么办？</summary><p>上述归并要求有效 KV 块形成无重复的集合划分。重叠或重复 key 会重复计分母；sink 若在每块复制也可能被重复计入。Padding、无效索引和 future token 要按 query 的 mask 排除。稀疏 backend 是否去重以及 sink 规则须单独核对。</p></details>
+<details><summary>LSE 能消除通信、因果依赖或增加 KV 容量吗？</summary><p>不能。LSE 提供可组合的归一化统计；各 rank 仍需要所需的 Q、本地 KV 和局部输出，通信与同步也仍存在。Chunk B 读 Chunk A 的 KV 前，A 的 KV 写入必须完成。</p></details>
+<details><summary>exp2 比 exp 快，所以我能直接换底数吗？</summary><p>不能只换函数。自然对数 LSE 配 exp；log2 LSE 配 exp2。若内部实现 exp(s)=exp2(s×log2(e))，输入也必须转换尺度。页面的错误底数卡片展示了错配后的数值变化。</p></details>
+<details><summary>防御性实现把 NaN / +∞ LSE 处理成 −∞，可以认为它们都是空 KV 吗？</summary><p>数学上不能。−∞ 可表示零质量；NaN/+∞可能来自溢出、错误索引、错误 backend 契约或其他上游问题。某些 kernel 做防御性替换，不应据此把异常输入当作合法空分片，调试时仍须检查来源。</p></details>
+<div class="panel" style="margin-top:18px"><h3>自测：两个 rank 输出相同，还需要 LSE 吗？</h3><p>如果 O₀=O₁，则任意合法质量加权都得到同一个 O。观察到输出相同不足以证明简单平均的实现正确，因为换一组 V 就可能暴露误差。</p><button type="button" id="quiz-button" aria-expanded="false">查看另一个自测</button><div class="quiz-answer" id="quiz-answer">两个分片都只保存 O=10，但一个分片 Z=1、另一个 Z=100。只看 O 无法推断质量比例。如果第三个分片 O=0、Z=9，是否正确保存了 LSE 就会改变合并结果。</div></div>
+</section>
+
+<section class="section" id="sources"><div class="section-head"><span class="num">11</span><h2>公开资料、推导与验证范围</h2></div>
+<p>基础公式直接由 Softmax 推导。通信图、张量 shape、载体打包与底数切换是教学示例：说明可以怎样实现归并，不代表某个模型或线上版本已经采用此布局。</p>
+<ol class="source-list"><li><a href="https://arxiv.org/abs/2205.14135">FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness</a><small>在线 Softmax 与分块 attention 的公开论文。</small></li><li><a href="https://github.com/Dao-AILab/flash-attention">Dao-AILab / flash-attention 官方仓库</a><small>核对具体后端的 LSE dtype、底数和前后向契约时，应固定所使用的版本。</small></li><li><a href="https://arxiv.org/abs/1911.03590">Ring Self-Attention</a><small>进一步阅读分布式 attention 的序列 / KV 通信思路；本页 Ring 图为算法示意。</small></li><li><a href="pp-vpp-training-inference.html">PP / VPP 训练与推理场景指南</a><small>PP 切不同层，KV / Context Parallel 切同一 attention 的 key 集合，LSE 的使用不同。</small></li></ol>
+<div class="callout amber">本页交互用 JavaScript 双精度复算数学示例；已检查分片归并、底数错配、空分片、causal mask 和手机布局。未测 GPU kernel、网络吞吐或实际 backend 的所有边界行为。</div>
+<p class="small">内容日期：2026-11-16；公开版整理与发布检查：2026-11-18。上列链接供进一步查阅，不表示本轮完成其最新版本的性能或兼容性验证。</p></section>
+<footer class="footer">Attention LSE · 2026-11-16 · 可离线使用。交互实验的误差为数学计算误差，不是 GPU benchmark 结果。</footer>
+</main></div>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const LN2 = Math.LN2;
+const colors = ['var(--r0)','var(--r1)','var(--r2)','var(--r3)','var(--r4)','var(--r5)','var(--r6)','var(--r7)'];
+let tokens = Array.from({length:8},(_,i)=>({score:0,value:0,owner:i%2,on:false}));
+let ranks = 2, last = null, onlineStep = 0, commMode = 'a2a';
+const fmt=(x,n=6)=>x===-Infinity?'−∞':x===Infinity?'+∞':Number.isNaN(x)?'NaN':Number.isFinite(x)?x.toFixed(n):'—';
+const ls = a => {const b=a.filter(Number.isFinite);if(!b.length)return -Infinity;const mx=Math.max(...b);return mx+Math.log(b.reduce((s,x)=>s+Math.exp(x-mx),0));};
+function globalState(scores,values,owners,n){
+ const l=ls(scores);const nonempty=l!==-Infinity;
+ const probability=scores.map(s=>Number.isFinite(s)&&nonempty?Math.exp(s-l):0);
+ const direct=probability.reduce((sum,p,i)=>sum+p*values[i],0);
+ const parts=Array.from({length:n},(_,r)=>{
+  const ids=scores.map((s,i)=>i).filter(i=>owners[i]===r&&Number.isFinite(scores[i]));
+  const localL=ls(ids.map(i=>scores[i]));
+  const localO=localL===-Infinity?0:ids.reduce((s,i)=>s+Math.exp(scores[i]-localL)*values[i],0);
+  return {ids,lse:localL,o:localO,w:0};
+ });
+ const maxL=Math.max(...parts.map(p=>p.lse));
+ const a=parts.map(p=>p.lse===-Infinity?0:Math.exp(p.lse-maxL));
+ const denom=a.reduce((s,x)=>s+x,0);
+ parts.forEach((p,r)=>p.w=denom?a[r]/denom:0);
+ const merged=parts.reduce((s,p)=>s+p.w*p.o,0);
+ const nonemptyParts=parts.filter(p=>p.ids.length);
+ const mean=nonemptyParts.length?nonemptyParts.reduce((s,p)=>s+p.o,0)/nonemptyParts.length:0;
+ return {l,direct,merged,mean,parts,probability,nonempty};
+}
+function tokenRows(){
+ $('token-body').innerHTML=tokens.map((t,i)=>`<tr id="row-${i}"><td class="token-name"><span class="token-dot" id="dot-${i}"></span>K${i}</td><td><input type="checkbox" data-i="${i}" data-key="on" ${t.on?'checked':''} aria-label="K${i} 有效"></td><td><select data-i="${i}" data-key="owner" aria-label="K${i} KV owner">${Array.from({length:ranks},(_,r)=>`<option value="${r}" ${t.owner===r?'selected':''}>rank ${r}</option>`).join('')}</select></td><td><input type="number" data-i="${i}" data-key="score" value="${t.score}" step="0.1" aria-label="K${i} 分数"></td><td><input type="number" data-i="${i}" data-key="value" value="${t.value}" step="1" aria-label="K${i} V 分量"></td><td><span class="mono" id="prob-${i}"></span><div class="p-track"><div class="p-fill" id="bar-${i}"></div></div></td></tr>`).join('');
+}
+function setPreset(name){
+ ranks=2;$('rank-count').value='2';$('temperature').value=1;$('common-shift').value=0;$('causal').checked=false;$('query-index').value=7;
+ tokens=Array.from({length:8},(_,i)=>({score:0,value:0,owner:i%2,on:false}));
+ if(name==='dominant'){Object.assign(tokens[0],{score:Math.log(9),value:10,on:true,owner:0});Object.assign(tokens[1],{score:0,value:0,on:true,owner:1});}
+ if(name==='unequal'){for(let i=0;i<4;i++)Object.assign(tokens[i],{score:0,value:i===0?10:0,on:true,owner:i===0?0:1});}
+ if(name==='many'){tokens.forEach((t,i)=>Object.assign(t,{score:4-i,value:[10,8,-1,4,-8,-6,5,1][i],on:true,owner:i<4?0:1}));}
+ if(name==='large'){Object.assign(tokens[0],{score:1000,value:10,on:true,owner:0});Object.assign(tokens[1],{score:999,value:0,on:true,owner:1});}
+ if(name==='empty'){Object.assign(tokens[0],{score:2,value:10,on:true,owner:0});Object.assign(tokens[1],{score:1,value:4,on:true,owner:0});}
+ document.querySelectorAll('[data-preset]').forEach(b=>b.classList.toggle('active',b.dataset.preset===name));
+ tokenRows();render();
+}
+function render(){
+ const tau=Number($('temperature').value), shift=Number($('common-shift').value),causal=$('causal').checked,q=Number($('query-index').value),base=$('lse-base').value;
+ $('temperature-value').textContent=tau.toFixed(2);$('common-shift-value').textContent=shift;
+ const scores=tokens.map((t,i)=>t.on&&(!causal||i<=q)?t.score/tau+shift:-Infinity);
+ const values=tokens.map(t=>t.value),owners=tokens.map(t=>t.owner);
+ last=globalState(scores,values,owners,ranks);last.scores=scores;last.values=values;
+ last.parts.forEach(p=>p.displayL=base==='2'?p.lse/LN2:p.lse);
+ let wrong=0;
+ if(last.nonempty){const finite=last.parts.filter(p=>p.lse!==-Infinity);const mx=Math.max(...finite.map(p=>p.displayL));const weights=finite.map(p=>base==='2'?Math.exp(p.displayL-mx):Math.pow(2,p.displayL-mx));const d=weights.reduce((s,x)=>s+x,0);wrong=finite.reduce((s,p,i)=>s+weights[i]/d*p.o,0);}
+ tokens.forEach((t,i)=>{$(`row-${i}`).classList.toggle('off',!Number.isFinite(scores[i]));$(`dot-${i}`).style.background=colors[t.owner];$(`bar-${i}`).style.background=colors[t.owner];$(`bar-${i}`).style.width=(last.probability[i]*100)+'%';$(`prob-${i}`).textContent=fmt(last.probability[i]);});
+ $('rank-grid').style.gridTemplateColumns=ranks>2?'repeat(2,minmax(0,1fr))':'';
+ $('rank-grid').innerHTML=last.parts.map((p,r)=>`<div class="rank-card"><div class="rank-title"><strong><i class="rank-color" style="background:${colors[r]}"></i>rank ${r}</strong><span class="small">${p.ids.length} 个有效 KV</span></div><div class="rank-stats"><span>局部 LSE（${base==='2'?'log2':'ln'}）<b>${fmt(p.displayL)}</b></span><span>局部 O_r<b>${fmt(p.o)}</b></span><span>全局质量 w_r<b>${(p.w*100).toFixed(3)}%</b></span><span>加权贡献 w_r O_r<b>${fmt(p.w*p.o)}</b></span></div><div class="mass-bar"><i style="background:${colors[r]};width:${p.w*100}%"></i></div></div>`).join('');
+ $('correct-output').textContent=fmt(last.merged);$('direct-output').textContent='直接 Attention = '+fmt(last.direct);$('mean-output').textContent=fmt(last.mean);$('mean-error').textContent='绝对误差 '+fmt(Math.abs(last.mean-last.direct));$('wrong-base-output').textContent=fmt(wrong);$('wrong-base-detail').textContent=(base==='2'?'错误地对 log2 LSE 使用 exp':'错误地对 ln LSE 使用 exp2')+'；误差 '+fmt(Math.abs(wrong-last.direct));
+ const min=Math.min(0,...values),max=Math.max(1,...values),range=max-min;
+ [['correct-dot',last.merged],['mean-dot',last.mean],['wrong-dot',wrong]].forEach(([id,v])=>$(id).style.left=((v-min)/range*100)+'%');
+ document.querySelectorAll('.minv').forEach(e=>e.textContent='V min '+fmt(min,1));document.querySelectorAll('.maxv').forEach(e=>e.textContent='V max '+fmt(max,1));
+ const naive=scores.filter(Number.isFinite).some(s=>!Number.isFinite(Math.exp(s)));
+ $('lab-status').className='status'+(last.nonempty?'':' warn');
+ $('lab-status').textContent=last.nonempty?`全局 LSE（${base==='2'?'log2':'ln'}）= ${fmt(base==='2'?last.l/LN2:last.l)}；Σ rank 质量 = ${fmt(last.parts.reduce((s,p)=>s+p.w,0))}；正确归并与直接 Attention 的误差 = ${Math.abs(last.merged-last.direct).toExponential(2)}。${naive?'直接 exp(score) 会溢出；减最大值后的计算仍正常。':''}`:'全部 KV 被 mask：Z=0，LSE=−∞，普通 Softmax 输出没有定义。本页以 O=0 作为演示占位；生产 backend 需要显式处理此情况。';
+ onlineStep=0;renderOnline();
+}
+function renderOnline(){
+ let m=-Infinity,ell=0,u=0,alpha=0,beta=0,mb=-Infinity,eb=0,ub=0;
+ for(let b=0;b<onlineStep;b++){
+  const ids=[b*2,b*2+1].filter(i=>Number.isFinite(last.scores[i]));
+  mb=ids.length?Math.max(...ids.map(i=>last.scores[i])):-Infinity;
+  eb=ids.reduce((s,i)=>s+Math.exp(last.scores[i]-mb),0);ub=ids.reduce((s,i)=>s+Math.exp(last.scores[i]-mb)*last.values[i],0);
+  if(mb===-Infinity){alpha=ell?1:0;beta=0;continue;}
+  const next=Math.max(m,mb);alpha=ell?Math.exp(m-next):0;beta=Math.exp(mb-next);ell=alpha*ell+beta*eb;u=alpha*u+beta*ub;m=next;
+ }
+ $('online-blocks').innerHTML=Array.from({length:4},(_,i)=>`<div class="block ${i<onlineStep?'done':''} ${i===onlineStep-1?'current':''}">块 ${i+1} · K${i*2} / K${i*2+1}</div>`).join('');
+ $('online-step').textContent=`已处理 ${onlineStep} / 4 块`;$('next-block').disabled=onlineStep===4;$('state-m').textContent=fmt(m,4);$('state-ell').textContent=fmt(ell,6);$('state-u').textContent=fmt(u,6);$('state-o').textContent=ell?fmt(u/ell):'—';
+ $('online-detail').textContent=onlineStep===0?'空状态：m=−∞，ℓ=0，u=0。':`本块 m_b=${fmt(mb,4)}，ℓ_b=${fmt(eb,6)}，u_b=${fmt(ub,6)}；旧状态缩放 α=${fmt(alpha,6)}，新块缩放 β=${fmt(beta,6)}。当前 ln LSE=${ell?fmt(m+Math.log(ell)):'−∞'}。${onlineStep===4&&ell?'全部块处理完；与直接 Attention 误差 '+Math.abs(u/ell-last.direct).toExponential(2)+'。':''}`;
+}
+function renderComm(){
+ const n=Number($('dcp-n').value),h=Number($('dcp-h').value),raw=Number($('dcp-t').value),t=Number.isInteger(raw)&&raw>=1&&raw<=65536?raw:384,d=512,hp=h/n;
+ $('rank-lanes').innerHTML=Array.from({length:n},(_,r)=>`<div class="rank-lane"><strong>KV owner ${r}</strong><br>Q × 本地有效 KV<br>O_${r} / L_${r}<br><span class="mono">[T,H,512] / [T,H]</span></div>`).join('');
+ const bytesO=t*h*d*2,bytesL=t*h*4,packed=bytesO+bytesL;
+ $('comm-bytes').textContent=`每 rank 逻辑 O=${(bytesO/2**20).toFixed(3)} MiB，LSE=${(bytesL/2**10).toFixed(3)} KiB；LSE/O=${(bytesL/bytesO*100).toFixed(6)}%。不含 Q/KV 交换、双缓冲或 staging。`;
+ if(commMode==='a2a'){
+  $('q-node').textContent='同一组 query 的 Q，可供所有 KV owners 使用';$('comm-node').textContent=`按目的 head owner 打包 [${n},${t},${hp},514]，进行一次 O/LSE AllToAll`;$('combine-node').textContent=`每 rank 收到 ${n} 份自己的 ${hp} heads partial → LSE 加权 → O [${t},${hp},512]`;
+  $('comm-title').textContent='先交换 O/LSE，再本地加权';$('comm-explanation').textContent='每个接收 rank 为自己负责的 head 子集收齐所有 KV owners 的 O 和 LSE。先统一分母，再加权合并。O 与统计可位级打包成一次 collective 的 payload。';
+  $('comm-shapes').textContent=`本地 partial O [${t},${h},512] BF16；LSE [${t},${h}] FP32。\n每 rank packed send = [${n},${t},${hp},514] carrier，约 ${(packed/2**20).toFixed(6)} MiB。\nrecv 第 0 维 = KV source owner；第 2 维 = 本目的 rank 的 heads。`;
+  $('comm-code').textContent=`partial_o, partial_lse = local_attention(Q, owned_KV)\n# heads 按目的 rank 划分；FP32 LSE 保留原始字节\nsend = pack_o_and_lse(partial_o, partial_lse)\nrecv = all_to_all(send)\nO_local_heads = lse_weighted_merge(recv.O, recv.LSE)`;
+ }else if(commMode==='agrs'){
+  $('q-node').textContent='同一组 query 的 Q，可供所有 KV owners 使用';$('comm-node').textContent=`AllGather LSE → [${n},${t},${h}] → 得到每个 query/head 的全局 LSE`;$('combine-node').textContent=`O_r × exp(L_r−L_global) → head 轴 ReduceScatter → [${t},${hp},512]`;
+  $('comm-title').textContent='先统一 LSE，再校正 O 做线性求和';$('comm-explanation').textContent='AllGather 拿到所有局部分母统计，各 rank 得到全局 LSE；把自己的已归一化 O 乘上全局质量权重。此时不同 rank 的 corrected O 才可用普通 SUM ReduceScatter，且得到本地 head 子集。';
+  $('comm-shapes').textContent=`gathered LSE [${n},${t},${h}] FP32，约 ${(n*bytesL/2**20).toFixed(3)} MiB。\ncorrected O 在本地按 [H,T,512] FP32 组织。\nReduceScatter 输出 [${hp},${t},512]，再 transpose/cast。`;
+  $('comm-code').textContent=`all_lse = all_gather(local_lse)\nglobal_lse = logsumexp(all_lse, dim=rank)\ncorrected_o = local_o * exp(local_lse - global_lse)\n# 此时是普通线性 SUM，不是未经校正地求和\nO_local_heads = reduce_scatter_sum(corrected_o, axis=head)`;
+ }else{
+  $('q-node').textContent='Ring 示意：Q owner 保留自己的 query，KV 块逐轮到达';$('comm-node').textContent=`KV 块轮转 ${n} 轮；每轮 local Attention 与 m/ℓ/u 状态更新`;$('combine-node').textContent='访问完整有效 KV 并集后，Q owner 输出 O=u/ℓ 与 LSE=m+lnℓ';
+  $('comm-title').textContent='移动 KV，逐轮合并状态';$('comm-explanation').textContent='不必先把全部 partial O 汇集到一个归并阶段。每个 query owner 随 KV 块到达，更新自己的 online softmax 状态。通信量、双缓冲和 overlap 取决于实现；这里展示通用 Ring CP 思路，不属于当前快照的运行验证。';
+  $('comm-shapes').textContent='每轮收到一个远端 KV block；本地 Q 的 O/state 留在 query owner。\nLSE/online state 随自己的 query/head 维护。\n不沿用 A2A 的 [N,T,H/N,D+2] payload 预算。';
+  $('comm-bytes').textContent='Ring 的主通信对象是 KV 块。实际 KV 字节量由 KV heads、压缩 latent、cache dtype、block 长度和通信方向决定，不能用上方 O/LSE A2A 数量替代。';
+  $('comm-code').textContent=`state = empty_online_softmax_state()\nfor kv_block in ring_received_blocks:\n    block_state = attention_tile_state(Q_local, kv_block, mask)\n    state = online_merge(state, block_state)\nO_local_queries = state.u / state.ell\nLSE = state.m + log(state.ell)`;
+ }
+}
+$('token-body').addEventListener('input',e=>{const el=e.target;if(el.dataset.i===undefined)return;const i=Number(el.dataset.i),key=el.dataset.key;const value=key==='on'?el.checked:Number(el.value);if(key!=='on'&&(el.value===''||!Number.isFinite(value)))return;tokens[i][key]=value;document.querySelectorAll('[data-preset]').forEach(b=>b.classList.remove('active'));render();});
+$('presets').addEventListener('click',e=>{const b=e.target.closest('[data-preset]');if(b)setPreset(b.dataset.preset);});
+$('rank-count').addEventListener('change',()=>{ranks=Number($('rank-count').value);tokens.forEach(t=>t.owner%=ranks);tokenRows();render();});
+['temperature','common-shift','causal','query-index','lse-base'].forEach(id=>$(id).addEventListener('input',render));
+$('next-block').addEventListener('click',()=>{if(onlineStep<4){onlineStep++;renderOnline();}});$('reset-blocks').addEventListener('click',()=>{onlineStep=0;renderOnline();});
+$('comm-tabs').addEventListener('click',e=>{const b=e.target.closest('[data-comm]');if(!b)return;commMode=b.dataset.comm;document.querySelectorAll('[data-comm]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));renderComm();});
+['dcp-n','dcp-h','dcp-t'].forEach(id=>$(id).addEventListener('input',renderComm));
+$('quiz-button').addEventListener('click',()=>{const open=$('quiz-answer').classList.toggle('open');$('quiz-button').setAttribute('aria-expanded',String(open));});$('print-page').addEventListener('click',()=>window.print());
+const observer=new IntersectionObserver(entries=>{for(const entry of entries){if(entry.isIntersecting){document.querySelectorAll('.sidebar nav a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+entry.target.id));}}},{rootMargin:'-8% 0px -68% 0px'});document.querySelectorAll('.section').forEach(s=>observer.observe(s));
+// Expose pure math and current results for deterministic offline verification.
+window.LSEExplainer={globalState,getResult:()=>last,getOnlineStep:()=>onlineStep};
+setPreset('dominant');renderComm();
+})();
+</script>
+</body></html>

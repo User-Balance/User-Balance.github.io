@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PP 与 VPP · 训练和推理的选择指南</title>
+<style>
+:root{--ink:#172c40;--muted:#607183;--nav:#102d3e;--teal:#008b83;--blue:#3a70c1;--orange:#c37a21;--line:#dce5eb;--paper:#f3f6f8}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.85 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}a{color:#1765a3;text-underline-offset:4px}button,input,select{font:inherit}button,select{cursor:pointer}button{border:1px solid var(--line);background:white;color:var(--ink);border-radius:8px;padding:7px 13px}button:hover{border-color:var(--teal)}button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #47b8ac;outline-offset:3px}aside{position:fixed;inset:0 auto 0 0;width:244px;background:var(--nav);color:white;padding:32px 25px;overflow:auto}.brand{font:700 26px/1.3 Georgia,serif;letter-spacing:1px}.brand small{display:block;font:12px/2 sans-serif;color:#a5c4cf;margin-top:10px;letter-spacing:2px}nav{margin-top:36px}nav a{display:block;color:#c7dbe2;text-decoration:none;font-size:14px;padding:9px 0}nav a:hover{color:white}.nav-note{border-top:1px solid #315063;padding-top:20px;font-size:12px;color:#adc4cc;margin-top:30px}main{margin-left:244px;padding:44px 4.8vw 75px;max-width:1640px}.hero{background:var(--nav);color:white;border-radius:20px;padding:42px 46px;position:relative;overflow:hidden}.eyebrow{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#70d0c3}.hero h1{font-size:clamp(30px,3.3vw,51px);line-height:1.25;margin:16px 0 22px;max-width:800px;letter-spacing:-1px}.hero p{color:#d1e1e8;max-width:760px;margin-bottom:0}.hero .pill{color:#9edfd4;background:#204753}.pill{display:inline-block;font-size:12px;padding:2px 10px;border-radius:30px;background:#e8f2f3;color:var(--teal);margin-right:7px}section{margin-top:34px;background:white;border:1px solid var(--line);border-radius:16px;padding:30px 34px;min-width:0}h2{font-size:28px;line-height:1.4;margin:5px 0 18px}h3{font-size:19px;line-height:1.5;margin:15px 0 10px}p{margin:10px 0 16px}.kicker{color:var(--teal);font-size:12px;font-weight:700;letter-spacing:1.5px}.muted,.caption{color:var(--muted);font-size:13px}.grid2,.grid3{display:grid;gap:18px}.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}.card{border:1px solid var(--line);border-radius:12px;padding:20px;min-width:0}.card p:last-child{margin-bottom:0}.card h3{margin-top:0}.callout{background:#edf6f5;border-left:4px solid var(--teal);padding:15px 20px;border-radius:0 10px 10px 0;margin:20px 0}.warn{background:#fff5e7;border-color:var(--orange)}.formula{background:#f0f4f8;border-radius:10px;padding:15px 19px;overflow-wrap:anywhere;font:14px/1.9 SFMono-Regular,Consolas,monospace;margin:16px 0}.table-wrap{overflow:auto;max-width:100%;margin:16px 0}table{border-collapse:collapse;width:100%;min-width:690px;font-size:14px;text-align:left}th{background:#eaf0f4;color:#34536b;font-size:13px}th,td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}tr:last-child td{border-bottom:0}.good{color:#00766e;font-weight:650}.care{color:#a76a20;font-weight:650}.bad{color:#a54d51;font-weight:650}.mapping{display:grid;gap:10px;margin-top:14px}.maprow{display:grid;grid-template-columns:80px 1fr;gap:12px;align-items:center}.chunks{display:flex;gap:9px}.chunk{flex:1;text-align:center;background:#e8f2f3;border:1px solid #badbd7;border-radius:8px;padding:10px 5px;font-size:13px}.chunk.secondary{background:#edf0fa;border-color:#ccd4ef}.route{padding:14px;background:#f1f4f8;border-radius:8px;font:13px/1.8 monospace;overflow-wrap:anywhere}.flow{display:flex;gap:12px;align-items:stretch;margin:20px 0}.flow .node{border:1px solid #b9d7dc;background:#eef6f7;padding:14px;flex:1;border-radius:10px;font-size:14px}.arrow{align-self:center;color:var(--teal);font-size:23px}.controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;background:#f3f6f8;padding:20px;border-radius:12px;margin-top:18px}.controls label{font-size:13px;min-width:0;color:#486277}.controls select,.controls input{display:block;width:100%;margin-top:6px;background:white;border:1px solid #cddbe4;border-radius:7px;padding:7px;color:var(--ink);min-width:0}.controls .span2{grid-column:span 2}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:22px 0}.stat{border:1px solid var(--line);border-radius:10px;padding:15px}.stat b{display:block;font-size:25px;color:var(--teal);line-height:1.4}.stat span{font-size:12px;color:var(--muted)}.tabs{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}.tabs button.active{background:var(--teal);border-color:var(--teal);color:white}.legend{display:flex;gap:18px;font-size:12px;color:var(--muted);flex-wrap:wrap}.swatch{display:inline-block;width:14px;height:10px;border-radius:3px;margin-right:6px}.swatch.f{background:#008f88}.swatch.b{background:#5378bd}.swatch.idle{background:#e9eff4}.timeline{background:#f7f9fb;border-radius:10px;padding:12px;overflow:auto}.timeline svg{display:block}.timeline svg text{font-family:SFMono-Regular,Consolas,monospace}.schedule-header{display:flex;justify-content:space-between;gap:15px;align-items:center}.schedule-header h3{margin-bottom:8px}.bar{height:12px;border-radius:10px;background:#e7edf1;overflow:hidden;margin:8px 0}.bar i{display:block;background:var(--teal);height:100%;transition:width .2s}.bar.blue i{background:var(--blue)}.recommendation{background:#edf6f5;border-radius:10px;padding:18px;margin-top:18px}.number{font-size:24px;color:var(--teal);font-weight:700;margin-right:10px}.steps{counter-reset:step}.steps .step{display:grid;grid-template-columns:38px 1fr;border-bottom:1px solid var(--line);padding:15px 0}.steps .step:before{counter-increment:step;content:counter(step);font-size:23px;color:var(--teal)}.step h3{margin:0}.step p{margin:5px 0}details{border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0}summary{font-weight:600;cursor:pointer}details p:last-child{margin-bottom:0}ul{padding-left:22px}li{margin:7px 0}.source-list li{font-size:14px}.source-meta{display:block;color:var(--muted);font-size:12px;overflow-wrap:anywhere}.foot{font-size:12px;color:var(--muted);text-align:center;margin-top:30px}code{font-family:SFMono-Regular,Consolas,monospace;font-size:.88em;overflow-wrap:anywhere}.nowrap{white-space:nowrap}@media(min-width:1750px){main{margin-right:auto}}@media(max-width:1150px){aside{width:210px;padding:25px 20px}main{margin-left:210px;padding:30px 25px}.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.grid3{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{padding:30px}section{padding:25px}}@media(max-width:780px){aside{position:static;width:auto;padding:18px 22px}.brand{font-size:22px}.brand small,.nav-note{display:none}nav{display:flex;overflow:auto;gap:17px;margin:10px 0 0;white-space:nowrap}nav a{font-size:12px;padding:3px 0}main{margin:0;padding:20px 14px 45px}.hero{padding:27px 23px;border-radius:14px}section{padding:23px 19px;margin-top:20px}.grid2{grid-template-columns:1fr}h2{font-size:24px}.flow{flex-direction:column}.arrow{transform:rotate(90deg);font-size:20px}.controls{padding:14px;gap:12px}.stat{padding:12px}.stat b{font-size:22px}.chunks{flex-direction:column}.maprow{grid-template-columns:64px 1fr}.schedule-header{display:block}.formula{font-size:12px;padding:13px}.hero h1{font-size:32px}.caption{overflow-wrap:anywhere}}@media print{aside,button,.controls{display:none}main{margin:0;padding:0;max-width:none}body{font-size:11px;background:white}section{break-inside:avoid;margin-top:15px;padding:20px}.hero{padding:25px}h2{font-size:20px}.grid2{grid-template-columns:1fr 1fr}.table-wrap{overflow:visible}table{min-width:0}.timeline svg{max-width:100%;height:auto}.hero{print-color-adjust:exact}a{color:inherit}.foot{font-size:9px}}
+</style><link rel="canonical" href="https://user-balance.github.io/pp-vpp-training-inference.html">
+<meta name="portal-title" content="PP / VPP：训练与推理场景指南">
+<meta name="portal-category" content="AI Infra">
+<meta name="portal-description" content="分别判断训练、Prefill 与 Decode 的 PP/VPP 适用场景，用流水线时间图比较气泡、通信和内存预算。">
+<meta name="portal-date" content="2026-11-18">
+<meta name="portal-tags" content="PP,VPP,流水线并行,Microbatch,1F1B,Megatron,Prefill,Decode,显存,通信">
+<link id="portal-article-nav-style" rel="stylesheet" href="assets/article-nav.css">
+</head><body>
+<nav id="portal-archive-nav" class="archive-nav" aria-label="学习手册导航"><a href="index.html">← 技术学习手册 · 返回门户</a><span>AI Infra · 资料日期 2026-11-18</span></nav>
+
+<aside><div class="brand">PP / VPP<small>PARALLELISM FIELD GUIDE</small></div><nav aria-label="目录"><a href="index.html">← 回到主页</a><a href="attention-lse.html">Attention LSE 指南 ↗</a>
+<a href="#decision">01 · 先看适用场景</a><a href="#mapping">02 · 物理段与虚拟段</a><a href="#training">03 · 训练调度与气泡</a><a href="#lab">04 · 交互式流水线实验</a><a href="#inference">05 · Prefill 与 Decode</a><a href="#memory">06 · 显存与机器内存</a><a href="#combine">07 · 与 TP / DP / EP 配合</a><a href="#workflow">08 · 实际选型与测试</a><a href="#faq">09 · 常见误区</a><a href="#sources">10 · 依据与验证边界</a></nav><div class="nav-note">2026.11.18 · 中文技术指南<br>离线可用 / 可交互 / 可打印<br>调度模型 ≠ GPU benchmark</div></aside>
+<main><header class="hero"><div class="eyebrow">TRAINING → PREFILL → DECODE</div><h1>什么时候用 PP，<br>什么时候值得加 VPP？</h1><p>PP 解决“模型如何跨设备放下和执行”；VPP 调整同一组设备上的层段与调度，让训练流水线有机会少等一会儿。选择取决于<strong>显存、可流水化工作量、网络与延迟目标</strong>。</p><p><span class="pill">PP：按层分区</span><span class="pill">VPP：每卡多个虚拟段</span><span class="pill">训练 / 推理分别判断</span></p></header>
+
+<section id="decision"><div class="kicker">01 / SCENARIO FIRST</div><h2>先用场景决定方向</h2>
+<div class="grid3"><div class="card"><h3>训练：容量与大规模扩展</h3><p>模型、梯度和优化器状态放不下，或 TP 跨节点通信过重：考虑 PP。已有 PP 且气泡明显、每段计算足够大：评估 VPP。</p></div><div class="card"><h3>Prefill：长输入与吞吐</h3><p>多请求或支持正确依赖的输入分块能形成流水线。长上下文场景可评估 PP + chunked prefill；是否降低 TTFT 要实测。</p></div><div class="card"><h3>Decode：容量与并发</h3><p>模型放不下时 PP 很有价值；高并发可填流水线。低并发、严格逐 token 延迟目标下，增加 PP / VPP 往往需要谨慎。</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>任务 / 约束</th><th>PP</th><th>VPP</th><th>主要判断依据</th></tr></thead><tbody>
+<tr><td>全参数预训练；跨多节点；训练状态超容量</td><td class="good">优先考虑</td><td class="good">PP 气泡大时评估</td><td>分层后的状态能放下；microbatch 足够；网络能承担边界通信。</td></tr>
+<tr><td>训练 PP 已开启，m 与 p 接近</td><td>先调平衡与 microbatch</td><td class="good">通常值得试验</td><td>有可节省的气泡，同时 chunk 仍然有足够计算量。</td></tr>
+<tr><td>小模型；单卡或单机 TP 已满足容量；少量 microbatch 微调</td><td class="care">收益可能有限</td><td class="care">通常低优先级</td><td>流水线启动、通信与框架复杂度可能超过收益。</td></tr>
+<tr><td>模型大到一个 TP / EP 组放不下的推理服务</td><td class="good">容量驱动</td><td>不会额外缩小同卡总权重</td><td>先让最大 stage 放下权重、KV 和 workspace，再优化吞吐。</td></tr>
+<tr><td>长 prompt，支持 causal chunked prefill</td><td class="good">值得评估</td><td class="care">依赖推理引擎支持</td><td>分块的层内 KV 依赖正确；计算与通信可重叠；TTFT / 吞吐联合测量。</td></tr>
+<tr><td>高并发 decode；看重总 tokens/s</td><td class="good">可通过请求批次填充</td><td class="care">不能套用训练收益</td><td>检查每个 stage 的队列、KV 容量及 p99 ITL。</td></tr>
+<tr><td>单请求 / 低并发 decode；追求最低 ITL</td><td class="care">尽量小，但服从容量</td><td class="bad">通常不宜优先</td><td>下一个 token 必须等当前 token 完成，虚拟段增加串行传输边界。</td></tr>
+</tbody></table></div><p class="caption">p = 物理 PP stage 数；m = 每个数据并行副本每轮的 microbatch 数。以上是机制驱动的选型建议，最终以相同任务和 SLA 的测试结果为准。</p></section>
+
+<section id="mapping"><div class="kicker">02 / MODEL PLACEMENT</div><h2>PP 与 VPP 到底切了什么？</h2><p>PP（Pipeline Parallelism，流水线并行）按层切模型；VPP（Virtual Pipeline Parallelism，虚拟流水线并行）把每个物理 stage 再分成多个 model chunk。以 32 层、4 个物理 stage 为例。一个 stage 可以是一张 GPU，也可以是多张 GPU 组成的 TP / EP 组；图中的“GPU”先用单卡方便理解。</p>
+<div class="grid2"><div class="card"><h3>普通 PP：每卡一个连续层段</h3><div class="mapping">
+<div class="maprow"><b>GPU 0</b><div class="chunks"><div class="chunk">L0–L7</div></div></div><div class="maprow"><b>GPU 1</b><div class="chunks"><div class="chunk">L8–L15</div></div></div><div class="maprow"><b>GPU 2</b><div class="chunks"><div class="chunk">L16–L23</div></div></div><div class="maprow"><b>GPU 3</b><div class="chunks"><div class="chunk">L24–L31</div></div></div></div><p class="route">Forward: G0 → G1 → G2 → G3</p></div>
+<div class="card"><h3>PP4 × VPP2：每卡两个虚拟段</h3><div class="mapping">
+<div class="maprow"><b>GPU 0</b><div class="chunks"><div class="chunk">C0 · L0–L3</div><div class="chunk secondary">C1 · L16–L19</div></div></div><div class="maprow"><b>GPU 1</b><div class="chunks"><div class="chunk">C0 · L4–L7</div><div class="chunk secondary">C1 · L20–L23</div></div></div><div class="maprow"><b>GPU 2</b><div class="chunks"><div class="chunk">C0 · L8–L11</div><div class="chunk secondary">C1 · L24–L27</div></div></div><div class="maprow"><b>GPU 3</b><div class="chunks"><div class="chunk">C0 · L12–L15</div><div class="chunk secondary">C1 · L28–L31</div></div></div></div><p class="route">Forward: G0.C0 → G1.C0 → G2.C0 → G3.C0<br>→ G0.C1 → G1.C1 → G2.C1 → G3.C1</p></div></div>
+<div class="callout"><strong>两种分配都让每卡持有 8 层。</strong>VPP2 把 8 层拆成两个 4 层 chunk，每卡总层数与总计算并没有再次减半。同一 GPU 上的 chunk 共享计算资源；调度把不同 microbatch 的前后向插入空闲机会。</div>
+<p>在这个 round-robin 示例中，普通 PP 每个 microbatch 的前向有 3 次跨卡边界，VPP2 有 7 次。训练还要逆向发送激活梯度；这就是“更少气泡”和“更多通信”的交换。实际框架可支持其他 layer layout，边界数量与拓扑要按真实布局重新算。</p></section>
+
+<section id="training"><div class="kicker">03 / TRAINING SCHEDULES</div><h2>训练中：GPipe、1F1B 与交错 1F1B</h2><div class="flow"><div class="node"><strong>Forward</strong><br>逐层产生激活，末段计算 loss</div><div class="arrow">→</div><div class="node"><strong>Backward</strong><br>激活梯度逐段反向返回</div><div class="arrow">→</div><div class="node"><strong>梯度累积 / 同步 / 更新</strong><br>同一轮 m 个 microbatch 后完成优化器 step</div></div>
+<div class="table-wrap"><table><thead><tr><th>调度</th><th>怎么执行</th><th>主要价值</th><th>主要成本</th></tr></thead><tbody><tr><td>GPipe / Fill–Drain</td><td>所有 microbatch 前向完成后，执行所有反向。</td><td>容易理解，形成前向和反向的流水波。</td><td>保留很多未反传激活；每轮填充和排空。</td></tr><tr><td>非交错 1F1B</td><td>Warmup 后，在本 stage 交替执行一个前向、一个反向；最后 cooldown。</td><td>反向更早消费激活，通常比 GPipe 降低激活驻留。</td><td>仍有流水线两端的气泡；不是同卡前后向同时执行。</td></tr><tr><td>VPP / Interleaved 1F1B</td><td>每卡多个 chunk，交错不同 chunk 与 microbatch 的前后向。</td><td>理想平衡情况下，缩短气泡对应的 chunk 时间。</td><td>更多边界通信；更复杂的激活队列、梯度同步与参数布局。</td></tr></tbody></table></div>
+<div class="formula">全局 batch（普通 DP×TP×PP，无特殊复制）：B_global = DP × b_micro × m<br>普通 PP 理想训练时间：T ≈ (m + p − 1) × (t_F + t_B)<br>气泡相对有效计算的开销：O_bubble ≈ (p − 1) / m<br>气泡占总时间的比例：f_idle ≈ (p − 1) / (m + p − 1)<br>VPP 常用理想近似：O_bubble,VPP ≈ (p − 1) / (m × v)</div>
+<p>例如 p=8、m=8 时，普通 PP 的理想空闲占比约 46.7%；m=64 时降到约 9.9%。v=2 的理想气泡缩减常用 1/v 估计，但<strong>并非每个实际 schedule 都严格达到</strong>：前后向耗时、group size、尾组、通信与非均匀层会改变结果。</p>
+<div class="grid2"><div class="card"><h3>什么情况适合训练 VPP？</h3><p>已经需要 PP，普通 1F1B 的 GPU 空闲明显；允许足够的 microbatch；拆小后的 chunk 仍能高效运行；P2P 网络快且能重叠；训练框架支持该模型和布局。</p></div><div class="card"><h3>什么情况应先优化别处？</h3><p>m 很大、气泡已小；通信或 EP all-to-all 已是瓶颈；chunk 太小造成 kernel / 通信启动开销占主导；stage 不平衡严重；全局 batch 限制导致流水线无法填充。</p></div></div>
+<p class="caption">这里讨论同步、每轮更新一次参数的训练 PP。异步流水线、weight stashing、Zero Bubble 及前后向重叠属于其他调度设计，不能直接套用本页公式。训练 m 在固定全局 batch 下增大时，b_micro 需相应减小，可能损害 GEMM 效率。</p></section>
+
+<section id="lab"><div class="kicker">04 / INTERACTIVE LAB</div><h2>亲手调一次流水线</h2><p>上半部按固定提交的 Megatron 调度顺序生成依赖有效的时间线。下半部加一个透明的通信敏感性模型。调度视图忽略通信，以隔离气泡；<strong>这不是硬件预测或实测性能</strong>。</p>
+<div class="controls"><label>物理 stage p<select id="p"><option>2</option><option selected>4</option><option>8</option></select></label><label>每轮 microbatch m<select id="m"><option>4</option><option selected>8</option><option>16</option><option>32</option><option>64</option></select></label><label>每卡虚拟段 v<select id="v"><option>1</option><option selected>2</option><option>4</option></select></label><label>每 stage F+B / microbatch（ms）<input id="compute" type="number" min="0.1" max="1000" step="0.1" value="12"></label><label>Microbatch 样本数 b<input id="batch" type="number" min="1" max="64" step="1" value="1"></label><label>每样本 token 数 s<input id="tokens" type="number" min="1" max="131072" step="1" value="512"></label><label>Hidden size h<input id="hidden" type="number" min="64" max="65536" step="64" value="8192"></label><label>边界元素字节数 d<select id="bytes"><option>1</option><option selected>2</option><option>4</option></select></label><label>P2P 有效带宽（GB/s）<input id="bandwidth" type="number" min="0.1" max="1000" step="0.1" value="25"></label><label>每次消息启动延迟（μs）<input id="latency" type="number" min="0" max="1000" step="1" value="10"></label><label class="span2">通信隐藏比例（假设） <span id="overlap-label">50%</span><input id="overlap" type="range" min="0" max="100" value="50"></label></div>
+<p id="lab-assumptions" class="caption"></p><div class="stats"><div class="stat"><b id="pp-idle"></b><span>普通 1F1B · 调度空闲占比</span></div><div class="stat"><b id="vpp-idle"></b><span>VPP · 调度空闲占比</span></div><div class="stat"><b id="traffic-ratio"></b><span>VPP / PP · 边界通信量比</span></div><div class="stat"><b id="same-memory">1.00×</b><span>VPP / PP · 均衡层权重总量</span></div></div>
+<div class="tabs" aria-label="调度切换"><button data-schedule="gpipe">GPipe</button><button data-schedule="pp">普通 1F1B</button><button data-schedule="vpp" class="active">VPP 交错 1F1B</button></div>
+<div class="schedule-header"><h3 id="schedule-title"></h3><div class="legend"><span><i class="swatch f"></i>Forward</span><span><i class="swatch b"></i>Backward</span><span><i class="swatch idle"></i>Idle / Bubble</span></div></div><div id="timeline" class="timeline" aria-label="GPU 调度时间线"></div><p class="caption">色块标签：microbatch 编号 · chunk 编号。悬停可看执行区间；同一行始终串行。横向滚动查看长时间线。</p><p id="schedule-summary" class="caption"></p>
+<div class="grid2"><div class="card"><h3>忽略通信：隔离气泡收益</h3><span>普通 PP：<strong id="pp-time"></strong></span><div class="bar blue"><i id="pp-bar"></i></div><span>VPP：<strong id="vpp-time"></strong></span><div class="bar"><i id="vpp-bar"></i></div><p id="bubble-saved"></p></div><div class="card"><h3>加入通信敏感性项</h3><p>普通 PP：<strong id="pp-total"></strong><br>VPP：<strong id="vpp-total"></strong></p><p id="comm-summary" class="muted"></p></div></div><div id="recommendation" class="recommendation" aria-live="polite"></div>
+<details><summary>计算器公式、假设与局限</summary><div class="formula">边界 tensor 字节：S = b × s × h × d<br>单次发送成本：τ = α + S / BW<br>训练边界消息总数：N_PP = 2m(p−1)，N_VPP = 2m(pv−1)<br>最忙 rank 的每 microbatch 发送次数：k = max_rank{outgoing forward + outgoing backward}<br>暴露通信代理项：ΔT = (1−overlap) × m × k × τ<br>敏感性时间：T_proxy = T_schedule + ΔT</div><p>按 round-robin layer layout，每次边界同形状、同 dtype，前向与激活梯度大小相等；k 从布局计数。BW 使用十进制 GB/s，容量用二进制 MiB。通信代理项用最忙 rank 的总发送工作量，不模拟收发 rendezvous、链路竞争、TP / EP collective 和方向差异；并非精确 critical path。</p><p>调度中 F:B=1:2，均衡 stage、均衡 chunk，单个 chunk 时间按 1/v 分割；m 自动保持不小于 p 且为 p 的倍数，group size=p，以满足该源码版本的 VPP group 限制。无优化器 step、DP 同步、重计算或网络耗时。计算器允许改变通信 tensor 大小而保持计算时间不变，用于敏感性探索；实际 shape 改动应重新测量 compute time。</p><p>普通 PP / VPP 比较使用同一物理设备数、同一 m、同一 tensor shape 和总计算量。GPipe 与非交错 1F1B 在理想模型中气泡可能相近，但激活驻留方式不同。网页检查依赖和不重叠，仅证明教学模型一致。</p></details></section>
+
+<section id="inference"><div class="kicker">05 / TWO DIFFERENT INFERENCE PHASES</div><h2>推理中，Prefill 与 Decode 必须分开看</h2>
+<div class="grid2"><div class="card"><h3>Prefill：有输入分块，才有流水机会</h3><p>一次处理很多 prompt token。多请求批次可以像工件一样经过 stage。对单个 causal prompt，支持分块的引擎可以让早期 chunk 进入下游 stage，后续 chunk 在上游继续执行。</p><p>关键依赖：同一层的后续 chunk 必须能看到前缀 chunk 的 KV；KDA / 其他状态层还需传递正确的前缀状态。不能把每个 chunk 当成互相独立的完整 attention。</p><div class="route">Stage 0: chunk 0 → chunk 1 → chunk 2<br>Stage 1: 等待 → chunk 0 → chunk 1 → chunk 2<br>Stage 2: 等待 → 等待 → chunk 0 → chunk 1 …</div><p class="caption">示意忽略通信。每层按 chunk 顺序维护 KV / 状态；跨层允许流水。</p></div><div class="card"><h3>Decode：下一 token 不能提前执行</h3><p>同一请求的 token t 经全部层得到 logits、采样出 token 后，才能执行 token t+1。把层分成更多虚拟段，无法解除这个依赖。</p><div class="route">请求 A：token t → 所有 stage → 采样<br>→ token t+1 → 所有 stage → 采样<br><br>高并发：用 B、C、D 等请求 / 批次<br>占据 A 已经过的 stage</div><p>多个独立请求可以提升稳态吞吐，但要承受排队与调度开销。Decode 常受权重读带宽、KV 读写或小 batch 效率影响；过小 microbatch 可能放大这些问题。</p></div></div>
+<div class="formula">仅前向、平衡 p 段、m 个独立工作项：T ≈ (m+p−1) × t_stage<br>单请求单 token：T_token ≈ Σ_j compute_j + Σ_boundary exposed_P2P + sampling / return<br>固定总层计算下，VPP 增加逻辑边界，不能把单 token 路径简单除以 v。</div>
+<div class="callout warn"><strong>“Forward-only VPP 可执行”不等于“服务 decode 一定更快”。</strong>Megatron 源码有 forward_only 路径，此时全部工作项走 forward warmup；训练交错 1F1B 的反向填空机会已经不存在。推理要按实际引擎的请求调度、batch 组织与链路成本重新评估。</div>
+<h3>长上下文 PP：为什么 chunk 大小也很关键？</h3><p>chunk 太大：工件少，难填满流水线，峰值 activation / workspace 可能大。chunk 太小：GEMM 规模缩小、消息数和 CPU 调度开销增加。随着 prefix 增长，同样 token 数的 chunk 运行时间也可能变化，导致 stage 等待传播。动态 chunking 可以尝试对齐工作项时间；是否有效要用目标模型和设备重新测量。</p><p class="caption">上述 chunked prefill 图为依赖示意；Megatron forward_only 机制见<a href="#sources">固定官方源码</a>。PP 在层边界传输中间 hidden state / proxy tensor；它不等同于 CP 中跨卡合并同一层 attention 的部分输出和 LSE。</p></section>
+
+<section id="memory"><div class="kicker">06 / CAPACITY BUDGET</div><h2>PP 能分摊哪些内存，VPP 又改变哪些？</h2>
+<div class="table-wrap"><table><thead><tr><th>内存项</th><th>增加物理 PP stage</th><th>固定 p 增加 VPP chunk</th></tr></thead><tbody><tr><td>GPU 权重</td><td>每 stage 只持有分配的层；理想均衡约 1/p。</td><td>同卡 chunk 权重求和；理想总量基本不变。</td></tr><tr><td>训练梯度 / 优化器 / master weights</td><td>层归属随 PP 切分；DP sharding 再按配置处理。</td><td>总层归属未减少；可能改变 bucket、同步与 padding。</td></tr><tr><td>训练激活</td><td>由层数、未完成 backward 数、调度和 checkpointing 共同决定。</td><td>chunk 小，但驻留队列改变；不能普遍承诺降到 1/v。</td></tr><tr><td>推理 KV / recurrent state</td><td>一般由本 stage 的 attention / 状态层持有；TP / CP 布局另算。</td><td>层总数不变；请求 / microbatch 驻留数可能变化。</td></tr><tr><td>通信 buffer / workspace / graph pool</td><td>增加 buffer、异步工作和 stage 端点管理成本。</td><td>更多 chunk / 消息队列 / graph，可能增加峰值。</td></tr><tr><td>CPU RAM / 加载峰值</td><td>取决于实际 rank 是否只读取自己 shard、共享 mmap 或全模型 staging。</td><td>不会自动按 v 降低；若每 rank 全量读取 checkpoint，CPU 峰值仍大。</td></tr></tbody></table></div>
+<div class="formula">GPU_j = Σ_(本 rank 持有的层) [权重 + 梯度 + 优化器状态 + KV / 状态]<br>        + peak_activation_j + workspace_j + comm_buffers_j + graphs_j + reserve_j<br>节点 CPU RAM = Σ_(本节点 rank 的独占加载 / offload / pinned buffers)<br>             + 共享页实际占用 + OS / 服务预留<br>可运行条件：每一张卡 / 每一个节点的峰值都小于各自可用容量。</div>
+<h3>一个可复算的训练容量示例</h3><p>仅作为示例：70B 参数、BF16 参数 2 B、FP32 梯度 4 B、FP32 master 4 B、Adam m/v 共 8 B，总持久训练状态为 18 B/参数。若无 TP、无 DP sharding、均匀 PP4，每卡基础状态 ≈ 70×10⁹×18/4/2³⁰ = <strong>293.37 GiB</strong>，尚未计激活与临时空间。VPP2 仍约 293.37 GiB；PP8 的均匀基础值约 146.68 GiB。</p><p>这不是所有训练配方的固定字节数：梯度 dtype、优化器、master weights、FP8 元数据、ZeRO / FSDP 都会改变状态量。LoRA 的可训练状态小很多，但基座权重与激活仍需预算。</p>
+<div class="callout"><strong>不要用总权重 / 总 GPU 数作为最终容量判断。</strong>Embedding、LM head、不同层类型、shared expert 和复制张量会让 stage 不均匀；应计算最大 stage / rank。优先按实际计算时间与内存双重平衡，而不是只按层数平均。</div>
+<h3>同样的规则也适用于推理权重</h3><p>教学示例：400B 参数、BF16 权重 2 B，均匀 PP4、无其他 sharding，则每 stage 基础权重约 400×10⁹×2/4/2³⁰ = <strong>186.26 GiB</strong>。固定这 4 个物理 stage 增加 VPP2，每 stage 的两个 chunk 加起来仍约 186.26 GiB，KV / 状态、workspace 与复制张量需另算。</p><p class="caption">这里使用理想均匀的虚构模型来复算容量；不是具体机器环境或线上模型报告。</p></section>
+
+<section id="combine"><div class="kicker">07 / PARALLELISM COMPOSITION</div><h2>通常是 PP 配合其他并行</h2><div class="table-wrap"><table><thead><tr><th>策略</th><th>与 PP 的关系</th><th>选型重点</th></tr></thead><tbody><tr><td>TP / Tensor Parallel</td><td>一个 stage 内拆矩阵；PP 跨 stage 拆层。</td><td>常见做法是 TP 放快速互联域，PP 跨域；但现代跨节点 fabric 可能足以支撑大 TP，应比较通信与延迟。</td></tr><tr><td>DP / Data Parallel</td><td>复制整个 PP×TP 流水线处理不同数据。</td><td>固定全局 batch 时增大 DP 会减少每流水线 m，气泡可能更大；推理副本增加需额外复制模型。</td></tr><tr><td>EP / Expert Parallel</td><td>在各 PP stage 的 MoE 层分配专家。</td><td>检查 EP 是否是 DP / TP rank 的重新分组；不能默认将 EP 再乘一次算 GPU 数。EP all-to-all 与 PP P2P 可能争用网络。</td></tr><tr><td>CP / Context Parallel</td><td>切同一层的序列 / KV 工作；PP 切不同层。</td><td>长上下文容量与算力的另一条路线；并非所有推理框架和模型支持 PP+CP 的组合。</td></tr><tr><td>ZeRO / FSDP / Activation Checkpointing</td><td>进一步降低状态或激活内存。</td><td>新 all-gather / 重计算会改变 stage 时间与 VPP 的最佳 chunk 粒度；需重测。</td></tr></tbody></table></div>
+<div class="formula">普通三维训练并行示例：GPU 数 = DP × TP × PP<br>例：DP4 × TP8 × PP4 = 128 GPUs<br>VPP2：仍然 128 GPUs，每物理 stage 有 2 个 model chunk。<br>EP / CP / AttentionDP 是否额外占设备，需读取真实 process-group 布局。</div>
+<p>如果 stage 本身是 TP8，跨 stage 传的是各 rank 对应的 hidden tensor 或 shard，具体随 SP / TP 布局变化；本页计算器的 S 是“一条 P2P 消息”的假设大小，不是整个 stage 组的聚合流量。</p></section>
+
+<section id="workflow"><div class="kicker">08 / PRACTICAL WORKFLOW</div><h2>实际部署：先满足容量，再比较收益</h2><div class="steps"><div class="step"><div><h3>确定目标与负载</h3><p>训练：固定模型、token/global batch 和收敛配方，优化 step time / MFU。Prefill：固定输入长度分布，比较 TTFT 和吞吐。Decode：固定并发、上下文与输出长度，比较 ITL、p99 和 tokens/s。</p></div></div><div class="step"><div><h3>计算每 rank 与每节点峰值</h3><p>先选能容纳全部状态的最小合理 PP；把 endpoint、专家复制、非均匀层、KV 和加载峰值计入。VPP 作为调度优化，不能补救基础权重超容量。</p></div></div><div class="step"><div><h3>建立普通 PP 基线</h3><p>训练用非交错 1F1B；调平 stage、m 与 microbatch size。推理调 chunk size、batch depth 和并发。记录每 stage 计算、等待、P2P 时长、峰值显存与网络利用率。</p></div></div><div class="step"><div><h3>只在存在可节省气泡时试 VPP</h3><p>从 v=2 比较，再尝试更细粒度；保持模型、GPU、全局 batch 与 dtype 相同。若通信等待、chunk 启动开销或显存增加抵消气泡收益，回到普通 PP 或重新切层。</p></div></div><div class="step"><div><h3>验证最终目标，而不是只看时间线漂亮</h3><p>训练验证 loss / 梯度与保存恢复；推理验证 logits / 输出和 KV / 状态正确性。记录稳定重复测量和 p95 / p99；TTFT、ITL 与吞吐可能朝不同方向变化。</p></div></div></div>
+<h3>核对框架配置，避免同名术语误用</h3><p>推理引擎的 PP stage 数、microbatch size 和异步 batch depth 是不同配置。<strong>batch depth 描述流水线中可驻留的批次，不等于每 stage 的 VPP model chunk 数。</strong>CP 的 interleave 也可能指序列分片，不能据此判断支持 VPP。</p><p>开启训练 VPP 应确认模型以多个 chunk 构建，并选择支持该布局的交错调度；推理还需确认请求、KV / recurrent state、采样回传和 CUDA Graph 的兼容性。只有某个 PP 参数存在，不足以证明该版本支持 VPP。</p><p class="caption">参考<a href="#sources">公开框架资料与固定 Megatron 源码</a>；本页不提供未经实际版本核对的服务启动命令。</p></section>
+
+<section id="faq"><div class="kicker">09 / CHECK YOUR UNDERSTANDING</div><h2>六个容易混淆的问题</h2>
+<details><summary>PP 能让一个样本的不同层同时执行吗？</summary><p>同一个 microbatch 的普通前向层之间有依赖，必须先有上层输出。PP 并行来自不同 microbatch、请求或有序 prompt chunk 占据不同 stage；不是让依赖层凭空同时计算。</p></details>
+<details><summary>VPP2 是否等于 PP 数乘以 2，显存再除以 2？</summary><p>逻辑层段更多，但物理设备没有增加。每卡多个 chunk 的权重必须相加，计算资源也共享。VPP 主要改变调度和通信，基础模型状态并没有按 v 再分摊一次。</p></details>
+<details><summary>训练 microbatch 越多越好吗？</summary><p>多工件可以减少相对气泡，但固定全局 batch 下 microbatch size 会变小，可能降低算子效率；动态变更全局 batch 还会影响优化配方。要联合检查 step time、显存与收敛。</p></details>
+<details><summary>VPP 总能减少 activation memory 吗？</summary><p>不能。虽然 chunk 较小，但未完成 backward 的 chunk 数与 warmup 队列会变。重计算、异步通信 buffer、梯度桶和图池共同决定峰值，应实测各 rank。</p></details>
+<details><summary>Chunked prefill / 多 stream / continuous batching 就是 VPP 吗？</summary><p>不是。Chunked prefill 切输入工作量，多 stream 处理执行重叠，continuous batching 管理请求批次；VPP 是把每个物理 stage 的模型层切成多个虚拟段并调度它们。它们可以配合，但概念不同。</p></details>
+<details><summary>什么时候 PP 会降低低并发推理延迟？</summary><p>是否降低取决于基线。若替代跨慢链路的大 TP、CPU offload 或超容量方案，PP 可能改善延迟；若基线已是单互联域高效执行，PP 的额外边界与填充通常需要付出代价。长 prompt 分块还可能形成层间流水，需用相同 prompt 对比 TTFT。</p></details></section>
+
+<section id="sources"><div class="kicker">10 / PUBLIC REFERENCES</div><h2>公开来源与验证范围</h2>
+<p>训练调度采用固定提交的官方源码机制；其余取舍与容量公式是明确假设下的教学分析。时间线和通信代理项不能代替真实 GPU / 网络测试。</p>
+<ol class="source-list"><li><a href="https://github.com/NVIDIA/Megatron-LM/blob/91260b59e815f0be44d625d75ba22cb8473e5981/megatron/core/pipeline_parallel/schedules.py#L144">NVIDIA Megatron-LM：PP / VPP 调度选择</a><span class="source-meta">2026-11-18 获取，固定提交 91260b59e815f0be44d625d75ba22cb8473e5981。</span></li><li><a href="https://github.com/NVIDIA/Megatron-LM/blob/91260b59e815f0be44d625d75ba22cb8473e5981/megatron/core/pipeline_parallel/schedules.py#L924">Warmup、forward_only 与调度 table</a>；<a href="https://github.com/NVIDIA/Megatron-LM/blob/91260b59e815f0be44d625d75ba22cb8473e5981/megatron/core/pipeline_parallel/schedules.py#L1153">Microbatch group 限制</a><span class="source-meta">时间线复现该版本的本地操作顺序，传播前后向依赖，忽略真实通信与 framework 执行开销。</span></li><li><a href="https://arxiv.org/abs/2104.04473">Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM</a><span class="source-meta">进一步阅读；本页调度机制以固定官方源码为直接依据，未把论文或源码当作本机性能测量。</span></li><li><a href="https://github.com/sgl-project/sglang">SGLang 官方仓库</a><span class="source-meta">推理 PP、chunked prefill 与可组合并行的支持情况，应核对实际镜像版本与模型路径。</span></li><li><a href="attention-lse.html">Attention LSE：从 Softmax 到并行归并</a><span class="source-meta">补充理解：PP 的层间通信与同一 attention 内的 O/LSE 归并。</span></li></ol>
+<div class="callout"><strong>验证的是网页和教学模型。</strong>108 组配置、32,760 个前后向任务通过依赖与同卡串行检查；还检查了消息计数、交互控件和移动端布局。未运行真实训练、GPU 推理或性能 benchmark。公开版整理与发布检查日期：2026-11-18。</div><button id="print">打印 / 保存 PDF</button><span class="muted">　无需 CDN；样式与交互脚本内嵌于 HTML。</span></section>
+<footer class="foot">PP / VPP · 训练与推理场景指南 · 2026-11-18 · 理解机制后再测量</footer></main><script>
+'use strict';
+// Offline teaching model. Rank-local order follows the cited Megatron source;
+// dependencies and duration propagation are simulated without communication.
+function buildOrders(p,m,v,mode){
+ if(!Number.isInteger(p)||!Number.isInteger(m)||!Number.isInteger(v)||p<2||m<p||m%p||v<1)throw new Error('教学模型要求 p≥2、m≥p、m%p=0、v≥1');
+ if(mode!=='vpp')v=1;
+ const table=[];
+ for(let lo=0;lo<m;lo+=p)for(let c=0;c<v;c++)for(let mb=lo;mb<Math.min(lo+p,m);mb++)table.push({mb,c});
+ return Array.from({length:p},(_,r)=>{
+  const f=table.map(o=>({...o,r,kind:'F'}));
+  const b=table.map(o=>({mb:o.mb,c:v-1-o.c,r,kind:'B'}));
+  if(mode==='gpipe')return [...f,...b];
+  const warm=Math.min(m*v,v===1?p-r-1:2*(p-r-1)+(v-1)*p);
+  const order=f.slice(0,warm);
+  for(let i=0;i<f.length-warm;i++)order.push(f[warm+i],b[i]);
+  order.push(...b.slice(f.length-warm));return order;
+ });
+}
+function taskKey(o){return `${o.kind}:${o.c}:${o.r}:${o.mb}`;}
+function dependencies(o,p,v){
+ const l=o.c*p+o.r;const q=p*v;
+ const ref=(kind,x)=>taskKey({kind,c:Math.floor(x/p),r:x%p,mb:o.mb});
+ if(o.kind==='F')return l===0?[]:[ref('F',l-1)];
+ return [ref('F',l),...(l<q-1?[ref('B',l+1)]:[])];
+}
+function simulate(p,m,v,mode='vpp'){
+ const chunks=mode==='vpp'?v:1;
+ const orders=buildOrders(p,m,chunks,mode),cursor=Array(p).fill(0),available=Array(p).fill(0),done=new Map(),ops=[];
+ const n=2*p*m*chunks;
+ while(ops.length<n){
+  let progressed=false;
+  for(let r=0;r<p;r++){
+   const o=orders[r][cursor[r]];if(!o)continue;
+   const deps=dependencies(o,p,chunks);if(deps.some(k=>!done.has(k)))continue;
+   const start=Math.max(available[r],...deps.map(k=>done.get(k).end));
+   const end=start+(o.kind==='F'?1:2)/chunks;
+   const op={...o,start,end,deps};done.set(taskKey(o),op);ops.push(op);available[r]=end;cursor[r]++;progressed=true;
+  }
+  if(!progressed)throw new Error('调度依赖循环：不生成误导性时间线');
+ }
+ const total=Math.max(...available),busy=m*3,idle=Math.max(0,1-busy/total);
+ return {p,m,v:chunks,mode,ops,total,busy,idle,orders};
+}
+function communication(p,m,v,S,bandwidth,alpha,overlap){
+ const counts=Array(p).fill(0),q=p*v;
+ for(let l=0;l<q;l++){
+  if(l<q-1)counts[l%p]++; // forward output send
+  if(l>0)counts[l%p]++; // backward gradient send
+ }
+ const messages=2*m*(q-1),tau=alpha/1000+S/(bandwidth*1e9)*1000;
+ return {messages,counts,k:Math.max(...counts),tau,bytes:messages*S,penalty:(1-overlap)*m*Math.max(...counts)*tau};
+}
+const $=id=>document.getElementById(id);
+const text=(id,value)=>{$(id).textContent=value;};
+const fmt=(x,n=2)=>Number(x).toLocaleString('en-US',{minimumFractionDigits:n,maximumFractionDigits:n});
+const ms=x=>fmt(x)+' ms';
+let currentMode='vpp',lastState;
+function readConfig(){
+ const p=Number($('p').value);let m=Number($('m').value);
+ if(m<p){m=p;$('m').value=String(m);}
+ for(const o of $('m').options)o.disabled=Number(o.value)<p;
+ const bounds={compute:[.1,1000],batch:[1,64],tokens:[1,131072],hidden:[64,65536],bandwidth:[.1,1000],latency:[0,1000]};
+ const cfg={p,m,v:Number($('v').value),bytes:Number($('bytes').value),overlap:Number($('overlap').value)/100};
+ for(const [id,[lo,hi]] of Object.entries(bounds)){
+  let value=Number($(id).value);if(!Number.isFinite(value)||$(id).value==='')value=lo;
+  value=Math.min(hi,Math.max(lo,value));if(['batch','tokens','hidden'].includes(id))value=Math.round(value);
+  cfg[id]=value;
+ }
+ return cfg;
+}
+function drawSchedule(result,compute){
+ const scale=compute/3,totalMs=result.total*scale;
+ const width=Math.max(790,Math.min(5200,totalMs*5+110)),left=84,right=20,rowH=52,h=40+result.p*rowH;
+ const toX=t=>left+t/result.total*(width-left-right);
+ let svg=`<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${result.mode} 的 ${result.p} 个 stage 调度" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}"><title>前后向依赖有效的流水线调度，忽略通信</title>`;
+ for(let i=0;i<=8;i++){
+  const x=left+(width-left-right)*i/8;
+  svg+=`<line x1="${x}" y1="25" x2="${x}" y2="${h}" stroke="#dae5ec"/><text x="${x}" y="16" font-size="10" fill="#718499" text-anchor="middle">${fmt(totalMs*i/8,1)}</text>`;
+ }
+ for(let r=0;r<result.p;r++){
+  const y=32+r*rowH;
+  svg+=`<text x="3" y="${y+25}" font-size="12" fill="#3f586f">Stage ${r}</text><rect x="${left}" y="${y}" width="${width-left-right}" height="38" rx="5" fill="#e9eff4"/>`;
+ }
+ for(const o of result.ops){
+  const x=toX(o.start),w=Math.max(.3,toX(o.end)-x-.7),y=32+o.r*rowH;
+  const fill=o.kind==='F'?(o.c%2?'#239f8a':'#008f88'):(o.c%2?'#7272b3':'#5378bd');
+  svg+=`<g><title>${o.kind==='F'?'Forward':'Backward'} · microbatch ${o.mb} · chunk ${o.c} · Stage ${o.r} · ${ms(o.start*scale)} → ${ms(o.end*scale)}</title><rect x="${x}" y="${y}" width="${w}" height="38" rx="3" fill="${fill}"/>`;
+  if(w>30)svg+=`<text x="${x+w/2}" y="${y+23}" font-size="${w>50?11:9}" fill="white" text-anchor="middle">${o.mb}·${o.c}</text>`;
+  svg+='</g>';
+ }
+ svg+='</svg>';$('timeline').innerHTML=svg;
+ const names={gpipe:'GPipe / Fill–Drain',pp:'普通 1F1B',vpp:`VPP 交错 1F1B · 每卡 ${result.v} chunk`};
+ text('schedule-title',names[result.mode]);
+ text('schedule-summary',`本图完成 ${result.ops.length.toLocaleString()} 次 chunk 前 / 后向；总时间 ${ms(totalMs)}；每 rank 有效计算 ${ms(result.busy*scale)}；平均空闲占比 ${fmt(result.idle*100,1)}%。均衡模型中所有 rank 有效计算量相同。`);
+}
+function render(){
+ const c=readConfig(),S=c.batch*c.tokens*c.hidden*c.bytes;
+ const pp=simulate(c.p,c.m,1,'pp'),vpp=simulate(c.p,c.m,c.v,'vpp');
+ const pc=communication(c.p,c.m,1,S,c.bandwidth,c.latency,c.overlap);
+ const vc=communication(c.p,c.m,c.v,S,c.bandwidth,c.latency,c.overlap);
+ const pt=pp.total*c.compute/3,vt=vpp.total*c.compute/3;
+ const ppProxy=pt+pc.penalty,vppProxy=vt+vc.penalty;
+ text('overlap-label',fmt(c.overlap*100,0)+'%');
+ text('lab-assumptions',`固定 ${c.p} 个物理 stage、${c.m} 个 microbatch；F:B = 1:2；VPP group size = ${c.p}；一条边界 tensor ${fmt(S/2**20)} MiB；同 shape 的前向和梯度。`);
+ text('pp-idle',fmt(pp.idle*100,1)+'%');text('vpp-idle',fmt(vpp.idle*100,1)+'%');
+ text('traffic-ratio',fmt(vc.messages/pc.messages)+'×');
+ text('pp-time',ms(pt));text('vpp-time',ms(vt));
+ $('pp-bar').style.width=pt/Math.max(pt,vt)*100+'%';$('vpp-bar').style.width=vt/Math.max(pt,vt)*100+'%';
+ text('bubble-saved',`调度时间差：${ms(pt-vt)}；理想模型相对加速 ${fmt(pt/vt)}×。真实算子时间或通信加入后会变化。`);
+ text('pp-total',ms(ppProxy));text('vpp-total',ms(vppProxy));
+ text('comm-summary',`单次发送 τ=${fmt(pc.tau,3)} ms；消息总数 PP ${pc.messages} / VPP ${vc.messages}；最忙 rank 每 microbatch 发送 ${pc.k} / ${vc.k} 次。暴露通信代理项 ${ms(pc.penalty)} / ${ms(vc.penalty)}。`);
+ const delta=ppProxy-vppProxy;
+ let recommendation=c.v===1?'当前 v=1，与普通 PP 的层分配和调度模型一致。':delta>.001?`这组假设中，VPP 的气泡节省大于增加的暴露通信：敏感性时间减少 ${ms(delta)}。下一步需要用真实 chunk 耗时和 P2P trace 验证。`:`这组假设中，新增通信抵消或超过气泡节省：VPP 的敏感性时间增加 ${ms(-delta)}。可尝试降低 v、扩大有效 chunk 计算或改善网络重叠。`;
+ if(c.compute/c.v<vc.tau)recommendation+=' 当前单 chunk 的 F+B 时间已小于一次发送成本，粒度可能过细。';
+ text('recommendation',recommendation);
+ const result=currentMode==='pp'?pp:currentMode==='vpp'?vpp:simulate(c.p,c.m,1,'gpipe');drawSchedule(result,c.compute);
+ lastState={config:c,pp,vpp,ppComm:pc,vppComm:vc,ppTime:pt,vppTime:vt,ppProxy,vppProxy};
+}
+for(const input of document.querySelectorAll('.controls input,.controls select'))input.addEventListener('input',render);
+for(const button of document.querySelectorAll('[data-schedule]'))button.addEventListener('click',()=>{
+ currentMode=button.dataset.schedule;
+ for(const other of document.querySelectorAll('[data-schedule]'))other.classList.toggle('active',other===button);
+ render();
+});
+$('print').addEventListener('click',()=>window.print());
+window.PipelineExplainer={simulate,communication,buildOrders,dependencies,taskKey,state:()=>lastState};
+render();
+
+</script></body></html>
