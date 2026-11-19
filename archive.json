@@ -259,6 +259,28 @@
         "通信"
       ],
       "source_date": "2026-11-18"
+    },
+    {
+      "path": "blackwell-latent-down-pipeline.html",
+      "title": "Blackwell 算子流水线：从 CTA 到 latent down",
+      "category": "GPU 与算子",
+      "category_id": "gpu",
+      "description": "把一个M=30的latent down拆到GPU上：交互查看矩阵切片、28个双CTA cluster、56轮K流水、TMEM累加及splitK规约。",
+      "tags": [
+        "Blackwell",
+        "latent down",
+        "SM",
+        "Tensor Core",
+        "TMA",
+        "SMEM",
+        "TMEM",
+        "CTA",
+        "warp",
+        "splitK",
+        "stages",
+        "GEMM"
+      ],
+      "source_date": "2026-11-19"
     }
   ]
 }
