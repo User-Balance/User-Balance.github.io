@@ -53,15 +53,15 @@
 <p class="small muted">不能用一个统一的 GB/s 数字描述整条链。计算、搬运能够重叠；DRAM利用率较低可能是数据已经搬完，也可能是缓存命中、任务太少或等待同步，需要结合时间线判定。</p></section>
 <section class="section" id="partition"><div class="section-head"><span class="section-no">03</span><h2>把 latent down，切到 GPU 上。</h2></div><p class="lead">固定逻辑计算 Y = x × Wᵀ，输入 x=[M,7168]、权重 W=[3584,7168]。默认演示 M=30、BM16、BN128、BK128、cluster2、12 stages。</p>
 <div class="card">
-<div class="controls"><div class="control"><label for="shape-m">输入行数 M <output id="shape-m-value">30</output></label><input id="shape-m" type="range" min="1" max="80" value="30"></div><div class="control"><label for="tile-m">每CTA的BM</label><select id="tile-m"><option value="16">16 · 默认快照</option><option value="32">32 · 教学比较</option><option value="64">64 · 教学比较</option></select></div><div class="control"><label for="cta-group">cluster大小</label><select id="cta-group"><option value="2">2 CTA · 默认快照</option><option value="1">1 CTA · 教学比较</option></select></div><button type="button" id="reset-shape">回到 M=30</button></div>
+<div class="controls"><div class="control"><label for="shape-m">输入行数 M <output id="shape-m-value">30</output></label><input id="shape-m" type="range" min="1" max="640" value="30"></div><div class="control"><label for="tile-m">每CTA的BM</label><select id="tile-m"><option value="16">16 · 默认快照</option><option value="32">32 · 教学比较</option><option value="64">64 · 教学比较</option></select></div><div class="control"><label for="cta-group">cluster大小</label><select id="cta-group"><option value="2">2 CTA · 默认快照</option><option value="1">1 CTA · 教学比较</option></select></div><button type="button" id="reset-shape">回到 M=30</button></div>
 <div class="stats"><div class="stat"><strong id="m-tiles">2</strong><span>M方向输出分块</span></div><div class="stat"><strong id="cta-count">56</strong><span>输出CTA数</span></div><div class="stat"><strong id="cluster-count">28</strong><span>cluster数</span></div><div class="stat"><strong id="coverage">37.8%</strong><span>相对148 SM预算的覆盖上界</span></div></div>
 <div class="scroll-figure"><svg id="matrix-svg" viewBox="0 0 1060 285" role="img" aria-labelledby="matrix-title matrix-desc"><title id="matrix-title">矩阵A、B和输出Y的分块</title><desc id="matrix-desc">点击GPU上的CTA选择一个输出tile，图中对应高亮该tile使用的输入行与权重列。</desc><g id="matrix-content"></g></svg></div>
 <p class="figure-caption" id="partition-description"></p>
 </div>
-<div class="two" style="margin-top:24px"><div class="card"><p class="kicker">TASKS → SM / 示意映射</p><h3>148 个 SM 位置，哪些有输出任务？</h3><div class="legend"><span class="key" style="--key:#c5d9cb">有任务</span><span class="key" style="--key:#28634b">当前cluster</span><span class="key" style="--key:#e8e9e2">本示例没有分配任务</span></div><div class="gpu-grid" id="gpu-grid" aria-label="148个SM的教学映射，可选择cluster"></div><p class="figure-caption">点击任意有任务的SM，联动高亮矩阵分块和两个CTA。位置是教学映射；真实CUDA调度不会保证按编号连续放置。</p></div>
+<div class="two" style="margin-top:24px"><div class="card"><p class="kicker">TASKS → SM / 示意映射</p><h3>148 个 SM 位置，哪些有输出任务？</h3><div class="legend"><span class="key" style="--key:#c5d9cb">有任务</span><span class="key" style="--key:#28634b">当前cluster</span><span class="key" style="--key:#e8e9e2">本示例没有分配任务</span></div><div class="controls"><div class="control"><label for="task-wave">输出任务批次 · 教学映射</label><select id="task-wave"><option value="0">第 1 / 1 批</option></select></div></div><div class="gpu-grid" id="gpu-grid" aria-label="148个SM的教学映射，可选择cluster"></div><p class="figure-caption">点击有任务的SM，联动高亮矩阵分块；任务超过148个时可切换批次，查看后面的输出tile。这些批次表示教学映射，不代表真实kernel launch或固定调度顺序。</p></div>
 <div class="card"><p class="kicker">ZOOM / 一个协作组</p><h3 id="selected-cluster">Cluster 0 · CTA 0 + CTA 1</h3><p class="small" id="selected-shape"></p><div class="scroll-figure"><svg class="two-cta-svg" viewBox="0 0 660 225" role="img" aria-labelledby="cluster-zoom-title"><title id="cluster-zoom-title">两个CTA分别驻留两个SM，协作计算相邻输出列</title><rect x="10" y="18" width="300" height="148" rx="9" fill="#e2ebdf"/><rect x="350" y="18" width="300" height="148" rx="9" fill="#e1eaf3"/><text x="32" y="48" class="svg-title">CTA 0 / leader SM</text><text x="372" y="48" class="svg-title">CTA 1 / partner SM</text><text x="32" y="77" class="svg-small">A: 8 × 128 · B: 128 × 128</text><text x="372" y="77" class="svg-small">A: 8 × 128 · B: 128 × 128</text><rect x="32" y="96" width="252" height="47" rx="5" fill="#bad2bf"/><rect x="372" y="96" width="252" height="47" rx="5" fill="#bed0e4"/><text x="158" y="126" class="svg-title" text-anchor="middle">输出 16 × 128</text><text x="498" y="126" class="svg-title" text-anchor="middle">输出 16 × 128</text><path d="M310 108H350" fill="none" stroke="#ac6136" stroke-width="3"/><text x="330" y="196" text-anchor="middle" class="svg-small">2-SM MMA：逻辑 16 × 256；每个CTA输出自己的16 × 128</text></svg></div><p class="figure-caption">上图固定展示BM16、cluster2的结构。改变BM或cluster后，任务计数与矩阵高亮联动；此结构图仍保留默认尺寸作对照。</p></div></div>
 <div class="note orange"><strong>两个“56”是巧合。</strong>M30下有 2×28=56 个输出CTA；每个输出tile又需要 7168÷128=56 轮K累加。一个是空间任务数，另一个是时间循环数。默认28个cluster、每cluster2个CTA；这个launch中每CTA只有一个输出tile。</div>
-<p class="small muted" style="margin-top:18px">改M、BM、cluster只改变教学切分，不表示相应配置已编译或通过性能测试。当前down后端的BN128、BK128具有实现与布局约束。</p></section>
+<p class="small muted" style="margin-top:18px">M控件范围为1–640。改M、BM、cluster只改变教学切分，不表示相应配置已编译或通过性能测试。当前down后端的BN128、BK128具有实现与布局约束。</p></section>
 <section class="section" id="warps"><div class="section-head"><span class="section-no">04</span><h2>八个 warp，并不做相同的事。</h2></div><p class="lead">warp specialization让加载、Tensor指令发射、scale处理和输出线程同时推进。它是程序分工，不是硬件强制的职业。</p>
 <div class="two"><div class="card"><p class="kicker">LATENT DOWN / MAIN-LOOP ROLES</p><h3>每CTA 256线程 = 8 warps</h3><div class="warp-grid"><div class="warp load"><b>w0</b>TMA发起<br>选中线程发指令</div><div class="warp mma"><b>w1</b>leader发MMA<br>异步Tensor计算</div><div class="warp scale"><b>w2</b>TMEM初始化<br>scale处理</div><div class="warp"><b>w3</b>BK128下<br>无第二scale任务</div><div class="warp epi"><b>w4</b>输出读回<br>量化 / 写出</div><div class="warp epi"><b>w5</b>输出读回<br>量化 / 写出</div><div class="warp epi"><b>w6</b>输出读回<br>量化 / 写出</div><div class="warp epi"><b>w7</b>输出读回<br>量化 / 写出</div></div><p class="figure-caption">partner CTA的w1不重复发起同一份2-SM MMA；其余任务按协作路径执行。</p></div><div class="card"><p class="kicker">DESIGN / 怎样分工</p><h3>按瓶颈配置线程，不能平均分配</h3><p class="small">Tensor管线执行乘加，更多warp只负责发射并不自动提升吞吐。先确认搬运是否供得上，再检查scale、TMEM读回、量化和写出。</p><p class="small">当前down的epilogue需要BF16舍入、group32求scale、FP8转换和packed scale写出；这些操作由普通线程执行。</p><div class="note" style="margin-top:12px"><strong>空闲warp也不能直接改岗位。</strong>增加epilogue线程会改变barrier人数、数据分配和资源占用，必须一起修改并验证。</div></div></div>
 <div class="table-wrap"><table><thead><tr><th>算子 / 路径</th><th>warp数/CTA</th><th>主要角色与区别</th></tr></thead><tbody>
@@ -116,7 +116,7 @@
 <section class="section" id="sources"><div class="section-head"><span class="section-no">11</span><h2>来源，与这页的验证范围。</h2></div><p class="lead">硬件机制依据NVIDIA公开文档；具体warp分工和M30默认配置按2026-11-18的实现快照整理。公开页面只保留教学内容，不附带环境信息或内部源码。</p>
 <ol class="source-list"><li><a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html">NVIDIA PTX ISA：tcgen05、TMEM与MMA合法形状</a><small>重点查看tcgen05.mma及“Various combinations of .kind and shapes”指令形状表。不同PTX版本的表号可能变化。</small></li><li><a href="https://docs.nvidia.com/cutlass/latest/media/docs/cpp/blackwell_functionality.html">CUTLASS：Blackwell Functionality</a><small>了解Blackwell Tensor操作、数据类型、协作CTA与布局约束。</small></li><li><a href="https://docs.nvidia.com/cutlass/latest/media/docs/cpp/efficient_gemm.html">CUTLASS：Efficient GEMM</a><small>进一步阅读分块、数据复用、流水和occupancy之间的取舍。</small></li><li><a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/">CUDA C++ Programming Guide</a><small>线程块、warp、cluster、共享内存与资源驻留的基础概念。</small></li><li><a href="nvidia-h20-b200-architecture-lab.html">本站：NVIDIA H20 / B200 架构与GEMM学习指南</a><small>从硬件全景进一步理解本页聚焦的内核细节。</small></li></ol>
 <div class="note"><strong>三种证据分别呈现。</strong>默认形状、任务数、warp角色和SMEM布局来自源码核对；CTA数量、K循环数和A切片字节是确定性推导；流水节拍与stage趋势是可调教学模型。本次验证页面交互、模型依赖和布局，没有运行新的GPU kernel、性能调优或nsys采集。</div>
-<p class="small muted" style="margin-top:18px">整理日期：2026-11-19。浏览器动画默认暂停，支持单步、拖动和减少动态效果设置。无外部脚本、字体、统计跟踪或GPU任务。</p><button type="button" id="print">打印 / 保存 PDF</button>
+<p class="small muted" style="margin-top:18px">整理日期：2026-11-19；M控件与多批映射更新：2026-11-20。浏览器动画默认暂停，支持单步、拖动和减少动态效果设置。无外部脚本、字体、统计跟踪或GPU任务。</p><button type="button" id="print">打印 / 保存 PDF</button>
 </section>
 </div>
 </main>
@@ -136,6 +136,10 @@ function svgText(g,x,y,text,cls="svg-small",anchor="start"){g.append(el("text",{
 function partition(m=state.m,bm=state.bm,cluster=state.cluster){const rows=Math.ceil(m/bm),cols=N/BN,ctas=rows*cols;return {rows,cols,ctas,clusters:rows*Math.ceil(cols/cluster),padded:rows*bm,coverage:Math.min(ctas,SMS)/SMS,cluster};}
 function renderPartition(){
  const p=partition();state.selected=Math.min(state.selected,p.clusters-1);
+ const clustersPerWave=Math.floor(SMS/state.cluster),wave=Math.floor(state.selected/clustersPerWave),waves=Math.ceil(p.clusters/clustersPerWave);
+ const waveSelect=$("task-wave");waveSelect.replaceChildren();
+ for(let j=0;j<waves;j++){const option=document.createElement("option");option.value=j;option.textContent="第 "+(j+1)+" / "+waves+" 批";option.selected=j===wave;waveSelect.append(option);}
+ waveSelect.disabled=waves===1;
  $("shape-m-value").textContent=state.m;$("m-tiles").textContent=p.rows;$("cta-count").textContent=p.ctas;$("cluster-count").textContent=p.clusters;$("coverage").textContent=(p.coverage*100).toFixed(1)+"%";
  const groupsPerRow=p.cols/state.cluster,row=Math.floor(state.selected/groupsPerRow),colGroup=state.selected%groupsPerRow;
  const startM=row*state.bm,endM=Math.min(state.m,startM+state.bm),startN=colGroup*state.cluster*BN,endN=startN+state.cluster*BN;
@@ -160,9 +164,10 @@ function renderPartition(){
  svgText(g,xA,y+h+52,"K按128切片；图中条纹压缩示意");svgText(g,xY,y+h+52,"高亮：当前cluster输出；灰色尾部为padding");
  const grid=$("gpu-grid");grid.replaceChildren();
  for(let i=0;i<SMS;i++){
-  const b=document.createElement("button"),active=i<p.ctas,idx=Math.floor(i/state.cluster);
+  const task=wave*clustersPerWave*state.cluster+i;
+  const b=document.createElement("button"),active=task<p.ctas,idx=Math.floor(task/state.cluster);
   b.type="button";b.className="sm"+(active?" active":"")+(i%state.cluster?" pair-odd":"")+(active&&idx===state.selected?" selected":"");
-  b.textContent=String(i);b.disabled=!active;b.setAttribute("aria-label","教学SM "+i+(active?"，CTA "+i+"，Cluster "+idx:"，没有输出任务"));b.setAttribute("aria-pressed",String(active&&idx===state.selected));
+  b.textContent=String(i);b.disabled=!active;b.setAttribute("aria-label","教学SM "+i+(active?"，输出任务CTA "+task+"，Cluster "+idx:"，本批没有输出任务"));b.setAttribute("aria-pressed",String(active&&idx===state.selected));
   if(active)b.addEventListener("click",()=>{state.selected=idx;renderPartition();});
   grid.append(b);
  }
@@ -257,6 +262,7 @@ function renderReduction(){
  $("reduction-status").textContent="点击演示：先完成所有partial，再做最终输出。";$("play-reduction").textContent="演示数据流";
 }
 $("shape-m").addEventListener("input",e=>{state.m=Number(e.target.value);renderPartition();});
+$("task-wave").addEventListener("change",e=>{state.selected=Number(e.target.value)*Math.floor(SMS/state.cluster);renderPartition();});
 $("tile-m").addEventListener("change",e=>{state.bm=Number(e.target.value);renderPartition();});
 $("cta-group").addEventListener("change",e=>{state.cluster=Number(e.target.value);renderPartition();});
 $("reset-shape").addEventListener("click",()=>{state.m=30;state.bm=16;state.cluster=2;state.selected=0;$("shape-m").value=30;$("tile-m").value=16;$("cta-group").value=2;renderPartition();});
